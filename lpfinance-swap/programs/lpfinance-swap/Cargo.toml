@@ -1,0 +1,28 @@
+[package]
+name = "lpfinance-swap"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "lpfinance_swap"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+anchor-lang = { version = "0.24.0", features=["init-if-needed"] }
+anchor-spl = { version = "0.24.0" }
+spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
+num-derive = "0.3"
+num-traits = "0.2"
+nom = "7"
+pyth-client = "0.2.2"
