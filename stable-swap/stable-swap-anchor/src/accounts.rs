@@ -6,6 +6,7 @@ use anchor_lang::prelude::*;
 #[derive(Accounts, Clone)]
 pub struct Initialize<'info> {
     /// The swap.
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(signer)]
     pub swap: AccountInfo<'info>,
     /// The authority of the swap.
@@ -149,6 +150,7 @@ pub struct SwapUserContext<'info> {
     /// The authority of the swap.
     pub swap_authority: AccountInfo<'info>,
     /// The authority of the user.
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(signer)]
     pub user_authority: AccountInfo<'info>,
     /// The swap.
@@ -161,6 +163,7 @@ pub struct AdminUserContext<'info> {
     /// The public key of the admin account.
     ///
     /// *Note: must be a signer.*
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(signer)]
     pub admin: AccountInfo<'info>,
     /// The swap.

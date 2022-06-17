@@ -15,4 +15,4 @@ pub use stable_swap_math::{curve, math, pool_converter};
 /// building with a different solana-program version
 pub use solana_program;
 
-solana_program::declare_id!("SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ");
+solana_program::declare_id!("DhxTG5bfGbCrGgX3ZfTRnFTbkjK8XZG9a1FP7RHxb7Sk");

@@ -14,7 +14,7 @@ pub use state::*;
 
 use anchor_lang::prelude::*;
 
-declare_id!("SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ");
+declare_id!("DhxTG5bfGbCrGgX3ZfTRnFTbkjK8XZG9a1FP7RHxb7Sk");
 
 /// The StableSwap program.
 #[derive(Clone)]
