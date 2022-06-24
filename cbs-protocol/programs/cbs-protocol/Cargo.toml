@@ -26,3 +26,6 @@ num-derive = "0.3.3"
 num-traits = "0.2.15"
 nom = "7"
 pyth-client = "0.2.2"
+lpfinance-tokens = { path = "../../../lpfinance-tokens/programs/lpfinance-tokens", features=["cpi"]}
+solend = { path = "../../../solend/programs/solend", features=["cpi"]}
+apricot = { path = "../../../apricot/programs/apricot", features=["cpi"]}
