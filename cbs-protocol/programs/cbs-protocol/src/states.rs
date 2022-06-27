@@ -50,63 +50,6 @@ pub struct RepayToken<'info> {
 }
 
 #[derive(Accounts)]
-pub struct RepaySOL<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut)]
-    pub config: Box<Account<'info, Config>>,
-
-    // state account for user's wallet
-    #[account(
-        mut,
-        constraint = user_account.owner == user_authority.key()
-    )]
-    pub user_account: Box<Account<'info, UserAccount>>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct WithdrawSOL<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut, has_one= state_account)]
-    pub config: Box<Account<'info, Config>>,
-    // state account for user's wallet
-    #[account(
-        mut,
-        constraint = user_account.owner == user_authority.key()
-    )]
-    pub user_account: Box<Account<'info, UserAccount>>,
-    pub pyth_btc_account: AccountInfo<'info>,
-    pub pyth_usdc_account: AccountInfo<'info>,
-    pub pyth_sol_account: AccountInfo<'info>,
-    pub pyth_eth_account: AccountInfo<'info>,
-    pub pyth_msol_account: AccountInfo<'info>,
-    pub pyth_ust_account: AccountInfo<'info>,
-    pub pyth_srm_account: AccountInfo<'info>,
-    pub pyth_scnsol_account: AccountInfo<'info>,
-    pub pyth_stsol_account: AccountInfo<'info>,
-    pub pyth_usdt_account: AccountInfo<'info>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
 pub struct WithdrawToken<'info> {
     #[account(mut)]
     pub user_authority: Signer<'info>,
@@ -130,7 +73,7 @@ pub struct WithdrawToken<'info> {
     pub dest_pool: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub dest_mint: Account<'info,Mint>,
-    pub pyth_btc_account: AccountInfo<'info>,
+    pub pyth_ray_account: AccountInfo<'info>,
     pub pyth_usdc_account: AccountInfo<'info>,
     pub pyth_sol_account: AccountInfo<'info>,
     pub pyth_eth_account: AccountInfo<'info>,
@@ -183,24 +126,13 @@ pub struct Initialize<'info> {
     // Config Accounts
     #[account(init,
         payer = authority,
-        space = 32 * 27 + 24 * 20 + 8
+        space = Config::LEN
     )]
     pub config: Box<Account<'info, Config>>,
 
-    pub wsol_mint: Box<Account<'info, Mint>>,
-    pub ray_mint: Box<Account<'info, Mint>>,
-    pub msol_mint: Box<Account<'info, Mint>>,
-    pub eth_mint: Box<Account<'info, Mint>>,
-    pub ust_mint: Box<Account<'info, Mint>>,
-    pub srm_mint: Box<Account<'info, Mint>>,
-    pub scnsol_mint: Box<Account<'info, Mint>>,
-    pub stsol_mint: Box<Account<'info, Mint>>,
-    pub usdt_mint: Box<Account<'info, Mint>>,
-
     pub lpsol_mint: Box<Account<'info, Mint>>,   
     pub lpusd_mint: Box<Account<'info, Mint>>,
-    pub lpray_mint: Box<Account<'info, Mint>>,
-    pub lpeth_mint: Box<Account<'info, Mint>>,
+    pub lpfi_mint: Box<Account<'info, Mint>>,
 
     // LpSOL POOL
     #[account(
@@ -222,26 +154,16 @@ pub struct Initialize<'info> {
         payer = authority
     )]
     pub pool_lpusd: Box<Account<'info, TokenAccount>>,
-    // LpBTC POOL
+    // LpFi POOL
     #[account(
         init,
-        token::mint = lpray_mint,
+        token::mint = lpfi_mint,
         token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpbtc".as_ref()],
+        seeds = [PREFIX.as_bytes(), b"pool_lpfi".as_ref()],
         bump,
         payer = authority
     )]
-    pub pool_lpbtc: Box<Account<'info, TokenAccount>>,
-    // LpETH POOL
-    #[account(
-        init,
-        token::mint = lpeth_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpeth".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_lpeth: Box<Account<'info, TokenAccount>>,
+    pub pool_lpfi: Box<Account<'info, TokenAccount>>,    
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -260,17 +182,16 @@ pub struct InitializePool<'info> {
     // Config Accounts
     #[account(mut, has_one = state_account)]
     pub config: Box<Account<'info, Config>>,
-
+    
+    // Tokens
     pub wsol_mint: Box<Account<'info, Mint>>,
     pub ray_mint: Box<Account<'info, Mint>>,
     pub msol_mint: Box<Account<'info, Mint>>,
-    pub eth_mint: Box<Account<'info, Mint>>,
-    pub ust_mint: Box<Account<'info, Mint>>,
     pub srm_mint: Box<Account<'info, Mint>>,
     pub scnsol_mint: Box<Account<'info, Mint>>,
     pub stsol_mint: Box<Account<'info, Mint>>,
-    pub usdt_mint: Box<Account<'info, Mint>>,
-    // USDC POOL
+
+    // wSOL POOL
     #[account(
         init,
         token::mint = wsol_mint,
@@ -280,17 +201,7 @@ pub struct InitializePool<'info> {
         payer = authority
     )]
     pub pool_wsol: Box<Account<'info, TokenAccount>>,
-    // USDC POOL
-    #[account(
-        init,
-        token::mint = eth_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_eth".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_eth: Box<Account<'info, TokenAccount>>,
-    // BTC POOL
+    // Ray POOL
     #[account(
         init,
         token::mint = ray_mint,
@@ -310,16 +221,6 @@ pub struct InitializePool<'info> {
         payer = authority
     )]
     pub pool_msol: Box<Account<'info, TokenAccount>>,
-    // UST POOL
-    #[account(
-        init,
-        token::mint = ust_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_ust".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_ust: Box<Account<'info, TokenAccount>>,
     // srm POOL
     #[account(
         init,
@@ -349,17 +250,7 @@ pub struct InitializePool<'info> {
         bump,
         payer = authority
     )]
-    pub pool_stsol: Box<Account<'info, TokenAccount>>,
-    // usdt POOL
-    #[account(
-        init,
-        token::mint = usdt_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_usdt".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_usdt: Box<Account<'info, TokenAccount>>,
+    pub pool_stsol: Box<Account<'info, TokenAccount>>,    
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -396,14 +287,17 @@ pub struct DepositCollateral<'info> {
 
     #[account(mut)]
     pub user_authority: Signer<'info>,
+    // User token account for collateral
     #[account(
         mut,
         constraint = user_collateral.owner == user_authority.key(),
         constraint = user_collateral.mint == collateral_mint.key()
     )]
     pub user_collateral : Box<Account<'info,TokenAccount>>,
+    // Collateral token address
     #[account(mut)]
     pub collateral_mint: Account<'info,Mint>,
+    // CBS protocol pool
     #[account(
         mut,
         constraint = collateral_pool.mint == collateral_mint.key(),
@@ -445,35 +339,6 @@ pub struct DepositCollateral<'info> {
 }
 
 #[derive(Accounts)]
-pub struct DepositSOL<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    // state account for user's wallet
-    #[account(
-        mut,
-        constraint = user_account.owner == user_authority.key()
-    )]
-    pub user_account: Box<Account<'info, UserAccount>>,
-    #[account(mut)]
-    pub whitelist: AccountLoader<'info, WhiteList>,
-
-    #[account(mut)]
-    pub whitelist_config: Box<Account<'info, lpfinance_accounts::Config>>,
-    #[account(mut)]
-    pub config: Box<Account<'info, Config>>,
-    pub accounts_program: Program<'info, LpfinanceAccounts>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
 pub struct BorrowLpToken<'info> {
     #[account(mut)]
     pub user_authority: Signer<'info>,
@@ -488,6 +353,7 @@ pub struct BorrowLpToken<'info> {
         bump
     )]
     pub state_account: Box<Account<'info, StateAccount>>,
+    // Token program's Signer
     #[account(mut)]
     pub tokens_state: Box<Account<'info, TokenStateAccount>>,
     #[account(mut)]
@@ -503,16 +369,13 @@ pub struct BorrowLpToken<'info> {
     pub user_collateral : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
     pub collateral_mint: Account<'info,Mint>,
-    pub pyth_btc_account: AccountInfo<'info>,
-    pub pyth_eth_account: AccountInfo<'info>,
-    pub pyth_usdc_account: AccountInfo<'info>,
+    pub pyth_ray_account: AccountInfo<'info>,
+    // Price feed for wSOL
     pub pyth_sol_account: AccountInfo<'info>,
     pub pyth_msol_account: AccountInfo<'info>,
-    pub pyth_ust_account: AccountInfo<'info>,
     pub pyth_srm_account: AccountInfo<'info>,
     pub pyth_scnsol_account: AccountInfo<'info>,
     pub pyth_stsol_account: AccountInfo<'info>,
-    pub pyth_usdt_account: AccountInfo<'info>,
     // Programs and Sysvars
     pub lptokens_program: Program<'info, LpfinanceTokens>,
     pub system_program: Program<'info, System>,
@@ -534,59 +397,35 @@ pub struct LiquidateCollateral<'info> {
     #[account(mut)]
     pub auction_msol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub auction_btc: Box<Account<'info, TokenAccount>>,
+    pub auction_ray: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub auction_usdc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub auction_eth: Box<Account<'info, TokenAccount>>,
-
-    #[account(mut)]
-    pub cbs_msol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_btc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_usdc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_eth: Box<Account<'info, TokenAccount>>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct LiquidateSecondCollateral<'info> {
-    #[account(mut)]
-    pub user_account: Box<Account<'info, UserAccount>>,
-    #[account(mut)]
-    pub state_account: Box<Account<'info, StateAccount>>,
-
-    #[account(mut)]
-    pub auction_ust: Box<Account<'info, TokenAccount>>,
+    pub auction_wsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub auction_srm: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub auction_scnsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub auction_stsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub auction_usdt: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub cbs_ust: Box<Account<'info, TokenAccount>>,
+    pub cbs_msol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ray: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_wsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub cbs_srm: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub cbs_scnsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub cbs_stsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_usdt: Box<Account<'info, TokenAccount>>,
+
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
 }
+
 
 #[derive(Accounts)]
 pub struct LiquidateLpTokenCollateral<'info> {
@@ -600,18 +439,14 @@ pub struct LiquidateLpTokenCollateral<'info> {
     #[account(mut)]
     pub auction_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub auction_lpbtc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub auction_lpeth: Box<Account<'info, TokenAccount>>,
+    pub auction_lpfi: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub cbs_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub cbs_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub cbs_lpbtc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_lpeth: Box<Account<'info, TokenAccount>>,
+    pub cbs_lpfi: Box<Account<'info, TokenAccount>>,
 
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
@@ -637,76 +472,6 @@ impl StateAccount {
     pub const LEN: usize = 32 + 1 + 8;
 }
 
-#[derive(Accounts)]
-pub struct UpdateConfig<'info> {
-    #[account(mut)]
-    pub owner: Signer<'info>,
-    #[account(mut, has_one = state_account)]
-    pub config: Box<Account<'info, Config>>,
-    #[account(mut, has_one = owner)]
-    pub state_account: Box<Account<'info, StateAccount>>,
-
-    #[account(mut)]
-    pub ray_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub wsol_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub eth_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub msol_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub ust_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub srm_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub scnsol_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub stsol_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub usdt_mint: Box<Account<'info,Mint>>,
-
-    #[account(mut)]
-    pub lpsol_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub lpusd_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub lpray_mint: Box<Account<'info,Mint>>,
-    #[account(mut)]
-    pub lpeth_mint: Box<Account<'info,Mint>>,
-
-    #[account(mut)]
-    pub pool_ray: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_wsol: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_msol: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_eth: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_ust: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_srm: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_scnsol: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_stsol: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_usdt: Box<Account<'info,TokenAccount>>,
-
-    #[account(mut)]
-    pub pool_lpsol: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_lpusd: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_lpbtc: Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub pool_lpeth: Box<Account<'info,TokenAccount>>,
-
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>
-}
-
 #[account]
 #[derive(Default)]
 pub struct Config {
@@ -714,33 +479,25 @@ pub struct Config {
 
     pub total_borrowed_lpusd: u64,
     pub total_borrowed_lpsol: u64,
-    pub total_borrowed_lpbtc: u64,
-    pub total_borrowed_lpeth: u64,
 
-    pub total_deposited_sol: u64,
-    pub total_deposited_usdc: u64,
-    pub total_deposited_btc: u64,
-    pub total_deposited_eth: u64,
+    pub total_deposited_wsol: u64,
+    pub total_deposited_ray: u64,
     pub total_deposited_msol: u64,
-    pub total_deposited_ust: u64,
     pub total_deposited_srm: u64,
     pub total_deposited_scnsol: u64,
     pub total_deposited_stsol: u64,
-    pub total_deposited_usdt: u64,
+
     pub total_deposited_lpsol: u64,
     pub total_deposited_lpusd: u64,
-    pub total_deposited_lpbtc: u64,
-    pub total_deposited_lpeth: u64,
+    pub total_deposited_lpfi: u64,
 
     pub lpsol_mint: Pubkey,
     pub lpusd_mint: Pubkey,
-    pub lpray_mint: Pubkey,
-    pub lpeth_mint: Pubkey,
+    pub lpfi_mint: Pubkey,
 
     pub ray_mint: Pubkey,
     pub wsol_mint: Pubkey,
     pub msol_mint: Pubkey,
-    pub ust_mint: Pubkey,
     pub srm_mint: Pubkey,
     pub scnsol_mint: Pubkey,
     pub stsol_mint: Pubkey,
@@ -748,12 +505,16 @@ pub struct Config {
     pub pool_ray: Pubkey,
     pub pool_wsol: Pubkey,
     pub pool_msol: Pubkey,
-    pub pool_eth: Pubkey,
     pub pool_srm: Pubkey,
     pub pool_scnsol: Pubkey,
     pub pool_stsol: Pubkey,
     pub pool_lpsol: Pubkey,
-    pub pool_lpusd: Pubkey
+    pub pool_lpusd: Pubkey,
+    pub pool_lpfi: Pubkey
+}
+
+impl Config {
+    pub const LEN:usize = 32*19 + 11*5 + 8;
 }
 
 #[account]
@@ -761,39 +522,29 @@ pub struct Config {
 pub struct UserAccount {
     pub borrowed_lpusd: u64,
     pub borrowed_lpsol: u64,
-    pub borrowed_lpbtc: u64,
-    pub borrowed_lpeth: u64,
     // deposited amount
-    pub btc_amount: u64,
-    pub sol_amount: u64,
-    pub usdc_amount: u64,
-    pub eth_amount: u64,
+    pub ray_amount: u64,
+    pub wsol_amount: u64,
     pub msol_amount: u64,
-    pub ust_amount: u64,
     pub srm_amount: u64,
     pub scnsol_amount: u64,
     pub stsol_amount: u64,
-    pub usdt_amount: u64,
 
     pub lpsol_amount: u64,
     pub lpusd_amount: u64,
-    pub lpeth_amount: u64,
-    pub lpbtc_amount: u64,
+    pub lpfi_amount: u64,
 
     // solend & apricot
-    pub lending_btc_amount: u64,
-    pub lending_sol_amount: u64,
-    pub lending_usdc_amount: u64,
-    pub lending_eth_amount: u64,
+    pub lending_ray_amount: u64,
+    pub lending_wsol_amount: u64,
     pub lending_msol_amount: u64,
-    pub lending_ust_amount: u64,
     pub lending_srm_amount: u64,
     pub lending_scnsol_amount: u64,
     pub lending_stsol_amount: u64,
-    pub lending_usdt_amount: u64,
 
     pub owner: Pubkey,
-    pub bump: u8
+    // Number to present the current Liquidate process
+    pub step_num: u8
 }
 
 impl UserAccount {
