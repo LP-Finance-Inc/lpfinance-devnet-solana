@@ -72,16 +72,26 @@ pub struct WithdrawToken<'info> {
     #[account(mut)]
     pub dest_pool: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub dest_mint: Account<'info,Mint>,
+    pub dest_mint: Box<Account<'info,Mint>>,
+    /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_usdc_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_sol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_eth_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_msol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_ust_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_srm_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_scnsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_usdt_account: AccountInfo<'info>,
 
     #[account(mut)]
@@ -369,12 +379,18 @@ pub struct BorrowLpToken<'info> {
     pub user_collateral : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
     pub collateral_mint: Account<'info,Mint>,
+    /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     // Price feed for wSOL
+    /// CHECK: pyth
     pub pyth_sol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_msol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_srm_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_scnsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
     // Programs and Sysvars
     pub lptokens_program: Program<'info, LpfinanceTokens>,
@@ -391,6 +407,7 @@ pub struct LiquidateCollateral<'info> {
     pub user_account: Box<Account<'info, UserAccount>>,
     #[account(mut)]
     pub state_account: Box<Account<'info, StateAccount>>,
+    /// CHECK: auction
     #[account(mut)]
     pub auction_account: AccountInfo<'info>,
 
