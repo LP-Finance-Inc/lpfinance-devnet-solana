@@ -377,8 +377,8 @@ pub mod cbs_protocol {
         total_price += stsol_price * (user_account.stsol_amount + user_account.lending_stsol_amount ) as u128;
 
         // LpFi price
-        // let stsol_price: u128 = get_price(ctx.accounts.pyth_stsol_account.to_account_info())?;
-        // total_price += stsol_price * (user_account.stsol_amount + user_account.lending_stsol_amount ) as u128;
+        let lpfi_price: u128 = ctx.accounts.liquidity_pool.get_price()?;
+        total_price += lpfi_price * user_account.lpfi_amount as u128;
 
         // LpUSD price
         let lpusd_price = LpUSD_PRICE;        
@@ -710,8 +710,8 @@ pub mod cbs_protocol {
         total_price += lpsol_price * lpsol_amount;
 
         // LpFi price
-        // let lpfi_price: u128 = lpfi_price;   
-        // total_price += lpfi_price * lpfi_amount;
+        let lpfi_price: u128 = ctx.accounts.liquidity_pool.get_price()?;
+        total_price += lpfi_price * lpfi_amount;
 
         let mut borrowed_total: u128 = 0;
         borrowed_total += borrowed_lpsol * lpsol_price;

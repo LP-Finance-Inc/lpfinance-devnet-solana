@@ -8,8 +8,11 @@ use anchor_spl::{
 };
 
 use lpfinance_accounts::{self, WhiteList};
-use lpfinance_tokens::{self, TokenStateAccount};
 use lpfinance_accounts::program::LpfinanceAccounts;
+
+use lpfinance_swap::{self, PoolInfo};
+
+use lpfinance_tokens::{self, TokenStateAccount};
 use lpfinance_tokens::program::LpfinanceTokens;
 
 use solend::program::Solend;
@@ -93,6 +96,8 @@ pub struct WithdrawToken<'info> {
     pub pyth_stsol_account: AccountInfo<'info>,
     /// CHECK: pyth
     pub pyth_usdt_account: AccountInfo<'info>,
+    // LpFi<->USDC pool
+    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
 
     #[account(mut)]
     pub solend_config: Box<Account<'info, solend::Config>>,
@@ -378,7 +383,7 @@ pub struct BorrowLpToken<'info> {
     )]
     pub user_collateral : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
-    pub collateral_mint: Account<'info,Mint>,
+    pub collateral_mint: Box<Account<'info,Mint>>,
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     // Price feed for wSOL
@@ -392,6 +397,8 @@ pub struct BorrowLpToken<'info> {
     pub pyth_scnsol_account: AccountInfo<'info>,
     /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
+    // LpFi<->USDC pool
+    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
     // Programs and Sysvars
     pub lptokens_program: Program<'info, LpfinanceTokens>,
     pub system_program: Program<'info, System>,

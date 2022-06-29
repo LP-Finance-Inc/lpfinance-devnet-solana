@@ -6,7 +6,6 @@ mod states;
 pub use states::*;
 
 declare_id!("87jyVePaEbZAYAcAjtGwQTcC4LU188KxJdynUzFWJKHA");
-const PREFIX: &str = "lpfiswap";
 
 #[program]
 pub mod lpfinance_swap {
@@ -150,7 +149,26 @@ pub mod lpfinance_swap {
         let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
 
         let quote_price = pyth_price.agg.price as u128;
-        let quote_total: u128 = quote_price * quote_amount as u128;
+        let mut quote_total: u128 = quote_price * quote_amount as u128;
+
+        // If quote token is LpFi Dao token, swap LpFi-> USDC and then USDC -> dest token
+        if ctx.accounts.quote_mint.key() == ctx.accounts.state_account.lpfi_mint {
+            let lpfi_price = ctx.accounts.liquidity_pool.get_token_price(ctx.accounts.state_account.usdc_mint, ctx.accounts.state_account.lpfi_mint)?;
+            let usdc_amount = lpfi_price * quote_amount as u128 / PRICE_MULTIPLIER;
+            // In case of quote token is LpFi, pyth_quote_account is usdc so quote_price is for USDC price
+            quote_total = quote_price * usdc_amount;
+
+            msg!("Quote USDC Amount: !!{:?}!!", usdc_amount.to_string());
+            let liquidity_pool = &mut ctx.accounts.liquidity_pool;     
+            
+            if liquidity_pool.tokena_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount + quote_amount;
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount - usdc_amount as u64;
+            } else if liquidity_pool.tokenb_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount + quote_amount;
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount - usdc_amount as u64;
+            }       
+        }
 
         // destination token
         let pyth_price_info = &ctx.accounts.pyth_dest_account;
@@ -161,9 +179,27 @@ pub mod lpfinance_swap {
 
         msg!("Quote Price: !!{:?}!!", quote_price.to_string());
         msg!("Dest Price: !!{:?}!!", dest_price.to_string());
-        msg!("Quote Amount: !!{:?}!!", quote_amount.to_string());
 
-        let transfer_amount = (quote_total/dest_price) as u64;
+        let mut transfer_amount = (quote_total/dest_price) as u64;
+
+        // If dest_mint is LpFi DAO token
+        if ctx.accounts.dest_mint.key() == ctx.accounts.state_account.lpfi_mint {
+            let lpfi_price = ctx.accounts.liquidity_pool.get_token_price(ctx.accounts.state_account.usdc_mint, ctx.accounts.state_account.lpfi_mint)?;
+            // In case of dest token is LpFi, pyth_dest_account is usdc so dest_price is for USDC price
+            let usdc_amount = quote_total / dest_price;
+            transfer_amount = (usdc_amount * PRICE_MULTIPLIER / lpfi_price) as u64;
+
+            let liquidity_pool = &mut ctx.accounts.liquidity_pool;        
+
+            if liquidity_pool.tokena_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount - transfer_amount;
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount + usdc_amount as u64;
+            } else if liquidity_pool.tokenb_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount - transfer_amount;
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount + usdc_amount as u64;
+            }
+        }
+
         msg!("Transfer Amount: !!{:?}!!", transfer_amount.to_string());
         msg!("Quote Total: !!{:?}!!", quote_total.to_string());
 

@@ -28,6 +28,7 @@ nom = "7"
 pyth-client = "0.2.2"
 
 lpfinance-accounts = { path = "../../../lpfinance-accounts/programs/lpfinance-accounts", features=["cpi"]}
+lpfinance-swap = { path = "../../../lpfinance-swap/programs/lpfinance-swap", features=["cpi"]}
 lpfinance-tokens = { path = "../../../lpfinance-tokens/programs/lpfinance-tokens", features=["cpi"]}
 solend = { path = "../../../solend/programs/solend", features=["cpi"]}
 apricot = { path = "../../../apricot/programs/apricot", features=["cpi"]}
