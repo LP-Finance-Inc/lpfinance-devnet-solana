@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 use test_tokens::program::TestTokens;
 
-const PREFIX: &str = "apricot0";
+pub const PREFIX: &str = "solend0";
 
 // This state account would be used as tx signer
 #[account]
@@ -177,7 +177,8 @@ pub struct InitUserAccount<'info> {
         space = UserAccount::LEN,
         payer = user_authority
     )]
-    pub user_account: Account<'info, UserAccount>,
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK:
     pub user: AccountInfo<'info>,
     // Contract Authority accounts
     #[account(mut)]
@@ -218,11 +219,11 @@ pub struct WithdrawToken<'info> {
         constraint = user_token.mint == token_mint.key(),
         constraint = user_token.owner == authority.key()
     )]
-    pub user_token: Account<'info, TokenAccount>,
+    pub user_token: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub token_mint: Account<'info, Mint>,
+    pub token_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub pool_token: Account<'info, TokenAccount>,
+    pub pool_token: Box<Account<'info, TokenAccount>>,
     // State Accounts
     #[account(mut)]
     pub state_account: Box<Account<'info, StateAccount>>,

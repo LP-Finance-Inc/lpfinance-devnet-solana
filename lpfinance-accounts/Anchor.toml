@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-lpfinance_accounts = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+lpfinance_accounts = "3ukdrhHrDPkirhTXArwU4AJjTXPafcY7XHeDCBDYLqKu"
 
 [registry]
 url = "https://anchor.projectserum.com"

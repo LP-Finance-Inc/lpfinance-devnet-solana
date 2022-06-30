@@ -177,7 +177,8 @@ pub struct InitUserAccount<'info> {
         space = UserAccount::LEN,
         payer = user_authority
     )]
-    pub user_account: Account<'info, UserAccount>,
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: 
     pub user: AccountInfo<'info>,
     // Contract Authority accounts
     #[account(mut)]

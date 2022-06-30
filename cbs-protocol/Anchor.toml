@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-cbs_protocol = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+cbs_protocol = "8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4"
 
 [registry]
 url = "https://anchor.projectserum.com"

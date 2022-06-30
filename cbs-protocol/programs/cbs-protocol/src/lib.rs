@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{program::invoke, system_instruction };
 use pyth_client;
 use anchor_spl::token::{self, Transfer };
 
@@ -7,18 +6,15 @@ mod states;
 pub use states::*;
 
 use lpfinance_accounts::cpi::accounts::AddFromCbsProgram;
-use lpfinance_accounts::{self, WhiteList};
+use lpfinance_accounts::{self};
 
 use lpfinance_tokens::cpi::accounts::MintLpToken;
-use lpfinance_tokens::{self, TokenStateAccount};
+use lpfinance_tokens::{self};
 
-use solend::program::Solend;
 use solend::{self};
-
-use apricot::program::Apricot;
 use apricot::{self};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4");
 
 const LTV:u128 = 85;
 const DOMINATOR:u128 = 100;

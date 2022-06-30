@@ -30,7 +30,7 @@ pub struct RepayToken<'info> {
     #[account(mut)]
     pub user_dest : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
-    pub dest_mint: Account<'info,Mint>,
+    pub dest_mint: Box<Account<'info,Mint>>,
     // state account for user's wallet
     #[account(mut,
         seeds = [PREFIX.as_bytes()],

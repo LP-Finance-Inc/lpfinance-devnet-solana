@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use std::ops::DerefMut;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("3ukdrhHrDPkirhTXArwU4AJjTXPafcY7XHeDCBDYLqKu");
 
 const MAX_LEN: usize = 10000;
 
@@ -172,6 +172,7 @@ pub struct AddFromCbsProgram<'info> {
     pub config: Box<Account<'info, Config>>,
     #[account(mut)]
     pub whitelist: AccountLoader<'info, WhiteList>,
+    /// CHECK:
     pub cbsprogram: AccountInfo<'info>
 }
 

@@ -7,7 +7,7 @@ pub use states::*;
 use test_tokens::cpi::accounts::MintToken;
 use test_tokens::{self};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("ETAZpMupgKhLfdz7sAsvGxELmtnm1mgwapMYDfwtRGtk");
 
 const PREFIX: &str = "apricot0";
 

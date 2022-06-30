@@ -7,9 +7,7 @@ pub use states::*;
 use test_tokens::cpi::accounts::MintToken;
 use test_tokens::{self};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
-
-const PREFIX: &str = "apricot0";
+declare_id!("BgN7NGCcQgFMVs9U8tQzht7NNrKCdQjcZ8g4GBRwgMrb");
 
 // Reward distribution duration
 const DAY_IN_SECONDS: i64 = 86400;

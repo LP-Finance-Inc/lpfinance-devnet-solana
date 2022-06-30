@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-solend = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+solend = "BgN7NGCcQgFMVs9U8tQzht7NNrKCdQjcZ8g4GBRwgMrb"
 
 [registry]
 url = "https://anchor.projectserum.com"
