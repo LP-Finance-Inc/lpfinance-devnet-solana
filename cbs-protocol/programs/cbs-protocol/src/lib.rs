@@ -18,7 +18,6 @@ declare_id!("8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4");
 
 const LTV:u128 = 85;
 const DOMINATOR:u128 = 100;
-const PREFIX: &str = "cbsprotocol3";
 
 const LENDING_PERCENT: u64 = 10;
 
@@ -60,6 +59,7 @@ pub mod cbs_protocol {
         // lptoken pool
         config.pool_lpsol = ctx.accounts.pool_lpsol.key();
         config.pool_lpusd = ctx.accounts.pool_lpusd.key();
+        config.pool_lpfi = ctx.accounts.pool_lpfi.key();
 
         // borrowed amount
         config.total_borrowed_lpsol = 0;

@@ -11,7 +11,7 @@ const idl = require("../target/idl/cbs_protocol.json");
 const programID = idl.metadata.address;
 
 console.log("ProgramID", programID);
-const PREFIX = "cbsprotocol3";
+const PREFIX = "cbsprotocol1";
 
 const pool_ray = "pool_ray";
 const pool_wsol = "pool_wsol";
@@ -154,30 +154,19 @@ module.exports = async function (provider) {
         authority,
         stateAccount,
         config: configAccount.publicKey,
-        rayMint,
-        wsolMint,
-        msolMint,
-        ethMint,
-        ustMint,
-        srmMint,
-        scnsolMint,
-        stsolMint,
-        usdtMint,
         lpsolMint,
         lpusdMint,
         lpfiMint,
-        lpethMint,
         poolLpsol,
         poolLpusd,
         poolLpfi,
-        poolLpeth,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
       },
       signers: [configAccount]
     });
-
+    
     await program.rpc.initializePool({
       accounts: {
         authority,
@@ -186,25 +175,15 @@ module.exports = async function (provider) {
         rayMint,
         wsolMint,
         msolMint,
-        ethMint,
-        ustMint,
         srmMint,
         scnsolMint,
         stsolMint,
-        usdtMint,
         poolRay,
-        poolEth,
         poolWsol,
         poolMsol,
-        poolUst,
         poolSrm,
         poolScnsol,
         poolStsol,
-        poolUsdt,
-        lpsolMint,
-        lpusdMint,
-        lpfiMint,
-        lpethMint,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
@@ -217,22 +196,18 @@ module.exports = async function (provider) {
 }
 
 // 2022-06-30
-// ProgramID 3f39cgs9wPLVv4vGySNecjKtefe5MJYkFEEj3v6bPequ
-// Config:  4mND9qtpmZN5fEk48TMy2tUEaSh5QFGL64ruFXMwuwRA
-// State-Account: HKakh92meu61n3kchSPpNDveCwHno9ymeamN9yZbXt1z
-// Pool-ETH: 5N45aAx4aAj5CmD5wiievuG9bnY3wwzLNzXUdgsXhpy
-// Pool-USDC: HoKqptd4zJzE5w5RvAXt39hHs4WDFvXnSry8xyedrrYc
-// Pool-BTC: J1bgGA5Khj3t9bPepVpS6rPD5o1Pa4JdxypWJQrXt6Zu
-// Pool-MSOL: GpCTx7w81RAqdJgC9HmJxwshUmagb1tpqG76beVpPwYA
-// Pool-UST: 8jde3rbntGh34KSk2V48q7w6WeFCCjEFLsxtV6AB2pWp
-// Pool-SRM: G7W5Dzby8sV8FobviTvogkzuksneFBCncy1kwjuoQea5
-// Pool-SCNSOL: 5RVTEUCfePKfwnvQdgW3nhKyndyPXAM2TJfUKXuT1dzP
-// Pool-STSOL: GYWxoNG6adwwe6Za6V7QQCxKFsDvJXxDNdhPrLuGu1CC
-// Pool-USDT: 51FovGmzpBmxy31yHAnhu4Ftb5VgoYV4bYxNhQdoPVAZ
-// Pool-LpSOL: HbYcBPKmKcNVFgvQt8in3KFTG6GQtYHXDM7Dwq2q7JKo
-// Pool-LpUSD: Bc7AzMJcUbE1c3CLHpXtyY7g9x23BBryJgqXRPvwHyCB
-// Pool-LpBTC: E6Bu3gzRbTuPmWRiCArJqtAvUzYFwJYf9nYZSjSarTJT
-// Pool-LpETH: GvbQ59hQsovMGaz2W4rq6xCxtF43UJdugq9mJocYWTpU
+// ProgramID 8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4
+// Config:  9gzCVpwVMSW29MZyh5DtxQtNCB8n9Lc5NWDpH3knkdiT
+// State-Account: DgTJJkqH89PJwpTstVVfNZ22CEfx8vqLHsMBfvfY6zVW
+// Pool-RAY: 8YBkgfB2F1EAnSxQJwheTvaRcqPuGYzw98q9uemYK32g
+// Pool-wSOL: 21ewc3oryWoc6coMz5h9TUo6djJMTbYJEKgseozQp35b
+// Pool-MSOL: GxFz5cCidDxAFM6Hzq3ASzCBy1b8bxLK7DrA1hiHbTJ4
+// Pool-SRM: GQSECtcwiSqHPef7bZVYquU5B9hh3mRiJZHPESKnYmLb
+// Pool-SCNSOL: 5KWjrGUWJufAnA8KsEVbgCVhtZekZXV3kZDZVnwH4KAv
+// Pool-STSOL: ENJYakYczWYWMX1iVCpmqoSZhNaGX5Mj5YM77U6LsxG5
+// Pool-LpSOL: CrAFe3bmrgqCNAx87gf8L9vwheFPWWFmqwKMQN8TaxiQ
+// Pool-LpUSD: 64C8Xmb9rumieArK7CAtiHKP9xatm7uTvkfmVtuzxdbn
+// Pool-LpFi: 8Fu8HnrkVkKyweWr3Ybq8r8BqaZuzKm1nojRQNoRBPJG
 
 /*
 module.exports = async function (provider) {

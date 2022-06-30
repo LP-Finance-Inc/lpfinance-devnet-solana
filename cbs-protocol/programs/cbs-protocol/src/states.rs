@@ -21,7 +21,7 @@ use solend::{self};
 use apricot::program::Apricot;
 use apricot::{self};
 
-const PREFIX: &str = "cbsprotocol3";
+pub const PREFIX: &str = "cbsprotocol1";
 
 #[derive(Accounts)]
 pub struct RepayToken<'info> {
@@ -538,7 +538,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub const LEN:usize = 32*19 + 11*5 + 8;
+    pub const LEN:usize = 32*19 + 11*8 + 8;
 }
 
 #[account]
