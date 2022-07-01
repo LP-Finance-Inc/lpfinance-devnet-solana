@@ -5,27 +5,27 @@
 const anchor = require("@project-serum/anchor");
 const TOKEN = require("@solana/spl-token");
 const { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, Token, getAssociatedTokenAddress } = require('@solana/spl-token')
-const { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Keypair } = anchor.web3;
+const { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Connection } = anchor.web3;
 
 const idl = require("../target/idl/lpfinance_swap.json");
 const programID = idl.metadata.address;
 
 console.log("ProgramID", programID);
-const PREFIX = "lpfiswap";
+const PREFIX = "lpfiswap0";
 
 
 // Test Token's MINT
-const usdcMint = new PublicKey("8cCs2Th4ivThrJPrkgAWNTegQgMcuBmY7TASv7FPhitj"); 
-const rayMint = new PublicKey("25ggxgxMqejf5v9WSQWboqxpsrik1u94PCP5EwPBYeEJ");
-const msolMint = new PublicKey("3dDwpZWQqCc5SttGJ2yNnYUnLSBnh9cjWJQPeKNDmDTz");
-const wsolMint = new PublicKey("CZqXAbuUzGngd97oLjR1bcWkkZrz7MsKAbTJX9oT5Epv"); 
-const srmMint = new PublicKey("GB8u3PRkQoi73v5Tctqj5he4M441S2QfqMpcaAsnozE6");
-const scnsolMint = new PublicKey("GXFmXhwBMfXq5utccyNcQRrfQuBVjjprHKSqLzi3P7vn");
-const stsolMint = new PublicKey("CJGeMYvL7s2k8VHooJ1JvgZsCJqrSEExmPkpFBZskAfV");
+const usdcMint = new PublicKey("6ybV587PY2z6DX4Pf1tTh8oEhnuR6wwXLE8LHinKQKYV"); 
+const rayMint = new PublicKey("CAtFbjnodtzt1mpxyJwPKfWP6MkTisckMk9KHUgSxX7v");
+const msolMint = new PublicKey("AzRQUJPKxv8L9xfHPeGgKcsXXrjbYekW5mVvbMdw11Mp");
+const wsolMint = new PublicKey("6hPAQy93EbDzwHyU843zcWKATy8NrJ1ZsKCRi2JkuXcT"); 
+const srmMint = new PublicKey("2F988bKHUgPaw6mHwuPfdQhiRg1XtCJuDh4hrvVpT3wD");
+const scnsolMint = new PublicKey("8eijEjgBCSk8vJcjwV1geZQp8tzvXTXgc7Xgg8qthKyJ");
+const stsolMint = new PublicKey("3gb5MH7VF6o6mWbuBX7V8d1KtWX1pCSYMAwFa296rPuP");
 
-const lpsolMint = new PublicKey("9Mcq5PQsEXuSY19ei8CqzRawPdPSAH1VM63GqtZU3x18"); 
-const lpusdMint = new PublicKey("8YawjpcTDs3SsR7bsCHDb4b1Yv3PAKULB5xZ5VNunroJ");
-const lpfiMint = new PublicKey("B8w6e1gSCHE4xNhPhaK5y3cYYBwKMmfJqfe3C9692mGW");
+const lpsolMint = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ"); 
+const lpusdMint = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL");
+const lpfiMint = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p");
 
 const pool_usdc = Buffer.from(usdcMint.toBuffer());
 const pool_ray = Buffer.from(rayMint.toBuffer());
@@ -38,6 +38,7 @@ const pool_lpsol = Buffer.from(lpsolMint.toBuffer());
 const pool_lpusd = Buffer.from(lpusdMint.toBuffer());
 const pool_lpfi = Buffer.from(lpfiMint.toBuffer());
 
+/*
 module.exports = async function (provider) {
   // Configure client to use the provider.
   anchor.setProvider(provider);
@@ -47,8 +48,8 @@ module.exports = async function (provider) {
 
   try {
 
-    const configAccount = anchor.web3.Keypair.generate();
-    console.log("Config: ", configAccount.publicKey.toBase58());
+    // const configAccount = anchor.web3.Keypair.generate();
+    // console.log("Config: ", configAccount.publicKey.toBase58());
 
     // Find PDA from `cbs protocol` for state account
     const [stateAccount, stateAccountBump] = await PublicKey.findProgramAddress(
@@ -139,45 +140,37 @@ module.exports = async function (provider) {
       accounts: {
         authority,
         stateAccount,
-        // config,
-        config: configAccount.publicKey,
-        // lpusdMint,
-        // lpsolMint,
         usdcMint,
         lpfiMint,
-        // lpethMint,
-        // poolLpfi,
-        // poolLpeth,
-        // poolLpsol,
-        // poolLpusd,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
-      },
-      signers: [configAccount]
+      }
     });
 
-    await createSinglePool(program, authority, stateAccount, usdcMint, poolUsdc, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, lpfiMint, poolLpfi, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, rayMint, poolRay, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, msolMint, poolMsol, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, wsolMint, poolWsol, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, srmMint, poolSrm, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, scnsolMint, poolScnsol, configAccount.publicKey);
-    await createSinglePool(program, authority, stateAccount, stsolMint, poolStsol, configAccount.publicKey);
+    await createSinglePool(program, authority, stateAccount, usdcMint, poolUsdc);
+    await createSinglePool(program, authority, stateAccount, lpfiMint, poolLpfi);
+    await createSinglePool(program, authority, stateAccount, rayMint, poolRay);
+    await createSinglePool(program, authority, stateAccount, msolMint, poolMsol);
+    await createSinglePool(program, authority, stateAccount, wsolMint, poolWsol);
+    await createSinglePool(program, authority, stateAccount, srmMint, poolSrm);
+    await createSinglePool(program, authority, stateAccount, scnsolMint, poolScnsol);
+    await createSinglePool(program, authority, stateAccount, stsolMint, poolStsol);
 
     const userTokena = await getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
       lpfiMint,
-      authority
+      authority,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
     const userTokenb = await getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
       usdcMint,
-      authority
+      authority,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
     // Find PDA for `liquidityPool pool`
@@ -187,19 +180,40 @@ module.exports = async function (provider) {
     );
     console.log("LiquidityPool:", liquidityPool.toBase58());
 
-    await createTokenPair(authority, lpfiMint, usdcMint, liquidityPool, userTokena, userTokenb, poolLpfi, poolUsdc);
+    await createTokenPair(
+      program, 
+      authority, 
+      lpfiMint, 
+      usdcMint, 
+      liquidityPool, 
+      userTokena, 
+      userTokenb, 
+      poolLpfi, 
+      poolUsdc
+    );
+    await addTokenLiquidityPool(
+      program,
+      authority,
+      lpfiMint,
+      usdcMint,
+      liquidityPool,
+      userTokena,
+      userTokenb,
+      poolLpfi,
+      poolUsdc
+    );
   } catch (err) {
     console.log("Transaction error: ", err);
   }
 }
-
-const createSinglePool = async (program, authority, stateAccount, tokenMint, tokenPool, config) => {
+*/
+const createSinglePool = async (program, authority, stateAccount, tokenMint, tokenPool) => {
   try {
     await program.rpc.initializePool({
       accounts: {
         authority,
         stateAccount,
-        config,
+        // config,
         tokenMint,
         tokenPool,
         systemProgram: SystemProgram.programId,
@@ -212,8 +226,68 @@ const createSinglePool = async (program, authority, stateAccount, tokenMint, tok
   }
 }
 
+
+module.exports = async function(provider) {
+  // Configure client to use the provider.
+  anchor.setProvider(provider);
+
+  // Add your deploy script here
+  const program = new anchor.Program(idl, programID);
+
+  // const priceData = await program.account.poolInfo.fetch(new PublicKey("DcB2ZfvRU5ac9FgYF9doWYjHWtRXbStH7wDhciQcmF6v"));
+  // console.log(priceData);
+
+  try {
+
+    // Signer
+    const authority = provider.wallet.publicKey;
+    
+
+    const userTokena = await getAssociatedTokenAddress(
+      lpfiMint,
+      authority,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    const userTokenb = await getAssociatedTokenAddress(
+      usdcMint,
+      authority,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    // Find PDA for `liquidityPool pool`
+    const [liquidityPool, liquidityPoolBump] = await PublicKey.findProgramAddress(
+      [Buffer.from(PREFIX), pool_lpfi, pool_usdc],
+      program.programId
+    );
+    console.log("LiquidityPool:", liquidityPool.toBase58(), authority.toBase58(), userTokena.toBase58(), userTokenb.toBase58());
+
+    const poolLpfi = new PublicKey("GnFDvH41YPW3DtQcaHEk4xZhG3Xeh9XXgwsC2EWHkoSb");
+    const poolUsdc = new PublicKey("26UWs5QHCgNPeLBpQvjQpZ9TmonKLJFmx21SHXBZ7w9V");
+    await createTokenPair(program, authority, lpfiMint, usdcMint, liquidityPool, userTokena, userTokenb, poolLpfi, poolUsdc);
+    await addTokenLiquidityPool(
+      program,
+      authority,
+      lpfiMint,
+      usdcMint,
+      liquidityPool,
+      userTokena,
+      userTokenb,
+      poolLpfi,
+      poolUsdc
+    );
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 const convert_to_wei = (val) => (parseFloat(val) * 1e9).toString();
 const createTokenPair = async (
+  program,
   authority,
   tokenaMint,
   tokenbMint,
@@ -251,6 +325,7 @@ const createTokenPair = async (
 }
 
 const addTokenLiquidityPool = async (
+  program,
   authority,
   tokenaMint,
   tokenbMint,
@@ -261,7 +336,13 @@ const addTokenLiquidityPool = async (
   tokenbPool
 ) => {
   try {
-    await program.rpc.addLiquidity({
+    const a_wei = convert_to_wei(10000000);
+    const b_wei = convert_to_wei(10000000);
+    const tokena_amount = new anchor.BN(a_wei);
+    const tokenb_amount = new anchor.BN(b_wei);
+    await program.rpc.addLiquidity(
+      tokena_amount, tokenb_amount,
+      {
       accounts: {
         authority,
         tokenaMint,
@@ -280,20 +361,17 @@ const addTokenLiquidityPool = async (
     console.log(err)
   }
 }
-// 2022-04-13 devnet
-// ProgramID 6dMiU9ZmaFTPeLPco5rMjXCbUUyJZyRvHPccXXTefTLu
-// Config-Account: 7jgbQyMsLkinSJ6fQHtUHwaUyKdwkGGE7scTFeTV8qzw
-// State-Account: 35oKiStiHmkrfCaFEyHs5suMiLHsM5VsAFQ3peKknkDV
-// Pool-USDC: DPeobw5yJS1dkfZaE2Z67gGXsfdDfq5PdXpkBY5HheLG
-// Pool-BTC: 84mg2xQAYsVLLGCesLWh1As8YicVkfcWiGKwDes2xg5R
-// Pool-MSOL: Ci8PRat8mtgspMyVxHJLj4G32TXJphBKdex8Ka2Ej2TF
-// Pool-ETH: 4KcLB2PVsitzKu2pzHuQF2ACB8EQVnKa463Wjn8EtwkB
-// Pool-UST: F9uxM2ijA2wVBbnbX92QAP85PfxwaqMBiYA1QoNZrrst
-// Pool-SRM: 9cZi4DnSWELQPFaZdSD5fWD77sPEeGALPQhz5E7FYMFT
-// Pool-SCNSOL: F4RFismMeTCaDjVGwkTv6oHaNEipQu43EbpbszfFxvAz
-// Pool-STSOL: CSQvYuTZzuFfSx8ZxvDnhFkB7gVJHsQEiw8w36KCwmEN
-// Pool-USDT: Gdqm6TiL1rnHCXaurBDr4Tek5t1jFNeiAzxc5KEZYMvD
-// Pool-LpUSD: 6PTciQETNSwB3FkiivjnU4KLWTr78KBhuPfBt8TazUWZ
-// Pool-LpSOL: BTX4Wauvb4GRkThrwXBJpGfm3AkqGCKAWhnD4z9MSsPs
-// Pool-LpBTC: HSWbnqVXb8YHMha3rk2Hc2dedP7iLZtvKETzj33cF6FC
-// Pool-LpETH: 8YfoUygmJfPgBmGaNqX7oWC2ZggYexJ6Bs21P7f1ct3C
+// 2022-07-01 devnet
+// ProgramID 87jyVePaEbZAYAcAjtGwQTcC4LU188KxJdynUzFWJKHA
+// State-Account: Gj9NXzkjoY3DW4XRroyZMjDDrBzvc2HCtDaGtWgaZmDC
+// Pool-USDC: 26UWs5QHCgNPeLBpQvjQpZ9TmonKLJFmx21SHXBZ7w9V
+// Pool-RAY: 5gS9zobDfjzdGwfM4mFubusq5Uqkr2WwyhrntXoigR9S
+// Pool-MSOL: APgMT9TK3Th1XcfHGAgGuyVZGyn12YHJD6HYPG8Zj5Tf
+// Pool-wSOL: BTSKPGQPERh3QjnaBfZmDKKwVjvv4jPYQDNVUJ2mik3d
+// Pool-SRM: BVrTba4EVWpeRkZ3JJUqDcfuP11bfzeTiC5jhczkdGym
+// Pool-SCNSOL: 95QWqKXjFvcsfcpFh6Uo8pJ9JHcN5wJcPCgzLb7hVAeX
+// Pool-STSOL: EUZJuR3Ws8VaCypcFHCeg9mHbrtmX9t6ZH4ERAh857MP
+// Pool-LpUSD: EigZFwsHC5uUiPtBn7xMD19uv4Rb8ajZQKZWpisagis4
+// Pool-LpSOL: E8JD5qTobkasrxLFyv8AZCw8aY1mP5AgzVfGedztCWm
+// Pool-LpFi: GnFDvH41YPW3DtQcaHEk4xZhG3Xeh9XXgwsC2EWHkoSb
+// LiquidityPool: DcB2ZfvRU5ac9FgYF9doWYjHWtRXbStH7wDhciQcmF6v

@@ -79,23 +79,15 @@ pub struct WithdrawToken<'info> {
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     /// CHECK: pyth
-    pub pyth_usdc_account: AccountInfo<'info>,
-    /// CHECK: pyth
     pub pyth_sol_account: AccountInfo<'info>,
     /// CHECK: pyth
-    pub pyth_eth_account: AccountInfo<'info>,
-    /// CHECK: pyth
     pub pyth_msol_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_ust_account: AccountInfo<'info>,
     /// CHECK: pyth
     pub pyth_srm_account: AccountInfo<'info>,
     /// CHECK: pyth
     pub pyth_scnsol_account: AccountInfo<'info>,
     /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_usdt_account: AccountInfo<'info>,
     // LpFi<->USDC pool
     pub liquidity_pool: Box<Account<'info, PoolInfo>>,
 

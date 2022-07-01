@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{ Mint, Token, TokenAccount };
 use anchor_spl::associated_token::AssociatedToken;
 
-pub const PREFIX: &str = "lpfiswap";
+pub const PREFIX: &str = "lpfiswap0";
 pub const PRICE_MULTIPLIER: u128 = 100000000; // 10**8 
 
 #[derive(Accounts)]
@@ -201,7 +201,7 @@ pub struct StateAccount {
 }
 
 impl StateAccount {
-    pub const LEN: usize = 2 * 32 + 8;
+    pub const LEN: usize = 3 * 32 + 8;
 }
 
 #[account]
@@ -217,7 +217,7 @@ pub struct PoolInfo {
 }
 
 impl PoolInfo {
-    pub const LEN: usize = 3 * 32 + 8 * 2 + 8;
+    pub const LEN: usize = 3 * 32 + 8 * 4 + 8;
 
     // Return the price of token b
     // For example, LpFi and USDC pool

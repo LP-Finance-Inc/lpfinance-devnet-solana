@@ -41,39 +41,39 @@ module.exports = async function (provider) {
     )
     
     console.log("UserLpToken", userLptoken.toBase58(), authority.toBase58())
-    const wei_val = convert_to_wei(550000000);
+    const wei_val = convert_to_wei(25000000);
     const amount = new anchor.BN(wei_val);
-    // await program.rpc.ownerMintLptoken(
-    //   amount,
-    //   {
-    //     accounts: {
-    //       owner: authority,
-    //       stateAccount,
-    //       lptokenMint,
-    //       userLptoken,
-    //       systemProgram: SystemProgram.programId,
-    //       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    //       tokenProgram: TOKEN_PROGRAM_ID,
-    //       rent: SYSVAR_RENT_PUBKEY,
-    //     }
-    // });
-    
-    const config = new PublicKey("3Lpjwy6tGj4XQVJBMcr8ESRpLDgdat3ozedQD5AjSf5a");
-    await program.rpc.burnLptoken(
+    await program.rpc.ownerMintLptoken(
       amount,
       {
         accounts: {
-          cbsAccount: authority,
+          owner: authority,
           stateAccount,
-          config,
-          cbsLptoken: userLptoken,
           lptokenMint,
+          userLptoken,
           systemProgram: SystemProgram.programId,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram: TOKEN_PROGRAM_ID,
-          rent: SYSVAR_RENT_PUBKEY
+          rent: SYSVAR_RENT_PUBKEY,
         }
-      }
-    )
+    });
+    
+    // const config = new PublicKey("3Lpjwy6tGj4XQVJBMcr8ESRpLDgdat3ozedQD5AjSf5a");
+    // await program.rpc.burnLptoken(
+    //   amount,
+    //   {
+    //     accounts: {
+    //       cbsAccount: authority,
+    //       stateAccount,
+    //       config,
+    //       cbsLptoken: userLptoken,
+    //       lptokenMint,
+    //       systemProgram: SystemProgram.programId,
+    //       tokenProgram: TOKEN_PROGRAM_ID,
+    //       rent: SYSVAR_RENT_PUBKEY
+    //     }
+    //   }
+    // )
   } catch (err) {
     console.log("Transaction error: ", err);
   }

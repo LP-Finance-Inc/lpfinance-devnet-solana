@@ -18,6 +18,7 @@ pub mod lpfinance_swap {
         let state_account = &mut ctx.accounts.state_account;
         state_account.owner = ctx.accounts.authority.key();
         state_account.lpfi_mint = ctx.accounts.lpfi_mint.key();
+        state_account.usdc_mint = ctx.accounts.usdc_mint.key();
 
         Ok(())
     }
