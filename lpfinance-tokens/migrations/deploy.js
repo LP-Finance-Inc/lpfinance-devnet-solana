@@ -17,6 +17,74 @@ const lpsol_mint = "lpsol_mint";
 const lpusd_mint = "lpusd_mint";
 const lpdao_mint = "lpdao_mint";
 
+const convert_to_wei = (val) => (parseFloat(val) * 1e9).toString();
+
+module.exports = async function (provider) {
+  // Configure client to use the provider.
+  anchor.setProvider(provider);
+
+  // Add your deploy script here
+  const program = new anchor.Program(idl, programID);
+
+  try {
+    const stateAccount = new PublicKey("64iaARaRU9sXwLmAVy1a5NkYVM82GJ9Lvk2VfJ8PMChk");
+    // Signer
+    const authority = provider.wallet.publicKey;
+    const lptokenMint = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ"); // LpSOL mint
+    // const lptokenMint = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL"); // LpUSD Mint
+    // const lptokenMint = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p"); // LpFI Mint
+    // mint: PublicKey, owner: PublicKey, allowOwnerOffCurve?: boolean, programId?: PublicKey, associatedTokenProgramId?: PublicKey
+    const userLptoken = await getAssociatedTokenAddress(
+      lptokenMint, 
+      authority, 
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )
+    
+    console.log("UserLpToken", userLptoken.toBase58(), authority.toBase58())
+
+    const wei_val = convert_to_wei(1500000);
+    // const wei_val = convert_to_wei(100000000);
+
+    const amount = new anchor.BN(wei_val);
+    await program.rpc.ownerMintLptoken(
+      amount,
+      {
+        accounts: {
+          owner: authority,
+          stateAccount,
+          lptokenMint,
+          userLptoken,
+          systemProgram: SystemProgram.programId,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: SYSVAR_RENT_PUBKEY,
+        }
+    });
+    
+    // const config = new PublicKey("3Lpjwy6tGj4XQVJBMcr8ESRpLDgdat3ozedQD5AjSf5a");
+    // await program.rpc.burnLptoken(
+    //   amount,
+    //   {
+    //     accounts: {
+    //       cbsAccount: authority,
+    //       stateAccount,
+    //       config,
+    //       cbsLptoken: userLptoken,
+    //       lptokenMint,
+    //       systemProgram: SystemProgram.programId,
+    //       tokenProgram: TOKEN_PROGRAM_ID,
+    //       rent: SYSVAR_RENT_PUBKEY
+    //     }
+    //   }
+    // )
+  } catch (err) {
+    console.log("Transaction error: ", err);
+  }
+}
+
+/*
 module.exports = async function (provider) {
   // Configure client to use the provider.
   anchor.setProvider(provider);
@@ -84,7 +152,7 @@ module.exports = async function (provider) {
   } catch (err) {
     console.log("Transaction error: ", err);
   }
-}
+} */
 
 // 2022-06-01
 // ProgramID GaVnsa8z34xSeYNDydTAdbiT64KxMgVXBXnimXXJT4Hw

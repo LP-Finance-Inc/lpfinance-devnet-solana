@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{program::invoke, system_instruction };
 use pyth_client;
-use anchor_spl::token::{self, Mint, Transfer, Token, TokenAccount };
-use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{self, Transfer };
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
-const PREFIX: &str = "lpfiswap";
+mod states;
+pub use states::*;
+
+declare_id!("87jyVePaEbZAYAcAjtGwQTcC4LU188KxJdynUzFWJKHA");
 
 #[program]
 pub mod lpfinance_swap {
@@ -17,147 +17,121 @@ pub mod lpfinance_swap {
 
         let state_account = &mut ctx.accounts.state_account;
         state_account.owner = ctx.accounts.authority.key();
+        state_account.lpfi_mint = ctx.accounts.lpfi_mint.key();
+        state_account.usdc_mint = ctx.accounts.usdc_mint.key();
+
         Ok(())
     }
 
+    // Create token account for swap protocol
     pub fn initialize_pool(
         ctx: Context<InitializePool>
     ) -> Result<()> {
-        msg!("INITIALIZE Pool");
-
-        let state_account = &mut ctx.accounts.state_account;
-        if state_account.owner != ctx.accounts.authority.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
+        let token_mint = &mut ctx.accounts.token_mint;
+        msg!("INITIALIZE Pool {:?}", token_mint.key().to_string());
 
         Ok(())
     }
 
-    pub fn swap_sol_to_token(
-        ctx: Context<SwapSOLToToken>,
-        quote_amount: u64
+    // Create new token pair
+    pub fn create_pair(
+        ctx: Context<CreatePair>,
+        tokena_amount: u64,
+        tokenb_amount: u64
     ) -> Result<()> {
-        if quote_amount == 0 {
+        if ctx.accounts.user_tokena.amount < tokena_amount || 
+            ctx.accounts.user_tokenb.amount < tokenb_amount
+        {
+            return Err(ErrorCode::InsufficientAmount.into());
+        }
+
+        {
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.user_tokena.to_account_info(),
+                to: ctx.accounts.tokena_pool.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info()
+            };
+
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::transfer(cpi_ctx, tokena_amount)?;
+        }
+
+        {
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.user_tokenb.to_account_info(),
+                to: ctx.accounts.tokenb_pool.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info()
+            };
+    
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::transfer(cpi_ctx, tokenb_amount)?;
+        }        
+
+        let liquidity_pool = &mut ctx.accounts.liquidity_pool;
+        liquidity_pool.tokena_amount = tokena_amount;
+        liquidity_pool.tokenb_amount = tokenb_amount;
+        liquidity_pool.initial_tokena_amount = tokena_amount;
+        liquidity_pool.initial_tokenb_amount = tokenb_amount;
+        liquidity_pool.tokena_mint = ctx.accounts.tokena_mint.key();
+        liquidity_pool.tokenb_mint = ctx.accounts.tokenb_mint.key();
+
+        Ok(())
+    }
+
+    // Create new token pair
+    pub fn add_liquidity(
+        ctx: Context<AddLiquidity>,
+        tokena_amount: u64,
+        tokenb_amount: u64
+    ) -> Result<()> {
+        
+        if ctx.accounts.user_tokena.amount < tokena_amount || 
+            ctx.accounts.user_tokenb.amount < tokenb_amount
+        {
+            return Err(ErrorCode::InsufficientAmount.into());
+        }
+
+        let liquidity_pool = &mut ctx.accounts.liquidity_pool;
+        // Need to keep initial price
+        if liquidity_pool.initial_tokena_amount * tokenb_amount != 
+            liquidity_pool.initial_tokenb_amount * tokena_amount 
+        {   
             return Err(ErrorCode::InvalidQuoteAmount.into());
         }
 
-        if **ctx.accounts.user_authority.lamports.borrow()  < quote_amount {
-            return Err(ErrorCode::InsufficientAmount.into());
+        {
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.user_tokena.to_account_info(),
+                to: ctx.accounts.tokena_pool.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info()
+            };
+
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::transfer(cpi_ctx, tokena_amount)?;
         }
 
-        let pyth_price_info = &ctx.accounts.pyth_quote_account;
-        let pyth_price_data = &pyth_price_info.try_borrow_data()?;
-        let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
+        {
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.user_tokenb.to_account_info(),
+                to: ctx.accounts.tokenb_pool.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info()
+            };
+    
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::transfer(cpi_ctx, tokenb_amount)?;
+        }        
 
-        let quote_price = pyth_price.agg.price as u64;
-        let quote_total: u128 = quote_price as u128 * quote_amount as u128;
-
-        // destination token
-        let pyth_price_info = &ctx.accounts.pyth_dest_account;
-        let pyth_price_data = &pyth_price_info.try_borrow_data()?;
-        let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
-
-        let dest_price = pyth_price.agg.price as u64;
-
-        let transfer_amount = (quote_total/dest_price as u128) as u64;
-
-        if ctx.accounts.dest_pool.amount < transfer_amount {
-            return Err(ErrorCode::InsufficientAmount.into());
-        }
-
-        msg!("Sending SOL");
-
-        invoke(
-            &system_instruction::transfer(
-                ctx.accounts.user_authority.key,
-                ctx.accounts.state_account.to_account_info().key,
-                quote_amount
-            ),
-            &[
-                ctx.accounts.user_authority.to_account_info().clone(),
-                ctx.accounts.state_account.to_account_info().clone(),
-                ctx.accounts.system_program.to_account_info().clone()
-            ]
-        )?;
-
-        msg!("Sending Token: !!{:?}!!", transfer_amount.to_string());
-        let (program_authority, program_authority_bump) = 
-            Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
-        
-        if program_authority != ctx.accounts.state_account.to_account_info().key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        let seeds = &[
-            PREFIX.as_bytes(),
-            &[program_authority_bump]
-        ];
-        let signer = &[&seeds[..]];
-
-
-        let cpi_accounts = Transfer {
-            from: ctx.accounts.dest_pool.to_account_info(),
-            to: ctx.accounts.user_dest.to_account_info(),
-            authority: ctx.accounts.state_account.to_account_info()
-        };
-
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-        token::transfer(cpi_ctx, transfer_amount)?;
+        liquidity_pool.tokena_amount += tokena_amount;
+        liquidity_pool.tokenb_amount += tokenb_amount;
 
         Ok(())
     }
 
-    pub fn swap_token_to_sol(
-        ctx: Context<SwapTokenToSOL>,
-        quote_amount: u64
-    ) -> Result<()> {
-        if quote_amount == 0 {
-            return Err(ErrorCode::InvalidQuoteAmount.into());
-        }
-        if ctx.accounts.user_quote.amount < quote_amount {
-            return Err(ErrorCode::InsufficientAmount.into());
-        }
-
-        let cpi_accounts = Transfer {
-            from: ctx.accounts.user_quote.to_account_info(),
-            to: ctx.accounts.quote_pool.to_account_info(),
-            authority: ctx.accounts.user_authority.to_account_info()
-        };
-
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        token::transfer(cpi_ctx, quote_amount)?;
-
-        let pyth_price_info = &ctx.accounts.pyth_quote_account;
-        let pyth_price_data = &pyth_price_info.try_borrow_data()?;
-        let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
-
-        let quote_price = pyth_price.agg.price as u128;
-        let quote_total = quote_price * quote_amount as u128;
-
-        // destination token
-        let pyth_price_info = &ctx.accounts.pyth_dest_account;
-        let pyth_price_data = &pyth_price_info.try_borrow_data()?;
-        let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
-
-        let dest_price = pyth_price.agg.price as u128;
-
-
-        let transfer_amount = (quote_total/dest_price) as u64;
-        let pool_balance = **ctx.accounts.state_account.to_account_info().lamports.borrow();
-        msg!("Pool Balance: !!{:?}!!", pool_balance.to_string());
-
-        if pool_balance < transfer_amount {
-            return Err(ErrorCode::InsufficientAmount.into());
-        }
-
-        **ctx.accounts.state_account.to_account_info().try_borrow_mut_lamports()? -= transfer_amount;
-        **ctx.accounts.user_authority.try_borrow_mut_lamports()? += transfer_amount;
-        
-        Ok(())
-    }
-
+    // Swap token to token
     pub fn swap_token_to_token(
         ctx: Context<SwapTokenToToken>,
         quote_amount: u64
@@ -176,7 +150,26 @@ pub mod lpfinance_swap {
         let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
 
         let quote_price = pyth_price.agg.price as u128;
-        let quote_total: u128 = quote_price * quote_amount as u128;
+        let mut quote_total: u128 = quote_price * quote_amount as u128;
+
+        // If quote token is LpFi Dao token, swap LpFi-> USDC and then USDC -> dest token
+        if ctx.accounts.quote_mint.key() == ctx.accounts.state_account.lpfi_mint {
+            let lpfi_price = ctx.accounts.liquidity_pool.get_token_price(ctx.accounts.state_account.usdc_mint, ctx.accounts.state_account.lpfi_mint)?;
+            let usdc_amount = lpfi_price * quote_amount as u128 / PRICE_MULTIPLIER;
+            // In case of quote token is LpFi, pyth_quote_account is usdc so quote_price is for USDC price
+            quote_total = quote_price * usdc_amount;
+
+            msg!("Quote USDC Amount: !!{:?}!!", usdc_amount.to_string());
+            let liquidity_pool = &mut ctx.accounts.liquidity_pool;     
+            
+            if liquidity_pool.tokena_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount + quote_amount;
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount - usdc_amount as u64;
+            } else if liquidity_pool.tokenb_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount + quote_amount;
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount - usdc_amount as u64;
+            }       
+        }
 
         // destination token
         let pyth_price_info = &ctx.accounts.pyth_dest_account;
@@ -187,9 +180,27 @@ pub mod lpfinance_swap {
 
         msg!("Quote Price: !!{:?}!!", quote_price.to_string());
         msg!("Dest Price: !!{:?}!!", dest_price.to_string());
-        msg!("Quote Amount: !!{:?}!!", quote_amount.to_string());
 
-        let transfer_amount = (quote_total/dest_price) as u64;
+        let mut transfer_amount = (quote_total/dest_price) as u64;
+
+        // If dest_mint is LpFi DAO token
+        if ctx.accounts.dest_mint.key() == ctx.accounts.state_account.lpfi_mint {
+            let lpfi_price = ctx.accounts.liquidity_pool.get_token_price(ctx.accounts.state_account.usdc_mint, ctx.accounts.state_account.lpfi_mint)?;
+            // In case of dest token is LpFi, pyth_dest_account is usdc so dest_price is for USDC price
+            let usdc_amount = quote_total / dest_price;
+            transfer_amount = (usdc_amount * PRICE_MULTIPLIER / lpfi_price) as u64;
+
+            let liquidity_pool = &mut ctx.accounts.liquidity_pool;        
+
+            if liquidity_pool.tokena_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount - transfer_amount;
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount + usdc_amount as u64;
+            } else if liquidity_pool.tokenb_mint == ctx.accounts.state_account.lpfi_mint {
+                liquidity_pool.tokenb_amount = liquidity_pool.tokenb_amount - transfer_amount;
+                liquidity_pool.tokena_amount = liquidity_pool.tokena_amount + usdc_amount as u64;
+            }
+        }
+
         msg!("Transfer Amount: !!{:?}!!", transfer_amount.to_string());
         msg!("Quote Total: !!{:?}!!", quote_total.to_string());
 
@@ -246,7 +257,6 @@ pub mod lpfinance_swap {
             &[program_authority_bump]
         ];
         let signer = &[&seeds[..]];
-
         
         let cpi_accounts = Transfer {
             from: ctx.accounts.swap_pool.to_account_info(),
@@ -260,340 +270,6 @@ pub mod lpfinance_swap {
 
         Ok(())
     }
-}
-
-
-#[derive(Accounts)]
-pub struct LiquidateToken<'info>{
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-
-    #[account(
-        mut,
-        constraint = auction_pool.mint == dest_mint.key()
-    )]
-    pub auction_pool : Box<Account<'info, TokenAccount>>,
-    #[account(
-        mut,
-        constraint = swap_pool.owner == state_account.key(),
-        constraint = swap_pool.mint == dest_mint.key()
-    )]
-    pub swap_pool : Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub dest_mint: Account<'info,Mint>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct Initialize<'info> {
-    // Token program authority
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    // State Accounts
-    #[account(init,
-        seeds = [PREFIX.as_bytes()],
-        bump,
-        space = StateAccount::LEN + 8,
-        payer = authority
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-
-    pub lpusd_mint: Box<Account<'info, Mint>>,
-    pub lpsol_mint: Box<Account<'info, Mint>>,
-    pub lpbtc_mint: Box<Account<'info, Mint>>,
-    pub lpeth_mint: Box<Account<'info, Mint>>,
-
-    // LpUSDC POOL
-    #[account(
-        init,
-        token::mint = lpusd_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpusd".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_lpusd: Box<Account<'info, TokenAccount>>,
-    // LpSOL POOL
-    #[account(
-        init,
-        token::mint = lpsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpsol".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_lpsol: Box<Account<'info, TokenAccount>>,
-
-    // LpBTC POOL
-    #[account(
-        init,
-        token::mint = lpbtc_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpbtc".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_lpbtc: Box<Account<'info, TokenAccount>>,
-    // LpETH POOL
-    #[account(
-        init,
-        token::mint = lpeth_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpeth".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_lpeth: Box<Account<'info, TokenAccount>>,
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct InitializePool<'info> {
-    // Token program authority
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    // State Accounts
-    #[account(mut)]
-    pub state_account: Box<Account<'info, StateAccount>>,  
-
-    pub usdc_mint: Box<Account<'info, Mint>>,
-    pub btc_mint: Box<Account<'info, Mint>>,
-    pub msol_mint: Box<Account<'info, Mint>>,
-    pub eth_mint: Box<Account<'info, Mint>>,
-    pub ust_mint: Box<Account<'info, Mint>>,
-    pub srm_mint: Box<Account<'info, Mint>>,
-    pub scnsol_mint: Box<Account<'info, Mint>>,
-    pub stsol_mint: Box<Account<'info, Mint>>,
-    pub usdt_mint: Box<Account<'info, Mint>>,
-
-    // USDC POOL
-    #[account(
-        init,
-        token::mint = usdc_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_usdc".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_usdc: Box<Account<'info, TokenAccount>>,
-    // BTC POOL
-    #[account(
-        init,
-        token::mint = btc_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_btc".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_btc: Box<Account<'info, TokenAccount>>,
-    // mSOL POOL
-    #[account(
-        init,
-        token::mint = msol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_msol".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_msol: Box<Account<'info, TokenAccount>>,
-    // eth POOL
-    #[account(
-        init,
-        token::mint = eth_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_eth".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_eth: Box<Account<'info, TokenAccount>>,
-    // ust POOL
-    #[account(
-        init,
-        token::mint = ust_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_ust".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_ust: Box<Account<'info, TokenAccount>>,
-    // srm POOL
-    #[account(
-        init,
-        token::mint = srm_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_srm".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_srm: Box<Account<'info, TokenAccount>>,
-    // scnsol POOL
-    #[account(
-        init,
-        token::mint = scnsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_scnsol".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_scnsol: Box<Account<'info, TokenAccount>>,
-    // stsol POOL
-    #[account(
-        init,
-        token::mint = stsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_stsol".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_stsol: Box<Account<'info, TokenAccount>>,
-    // usdt POOL
-    #[account(
-        init,
-        token::mint = usdt_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_usdt".as_ref()],
-        bump,
-        payer = authority
-    )]
-    pub pool_usdt: Box<Account<'info, TokenAccount>>,
-
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct SwapSOLToToken<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    // NOTE: this will also be SOL account.
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut)]
-    pub dest_mint: Account<'info,Mint>,
-    // User's Token account For dest_mint
-    #[account(
-        init_if_needed,
-        payer = user_authority,
-        associated_token::mint = dest_mint,
-        associated_token::authority = user_authority
-    )]
-    pub user_dest : Box<Account<'info, TokenAccount>>,
-    // Swap Pool for dest_mint token
-    #[account(
-        mut,
-        constraint = dest_pool.owner == state_account.key(),
-        constraint = dest_pool.mint == dest_mint.key()
-    )]
-    pub dest_pool : Box<Account<'info, TokenAccount>>,
-    // SOL pyth account
-    pub pyth_quote_account: AccountInfo<'info>,
-    // Token pyth account
-    pub pyth_dest_account: AccountInfo<'info>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct SwapTokenToSOL<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    // NOTE: this will also be SOL account.
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut)]
-    pub quote_mint: Account<'info,Mint>,
-    #[account(
-        mut,
-        constraint = user_quote.owner == user_authority.key(),
-        constraint = user_quote.mint == quote_mint.key()
-    )]
-    pub user_quote : Box<Account<'info, TokenAccount>>,
-    #[account(
-        mut,
-        constraint = quote_pool.owner == state_account.key(),
-        constraint = quote_pool.mint == quote_mint.key()
-    )]
-    pub quote_pool : Box<Account<'info, TokenAccount>>,
-    // Token pyth
-    pub pyth_quote_account: AccountInfo<'info>,
-    // SOL pyth
-    pub pyth_dest_account: AccountInfo<'info>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct SwapTokenToToken<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-
-    #[account(
-        mut,
-        constraint = user_quote.owner == user_authority.key(),
-        constraint = user_quote.mint == quote_mint.key()
-    )]
-    pub user_quote : Box<Account<'info, TokenAccount>>,
-    #[account(
-        mut,
-        constraint = quote_pool.owner == state_account.key(),
-        constraint = quote_pool.mint == quote_mint.key()
-    )]
-    pub quote_pool : Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub quote_mint: Account<'info,Mint>,
-    #[account(mut)]
-    pub dest_mint: Account<'info,Mint>,
-    #[account(
-        init_if_needed,
-        payer = user_authority,
-        associated_token::mint = dest_mint,
-        associated_token::authority = user_authority
-    )]
-    pub user_dest : Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub dest_pool : Box<Account<'info, TokenAccount>>,
-    pub pyth_quote_account: AccountInfo<'info>,
-    pub pyth_dest_account: AccountInfo<'info>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[account]
-#[derive(Default)]
-pub struct StateAccount {
-    pub owner: Pubkey,
-    pub second_owner: Pubkey
-}
-impl StateAccount {
-    pub const LEN: usize = 2 * 32;
 }
 
 #[error_code]

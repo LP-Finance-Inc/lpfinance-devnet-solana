@@ -10,7 +10,7 @@ const LP_TOKEN_DECIMALS: u8 = 9;
 const PREFIX: &str = "lptokens";
 
 // DAO governance token
-const INITIAL_SUPPLY: u64 = 500000000; // 500,000,000
+const INITIAL_SUPPLY: u64 = 25000000; // 25,000,000 = 25M
 
 const DAY_IN_SECONDS: i64 = 86400; 
 // Reward Rate => 0.00809%
@@ -112,28 +112,14 @@ pub mod lpfinance_tokens {
             return Err(ErrorCode::InvalidAmount.into());
         }
 
-        let (mint_token_authority, mint_token_authority_bump) = 
-            Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
-        
-        if mint_token_authority != ctx.accounts.state_account.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        // Mint
-        let seeds = &[
-            PREFIX.as_bytes(),
-            &[mint_token_authority_bump]
-        ];
-        let signer = &[&seeds[..]];
-
         let cpi_accounts = Burn {
             mint: ctx.accounts.lptoken_mint.to_account_info(),
             from: ctx.accounts.cbs_lptoken.to_account_info(),
-            authority: ctx.accounts.state_account.to_account_info(),
+            authority: ctx.accounts.cbs_account.to_account_info(),
         };
 
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
         token::burn(cpi_ctx, amount)?;
         Ok(())
@@ -397,7 +383,7 @@ pub struct BurnLpToken<'info> {
     pub cbs_account: Signer<'info>,
     #[account(mut)]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
-    #[account(mut, has_one = cbs_account)]
+    #[account(mut)] // , has_one = cbs_account
     pub config: Box<Account<'info, Config>>,
     #[account(
         mut,
