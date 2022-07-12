@@ -3,7 +3,7 @@
 // configured from the workspace's Anchor.toml.
 
 const anchor = require("@project-serum/anchor");
-const { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, Token } = require('@solana/spl-token')
+const { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddress } = require('@solana/spl-token')
 const { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Keypair } = anchor.web3;
 // const { cbsAddrs } = require('./wallets');
 
@@ -35,6 +35,7 @@ const lpsolMint = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ");
 const lpusdMint = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL");
 const lpfiMint = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p");
 
+/*
 module.exports = async function (provider) {
   // Configure client to use the provider.
   anchor.setProvider(provider);
@@ -194,6 +195,7 @@ module.exports = async function (provider) {
     console.log("Transaction error: ", err);
   }
 }
+*/
 
 // 2022-06-30
 // ProgramID 8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4
@@ -209,30 +211,93 @@ module.exports = async function (provider) {
 // Pool-LpUSD: 64C8Xmb9rumieArK7CAtiHKP9xatm7uTvkfmVtuzxdbn
 // Pool-LpFi: 8Fu8HnrkVkKyweWr3Ybq8r8BqaZuzKm1nojRQNoRBPJG
 
-/*
+const convert_to_wei = (val) => (parseFloat(val) * 1e9).toString();
 module.exports = async function (provider) {
   // Configure client to use the provider.
   anchor.setProvider(provider);
 
   // Add your deploy script here
   const program = new anchor.Program(idl, programID);
-
-  for (const idx in cbsAddrs) {
-    try {
-      console.log(cbsAddrs[idx])
-      const authority = new PublicKey(cbsAddrs[idx]);
-      const [userAccount, userAccountBump] = await PublicKey.findProgramAddress(
-        [Buffer.from(PREFIX), Buffer.from(authority.toBuffer())],
-        program.programId
-      );
+  const authority = provider.wallet.publicKey;
+  const userAuthority= authority
+  // const userCollateral= new PublicKey("9YgWJ3xJSgCNx2Nm4BHpy3xRLrrgxnJ6C1d3DzKvuk9p")
+  const collateralMint= new PublicKey("AzRQUJPKxv8L9xfHPeGgKcsXXrjbYekW5mVvbMdw11Mp")
+  const stateAccount= new PublicKey("DgTJJkqH89PJwpTstVVfNZ22CEfx8vqLHsMBfvfY6zVW")
+  const config= new PublicKey("9gzCVpwVMSW29MZyh5DtxQtNCB8n9Lc5NWDpH3knkdiT")
+  const collateralPool= new PublicKey("GxFz5cCidDxAFM6Hzq3ASzCBy1b8bxLK7DrA1hiHbTJ4")
+  // const userAccount= new PublicKey("6cmi6ppEvaG8sdVJcLY624RVtWvcXgXyFna24p1DeDjM")
+  const solendConfig= new PublicKey("68SQXmcLmJzEUUm5MxudGZfJiPHsMEu3rQboTuNEabUT")
+  const solendAccount= new PublicKey("6ArpAjPPRXoWvrNSuFfS9mnJXHWZnT33RcabftCWXi7F")
+  const solendPool= new PublicKey("8yY8cKyP1sQNEBummXs2joVhijDSdzQwcBU2VcVG3z9w")
+  const apricotConfig= new PublicKey("1MA4Cp4wkLipThnYB1M6QpJ12mJvdH2ESbAvQv8bjYK")
+  const apricotAccount= new PublicKey("6EKRNhYvkwE1ByoZUdFXFm5L1cAhNusD6nrbJcHdZ13W")
+  const apricotPool= new PublicKey("EpV4kEfrkaVoKF2SDYbg7QCFxA9xhYsuJ2teupBbhJAp")
+  const solendProgram= new PublicKey("BgN7NGCcQgFMVs9U8tQzht7NNrKCdQjcZ8g4GBRwgMrb")
+  const apricotProgram= new PublicKey("ETAZpMupgKhLfdz7sAsvGxELmtnm1mgwapMYDfwtRGtk")
+  const whiteListKey= new PublicKey("HADJ37pxxkTpe4DHLJRdVXV6dFqm1iMCuxsH8K3pkstJ")
+  const configAccountKey= new PublicKey("Ci2mQYyAV2RA86dFMWazAQxutd3pX7vpoyPe2fv33S2u")
+  const accountsProgram= new PublicKey("3ukdrhHrDPkirhTXArwU4AJjTXPafcY7XHeDCBDYLqKu")
   
-      await program.rpc.fixUserAccount( new anchor.BN("0"), {
+  const deposit_wei = convert_to_wei("100");
+  const deposit_amount = new anchor.BN(deposit_wei);
+  const [userAccount, userAccountBump] = await PublicKey.findProgramAddress(
+    [Buffer.from(PREFIX), Buffer.from(userAuthority.toBuffer())],
+    program.programId
+  );
+  const userCollateral = await getAssociatedTokenAddress(
+    collateralMint,
+    userAuthority,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  let accountData;
+  try {
+    accountData = await program.account.userAccount.fetch(userAccount);
+  } catch (err) {
+    accountData = null;
+  }
+
+  if (accountData == null || accountData === undefined) {
+    try {
+      console.log("==")
+      await program.rpc.initUserAccount({
         accounts: {
-          userAccount
-        }
+          userAccount,
+          userAuthority,
+          systemProgram: SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: SYSVAR_RENT_PUBKEY,
+        },
       });
+      accountData = await program.account.userAccount.fetch(userAccount);
     } catch (err) {
       console.log(err)
     }
   }
-} */
+  await program.rpc.depositCollateral(deposit_amount, {
+    accounts: {
+      userAuthority,
+      userCollateral,
+      collateralMint,
+      stateAccount,
+      config,
+      collateralPool,
+      userAccount,
+      solendConfig,
+      solendAccount,
+      solendPool,
+      apricotConfig,
+      apricotAccount,
+      apricotPool,
+      solendProgram,
+      apricotProgram,
+      whitelist: whiteListKey,
+      accountsConfig: configAccountKey,
+      accountsProgram,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      rent: SYSVAR_RENT_PUBKEY,
+    },
+  });
+}

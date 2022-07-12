@@ -125,6 +125,7 @@ pub mod cbs_protocol {
         ctx: Context<DepositCollateral>,
         amount: u64
     )-> Result<()> {        
+        msg!("Deposit collateral");
         if amount == 0 {
             return Err(ErrorCode::InvalidAmount.into());
         }
@@ -234,6 +235,7 @@ pub mod cbs_protocol {
             }
 
             if solend_higher {
+                msg!("Solend Deposit");
                 let cpi_program = ctx.accounts.solend_program.to_account_info();
                 let cpi_accounts = solend::cpi::accounts::DepositToken {
                     authority: ctx.accounts.state_account.to_account_info(),
@@ -250,6 +252,7 @@ pub mod cbs_protocol {
     
                 solend::cpi::deposit_token(cpi_ctx, lending_amount)?;
             } else {
+                msg!("Apricot Deposit");
                 let cpi_program = ctx.accounts.apricot_program.to_account_info();
                 let cpi_accounts = apricot::cpi::accounts::DepositToken {
                     authority: ctx.accounts.state_account.to_account_info(),
@@ -308,10 +311,12 @@ pub mod cbs_protocol {
             config.total_deposited_lpfi = config.total_deposited_lpfi + amount;
         }
 
+        msg!("========");
         // let whitelist = ctx.accounts.whitelist.load_mut()?;
         if ctx.accounts.whitelist.load_mut()?.addresses.contains(&ctx.accounts.user_authority.key()) {
             msg!("Already Exist");
         } else {
+            msg!("Add whitelist");
 
             let cpi_program = ctx.accounts.accounts_program.to_account_info();
             let cpi_accounts = AddFromCbsProgram {
@@ -655,7 +660,6 @@ pub mod cbs_protocol {
         let srm_amount = user_account.srm_amount as u128;
         let scnsol_amount = user_account.scnsol_amount as u128;
         let stsol_amount = user_account.stsol_amount as u128;
-        let lpfi_amount = user_account.lpfi_amount as u128;
 
         let lending_wsol_amount = user_account.lending_wsol_amount as u128;
         let lending_ray_amount = user_account.lending_ray_amount as u128;
@@ -1031,6 +1035,18 @@ pub mod cbs_protocol {
             user_account.lending_scnsol_amount = 0;
             user_account.lending_stsol_amount = 0;
         }
+        Ok(())
+    }
+
+
+    pub fn apply_dsf(
+        ctx: Context<UpdateUserAccount>,
+        lpusd_rate: u64,
+        lpsol_rate: u64
+    ) -> Result<()> {
+        let user_account = &mut ctx.accounts.user_account;
+        user_account.borrowed_lpusd = user_account.borrowed_lpusd * (100 + lpusd_rate) / 100;
+        user_account.borrowed_lpsol = user_account.borrowed_lpsol * (100 + lpsol_rate) / 100;
         Ok(())
     }
 }
