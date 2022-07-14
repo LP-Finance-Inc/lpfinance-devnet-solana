@@ -39,7 +39,7 @@ module.exports = async function (provider) {
     // Signer
     const authority = provider.wallet.publicKey; 
     // CBS account      
-    const user = new PublicKey('8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4');
+    const user = new PublicKey('Gu6urAi7fg5eV5Jvohdo6U1pxYTSxheh5RxUzprdENLq');
     const [userAccount, userAccountBump] = await PublicKey.findProgramAddress(
       [Buffer.from(PREFIX), Buffer.from(user.toBuffer())],
       program.programId
@@ -47,15 +47,15 @@ module.exports = async function (provider) {
     console.log("CBS apricot account", userAccount.toBase58());
 
     // initUserAccount
-    await program.rpc.initUserAccount({
-      accounts: {
-        userAccount,
-        user,
-        userAuthority: authority,
-        systemProgram: SystemProgram.programId,
-        rent: SYSVAR_RENT_PUBKEY,
-      }
-    });
+    // await program.rpc.initUserAccount({
+    //   accounts: {
+    //     userAccount,
+    //     user,
+    //     userAuthority: authority,
+    //     systemProgram: SystemProgram.programId,
+    //     rent: SYSVAR_RENT_PUBKEY,
+    //   }
+    // });
 
   } catch (err) {
     console.log("Transaction error: ", err);

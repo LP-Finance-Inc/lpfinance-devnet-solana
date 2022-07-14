@@ -7,9 +7,6 @@ use anchor_spl::{
     token::{ Mint, Token, TokenAccount }
 };
 
-use lpfinance_accounts::{self, WhiteList};
-use lpfinance_accounts::program::LpfinanceAccounts;
-
 use lpfinance_swap::{self, PoolInfo};
 
 use lpfinance_tokens::{self, TokenStateAccount};
@@ -21,50 +18,62 @@ use solend::{self};
 use apricot::program::Apricot;
 use apricot::{self};
 
-pub const PREFIX: &str = "cbsprotocol1";
+pub const PREFIX: &str = "cbs-pda";
+const DISCRIMINATOR_LENGTH: usize = 8;
+const PUBLIC_KEY_LENGTH: usize = 32;
+const U64_LENGTH: usize = 8;
+const U8_LENGTH: usize = 1;
+const BOOL_LENGTH: usize =1;
+// const TITLE_LENGTH: usize = 4*2;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     // Token program authority
     #[account(mut)]
     pub authority: Signer<'info>,
-    // State Accounts
-    #[account(init,
-        seeds = [PREFIX.as_bytes()],
-        bump,
-        space = StateAccount::LEN,
-        payer = authority
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
 
     // Config Accounts
     #[account(init,
         payer = authority,
         space = Config::LEN
     )]
+    pub config: Box<Account<'info, Config>>, 
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct CreateLpTokenATA<'info> {
+    // Token program authority
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    // Config Accounts
+    #[account(mut,
+        constraint = config.owner == authority.key()
+    )]
     pub config: Box<Account<'info, Config>>,
 
     pub lpsol_mint: Box<Account<'info, Mint>>,   
     pub lpusd_mint: Box<Account<'info, Mint>>,
     pub lpfi_mint: Box<Account<'info, Mint>>,
-
+    /// CHECK: This is safe
+    #[account(seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
     // LpSOL POOL
     #[account(
         init,
         token::mint = lpsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpsol".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_lpsol: Box<Account<'info, TokenAccount>>,
+
     // LpUSD POOL
     #[account(
         init,
         token::mint = lpusd_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpusd".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_lpusd: Box<Account<'info, TokenAccount>>,
@@ -72,9 +81,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         token::mint = lpfi_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_lpfi".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_lpfi: Box<Account<'info, TokenAccount>>,    
@@ -85,16 +92,15 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
-pub struct InitializePool<'info> {
+pub struct CreateTokenATA<'info> {
     // Token program authority
     #[account(mut)]
     pub authority: Signer<'info>,
-    // State Accounts
-    #[account(mut)]
-    pub state_account: Box<Account<'info, StateAccount>>,
 
     // Config Accounts
-    #[account(mut, has_one = state_account)]
+    #[account(mut,
+        constraint = config.owner == authority.key()
+    )]
     pub config: Box<Account<'info, Config>>,
     
     // Tokens
@@ -105,13 +111,15 @@ pub struct InitializePool<'info> {
     pub scnsol_mint: Box<Account<'info, Mint>>,
     pub stsol_mint: Box<Account<'info, Mint>>,
 
+    /// CHECK: This is safe
+    #[account(seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+
     // wSOL POOL
     #[account(
         init,
         token::mint = wsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_wsol".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_wsol: Box<Account<'info, TokenAccount>>,
@@ -119,9 +127,7 @@ pub struct InitializePool<'info> {
     #[account(
         init,
         token::mint = ray_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_ray".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_ray: Box<Account<'info, TokenAccount>>,
@@ -129,9 +135,7 @@ pub struct InitializePool<'info> {
     #[account(
         init,
         token::mint = msol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_msol".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_msol: Box<Account<'info, TokenAccount>>,
@@ -139,9 +143,7 @@ pub struct InitializePool<'info> {
     #[account(
         init,
         token::mint = srm_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_srm".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_srm: Box<Account<'info, TokenAccount>>,
@@ -149,9 +151,7 @@ pub struct InitializePool<'info> {
     #[account(
         init,
         token::mint = scnsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_scnsol".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_scnsol: Box<Account<'info, TokenAccount>>,
@@ -159,9 +159,7 @@ pub struct InitializePool<'info> {
     #[account(
         init,
         token::mint = stsol_mint,
-        token::authority = state_account,
-        seeds = [PREFIX.as_bytes(), b"pool_stsol".as_ref()],
-        bump,
+        token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_stsol: Box<Account<'info, TokenAccount>>,    
@@ -169,6 +167,44 @@ pub struct InitializePool<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct CreateSolendCBSAccount<'info> {
+    /// CHECK: This is safe
+    #[account(mut, seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+    /// CHECK: This is safe
+    #[account(mut)]
+    pub solend_account: AccountInfo<'info>,
+    pub solend_program: Program<'info, Solend>,
+    #[account(mut, has_one = owner)]
+    pub config: Box<Account<'info, Config>>,  
+    // Signer
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct CreateApricotCBSAccount<'info> {
+    /// CHECK: This is safe
+    #[account(mut, seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+    /// CHECK: This is safe
+    #[account(mut)]
+    pub apricot_account: AccountInfo<'info>,
+    pub apricot_program: Program<'info, Apricot>,
+    #[account(mut, has_one = owner)]
+    pub config: Box<Account<'info, Config>>,  
+    // Signer
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
@@ -182,25 +218,31 @@ pub struct InitUserAccount<'info> {
         payer = user_authority
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
-    // Contract Authority accounts
+    // Signer
     #[account(mut)]
     pub user_authority: Signer<'info>,
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
-pub struct DepositCollateral<'info> {
-    // Program signer
-    #[account(mut)]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut, has_one = state_account)]
-    pub config: Box<Account<'info, Config>>,  
+pub struct DeleteUserAccount<'info> {
+    #[account(mut, has_one = owner, close = owner)]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    pub owner: Signer<'info>,
+}
 
+#[derive(Accounts)]
+pub struct DepositCollateral<'info> {
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,  
     #[account(mut)]
     pub user_authority: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+
     // User token account for collateral
     #[account(
         mut,
@@ -215,7 +257,7 @@ pub struct DepositCollateral<'info> {
     #[account(
         mut,
         constraint = collateral_pool.mint == collateral_mint.key(),
-        constraint = collateral_pool.owner == state_account.key()
+        constraint = collateral_pool.owner == cbs_pda.key()
     )]
     pub collateral_pool: Box<Account<'info, TokenAccount>>,
 
@@ -241,11 +283,6 @@ pub struct DepositCollateral<'info> {
     pub solend_program: Program<'info, Solend>,
     pub apricot_program: Program<'info, Apricot>,
 
-    #[account(mut)]
-    pub whitelist: AccountLoader<'info, WhiteList>,
-    #[account(mut)]
-    pub accounts_config: Box<Account<'info, lpfinance_accounts::Config>>,
-    pub accounts_program: Program<'info, LpfinanceAccounts>,
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -262,27 +299,25 @@ pub struct BorrowLpToken<'info> {
         constraint = user_account.owner == user_authority.key()
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
+    /// CHECK: this is safe
+    #[account(mut, seeds = [PREFIX.as_bytes()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
     // Token program's Signer
     #[account(mut)]
     pub tokens_state: Box<Account<'info, TokenStateAccount>>,
-    #[account(mut)]
-    pub config: Box<Account<'info, Config>>,
     #[account(mut)]
     pub lptoken_config: Box<Account<'info, lpfinance_tokens::Config>>,
     #[account(
         init_if_needed,
         payer = user_authority,
-        associated_token::mint = collateral_mint,
+        associated_token::mint = lptoken_mint,
         associated_token::authority = user_authority
     )]
-    pub user_collateral : Box<Account<'info,TokenAccount>>,
+    pub user_lptoken : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
-    pub collateral_mint: Box<Account<'info,Mint>>,
+    pub lptoken_mint: Box<Account<'info,Mint>>,
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     // Price feed for wSOL
@@ -391,7 +426,7 @@ pub struct RepayToken<'info> {
         bump
     )]
     pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut,has_one = state_account)]
+    #[account(mut)]
     pub config: Box<Account<'info, Config>>,
     #[account(mut)]
     pub dest_pool: Box<Account<'info, TokenAccount>>,
@@ -416,12 +451,13 @@ pub struct WithdrawToken<'info> {
         constraint = user_account.owner == user_authority.key()
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
     #[account(mut,
         seeds = [PREFIX.as_bytes()],
         bump
     )]
-    pub state_account: Box<Account<'info, StateAccount>>,
-    #[account(mut, has_one = state_account)]
+    pub cbs_pda: AccountInfo<'info>,
+    #[account(mut)]
     pub config: Box<Account<'info, Config>>,
 
     #[account(mut)]
@@ -490,8 +526,6 @@ impl StateAccount {
 #[account]
 #[derive(Default)]
 pub struct Config {
-    pub state_account: Pubkey,
-
     pub total_borrowed_lpusd: u64,
     pub total_borrowed_lpsol: u64,
 
@@ -525,16 +559,27 @@ pub struct Config {
     pub pool_stsol: Pubkey,
     pub pool_lpsol: Pubkey,
     pub pool_lpusd: Pubkey,
-    pub pool_lpfi: Pubkey
+    pub pool_lpfi: Pubkey,
+
+    pub owner: Pubkey,
+    pub liquidation_run: bool,
+
 }
 
 impl Config {
-    pub const LEN:usize = 32*19 + 11*8 + 8;
+    pub const LEN:usize = DISCRIMINATOR_LENGTH
+        + PUBLIC_KEY_LENGTH * 19
+        + U64_LENGTH * 11
+        + BOOL_LENGTH;
 }
 
 #[account]
 #[derive(Default)]
 pub struct UserAccount {
+    pub owner: Pubkey,
+    // Number to present the current Liquidate process
+    pub step_num: u8,
+
     pub borrowed_lpusd: u64,
     pub borrowed_lpsol: u64,
     // deposited amount
@@ -555,13 +600,12 @@ pub struct UserAccount {
     pub lending_msol_amount: u64,
     pub lending_srm_amount: u64,
     pub lending_scnsol_amount: u64,
-    pub lending_stsol_amount: u64,
-
-    pub owner: Pubkey,
-    // Number to present the current Liquidate process
-    pub step_num: u8
+    pub lending_stsol_amount: u64
 }
 
 impl UserAccount {
-    pub const LEN: usize = 8 * 28 + 32 + 1 + 8;
+    pub const LEN: usize = DISCRIMINATOR_LENGTH
+        + U64_LENGTH * 28 
+        + PUBLIC_KEY_LENGTH // owner pubkey
+        + U8_LENGTH;        // Liquidate process
 }
