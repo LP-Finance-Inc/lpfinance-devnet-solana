@@ -30,9 +30,9 @@ module.exports = async function (provider) {
     const stateAccount = new PublicKey("64iaARaRU9sXwLmAVy1a5NkYVM82GJ9Lvk2VfJ8PMChk");
     // Signer
     const authority = provider.wallet.publicKey;
-    const lptokenMint = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ"); // LpSOL mint
+    // const lptokenMint = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ"); // LpSOL mint
     // const lptokenMint = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL"); // LpUSD Mint
-    // const lptokenMint = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p"); // LpFI Mint
+    const lptokenMint = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p"); // LpFI Mint
     // mint: PublicKey, owner: PublicKey, allowOwnerOffCurve?: boolean, programId?: PublicKey, associatedTokenProgramId?: PublicKey
     const userLptoken = await getAssociatedTokenAddress(
       lptokenMint, 

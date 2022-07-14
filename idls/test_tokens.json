@@ -1,0 +1,368 @@
+{
+  "version": "0.1.0",
+  "name": "test_tokens",
+  "instructions": [
+    {
+      "name": "initialize",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "wsolMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "msolMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stsolMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "scnsolMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "usdcMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "btcMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ethMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rayMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "srmMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "avaxMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "fidaMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "fttMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ftmMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gmtMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "lunaMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "maticMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "usdtMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "burnToken",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "mintToken",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "updateOwner",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newOwner",
+          "type": "publicKey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "TokenStateAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "secondOwner",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stateAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "wsolMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "msolMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "stsolMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "scnsolMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "usdcMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "btcMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "ethMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "rayMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "srmMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "avaxMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "fidaMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "fttMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "ftmMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "gmtMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "lunaMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "maticMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "usdtMint",
+            "type": "publicKey"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidAmount",
+      "msg": "Invalid Amount"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidOwner",
+      "msg": "Invalid Owner"
+    },
+    {
+      "code": 6002,
+      "name": "TooOftenMint",
+      "msg": "Too often mint"
+    }
+  ],
+  "metadata": {
+    "address": "3QTW9aZp4U2xoj9UfvTF6PEL3UZzfEHi8UtNruhw7GHL"
+  }
+}
