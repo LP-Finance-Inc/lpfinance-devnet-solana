@@ -412,7 +412,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "apricot",
- "lpfinance-accounts",
  "lpfinance-swap",
  "lpfinance-tokens",
  "nom",
@@ -421,6 +420,7 @@ dependencies = [
  "pyth-client",
  "solend",
  "spl-token",
+ "swap-base",
 ]
 
 [[package]]
@@ -759,13 +759,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "lpfinance-accounts"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
 ]
 
 [[package]]
@@ -1271,6 +1264,16 @@ name = "subtle"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
+
+[[package]]
+name = "swap-base"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "spl-associated-token-account",
+ "spl-token",
+]
 
 [[package]]
 name = "syn"

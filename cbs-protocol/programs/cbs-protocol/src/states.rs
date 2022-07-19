@@ -7,6 +7,8 @@ use anchor_spl::{
     token::{ Mint, Token, TokenAccount }
 };
 
+use swap_base::{self, Pool};
+
 use lpfinance_swap::{self, PoolInfo};
 
 use lpfinance_tokens::{self, TokenStateAccount};
@@ -316,10 +318,16 @@ pub struct BorrowLpToken<'info> {
         associated_token::authority = user_authority
     )]
     pub user_lptoken : Box<Account<'info,TokenAccount>>,
+    // LpUSD-USDC stableswap pool
+    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    // LpSOL-wSOL stableswap pool
+    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
     #[account(mut)]
     pub lptoken_mint: Box<Account<'info,Mint>>,
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_usdc_account: AccountInfo<'info>,
     // Price feed for wSOL
     /// CHECK: pyth
     pub pyth_sol_account: AccountInfo<'info>,
@@ -341,6 +349,77 @@ pub struct BorrowLpToken<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
+
+#[derive(Accounts)]
+pub struct WithdrawToken<'info> {
+    #[account(mut)]
+    pub user_authority: Signer<'info>,
+    // state account for user's wallet
+    #[account(
+        mut,
+        constraint = user_account.owner == user_authority.key()
+    )]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
+
+    #[account(mut)]
+    pub user_dest : Box<Account<'info,TokenAccount>>,
+    #[account(mut)]
+    pub dest_pool: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub dest_mint: Box<Account<'info,Mint>>,
+    // LpUSD-USDC stableswap pool
+    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    // LpSOL-wSOL stableswap pool
+    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    /// CHECK: pyth
+    pub pyth_ray_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_usdc_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_sol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_msol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_srm_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_scnsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_stsol_account: AccountInfo<'info>,
+    // LpFi<->USDC pool
+    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+
+    #[account(mut)]
+    pub solend_config: Box<Account<'info, solend::Config>>,
+    #[account(mut)]
+    pub solend_pool: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub solend_account: Box<Account<'info, solend::UserAccount>>,
+    #[account(mut)]
+    pub solend_state_account: Box<Account<'info, solend::StateAccount>>,
+    #[account(mut)]
+    pub apricot_config: Box<Account<'info, apricot::Config>>,
+    #[account(mut)]
+    pub apricot_pool: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub apricot_account: Box<Account<'info, apricot::UserAccount>>,
+    #[account(mut)]
+    pub apricot_state_account: Box<Account<'info, apricot::StateAccount>>,
+    pub solend_program: Program<'info, Solend>,
+    pub apricot_program: Program<'info, Apricot>,
+
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
 
 #[derive(Accounts)]
 pub struct LiquidateCollateral<'info> {
@@ -435,71 +514,6 @@ pub struct RepayToken<'info> {
         constraint = user_account.owner == user_authority.key()
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct WithdrawToken<'info> {
-    #[account(mut)]
-    pub user_authority: Signer<'info>,
-    // state account for user's wallet
-    #[account(
-        mut,
-        constraint = user_account.owner == user_authority.key()
-    )]
-    pub user_account: Box<Account<'info, UserAccount>>,
-    /// CHECK: this is safe
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub cbs_pda: AccountInfo<'info>,
-    #[account(mut)]
-    pub config: Box<Account<'info, Config>>,
-
-    #[account(mut)]
-    pub user_dest : Box<Account<'info,TokenAccount>>,
-    #[account(mut)]
-    pub dest_pool: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub dest_mint: Box<Account<'info,Mint>>,
-    /// CHECK: pyth
-    pub pyth_ray_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_sol_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_msol_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_srm_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_scnsol_account: AccountInfo<'info>,
-    /// CHECK: pyth
-    pub pyth_stsol_account: AccountInfo<'info>,
-    // LpFi<->USDC pool
-    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
-
-    #[account(mut)]
-    pub solend_config: Box<Account<'info, solend::Config>>,
-    #[account(mut)]
-    pub solend_pool: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub solend_account: Box<Account<'info, solend::UserAccount>>,
-    #[account(mut)]
-    pub solend_state_account: Box<Account<'info, solend::StateAccount>>,
-    #[account(mut)]
-    pub apricot_config: Box<Account<'info, apricot::Config>>,
-    #[account(mut)]
-    pub apricot_pool: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub apricot_account: Box<Account<'info, apricot::UserAccount>>,
-    #[account(mut)]
-    pub apricot_state_account: Box<Account<'info, apricot::StateAccount>>,
-    pub solend_program: Program<'info, Solend>,
-    pub apricot_program: Program<'info, Apricot>,
-
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,

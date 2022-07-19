@@ -9,6 +9,7 @@ import {
 import { 
   NETWORK, 
   PREFIX, 
+  pythUsdcAccount,
   pythRayAccount,
   pythSolAccount,
   pythMsolAccount,
@@ -23,7 +24,9 @@ import {
   apricotPool,
   LiquidityPool,
   SolendStateAccount,
-  ApricotStateAccount
+  ApricotStateAccount,
+  StableLpsolPool,
+  StableLpusdPool
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
@@ -74,6 +77,9 @@ const withdraw = async () => {
         userDest,
         destPool,
         destMint,
+        stableLpsolPool: StableLpsolPool,
+        stableLpusdPool: StableLpusdPool,
+        pythUsdcAccount,
         pythRayAccount,
         pythSolAccount,
         pythMsolAccount,

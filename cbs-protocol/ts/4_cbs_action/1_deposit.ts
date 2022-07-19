@@ -33,8 +33,10 @@ const deposit = async () => {
   // Config
   const config = getPublicKey('cbs_config');  
   const cbsConfigData = await program.account.config.fetch(config);
-  const collateralMint= cbsConfigData.rayMint as PublicKey;
-  const collateralPool= cbsConfigData.poolRay as PublicKey;
+  // const collateralMint= cbsConfigData.rayMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolRay as PublicKey;
+  const collateralMint= cbsConfigData.lpsolMint as PublicKey;
+  const collateralPool= cbsConfigData.poolLpsol as PublicKey;
   const userCollateral = await getATAPublicKey(collateralMint, creatorKeypair.publicKey);
   const solendAccount = getPublicKey('cbs_solend_account')
   const apricotAccount = getPublicKey('cbs_apricot_account')
@@ -99,7 +101,7 @@ deposit();
 
 const print_config_data = (configData) => {     
   console.log("===== Config Data =====") 
-  
+
   console.table([
     { "Property": "borrowed_lpusd", "Value" : configData.totalBorrowedLpusd.toString()},
     { "Property": "borrowed_lpsol", "Value": configData.totalBorrowedLpsol.toString()},

@@ -22,9 +22,11 @@ export const ApricotConfig= new PublicKey("1MA4Cp4wkLipThnYB1M6QpJ12mJvdH2ESbAvQ
 export const SolendStateAccount= new PublicKey("76XJ35ToUi7ivAc9p62t8t4ukvE9BQPsNRSbUKiZmmuW")
 export const ApricotStateAccount= new PublicKey("7bAetJoCfBiUmg8kZmQxUjnwCy7C7fPWUeYzAg1edFDM")
 
+export const StableLpusdPool = new PublicKey("4Mcu9CJj8EPtsijxtwqo5kpPJSmzyeTZKE7Won5Q6iyL");
+export const StableLpsolPool = new PublicKey("Hi9bZiEgdto5gHdMNfcZxHe1SZh63ifnD3HJEyWhcgKF");
 
-export const solendPool = new PublicKey("AjU3jz8zc7vksB42VhvH3D1Rx5M5s2Bfh94WbJdYS79Y")
-export const apricotPool = new PublicKey("3iHXjSSpVwg8rtUFDt6LNQRu8ttdYvBLnAj6cmW2zkqs")
+export const solendPool = new PublicKey("AjU3jz8zc7vksB42VhvH3D1Rx5M5s2Bfh94WbJdYS79Y") // RAY ata
+export const apricotPool = new PublicKey("3iHXjSSpVwg8rtUFDt6LNQRu8ttdYvBLnAj6cmW2zkqs") // RAY ata
 
 export const LiquidityPool = new PublicKey("DcB2ZfvRU5ac9FgYF9doWYjHWtRXbStH7wDhciQcmF6v")
 

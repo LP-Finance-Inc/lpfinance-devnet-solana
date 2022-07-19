@@ -5,6 +5,8 @@ use anchor_spl::token::{self, Transfer };
 mod states;
 pub use states::*;
 
+use swap_base::{self, Pool};
+
 use lpfinance_tokens::cpi::accounts::MintLpToken;
 use lpfinance_tokens::{self};
 
@@ -25,7 +27,9 @@ const LENDING_DENOMINATOR: u128 = 10000000; // 100,00000
 // const W_THRESHHOLD: u64 = 90;
 // const S_THRESHHOLD: u64 = 75;
 
-const LPUSD_PRICE: u128 = 100000000;
+const PRICE_DENOMINATOR: u128 = 100000000;
+
+const PRICE_UNIT: u64 = 1000000000; // 10^9
 
 pub fn get_price(pyth_account: AccountInfo) -> Result<u128> {
     let pyth_price_info = &pyth_account;
@@ -428,11 +432,16 @@ pub mod cbs_protocol {
         let mut total_borrowed_price: u128 = 0;
         let user_account = &mut ctx.accounts.user_account;
 
+
         if user_account.step_num > 0 && user_account.step_num < 6 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
         let config = &mut ctx.accounts.config;
+
+        
+        let lpusd_swap_amount: u64 = ctx.accounts.stable_lpusd_pool.get_swap_rate(PRICE_UNIT)?;
+        let lpsol_swap_amount: u64 = ctx.accounts.stable_lpsol_pool.get_swap_rate(PRICE_UNIT)?;
 
         // RAY price        
         let ray_price: u128 = get_price(ctx.accounts.pyth_ray_account.to_account_info())?;    
@@ -460,16 +469,19 @@ pub mod cbs_protocol {
         total_price += stsol_price * (user_account.stsol_amount + user_account.lending_stsol_amount ) as u128;
 
         // LpFi price
-        let lpfi_price: u128 = ctx.accounts.liquidity_pool.get_price()?;
+        let lpfi_price: u128 = get_price(ctx.accounts.pyth_usdc_account.to_account_info())? * ctx.accounts.liquidity_pool.get_price()? / PRICE_DENOMINATOR;
         total_price += lpfi_price * user_account.lpfi_amount as u128;
 
         // LpUSD price
-        let lpusd_price = LPUSD_PRICE;        
+        let usdc_price: u128 = get_price(ctx.accounts.pyth_usdc_account.to_account_info())?;
+        let lpusd_price = usdc_price * lpusd_swap_amount as u128/ PRICE_UNIT as u128;        
         total_price += lpusd_price * user_account.lpusd_amount as u128;
 
         // LpSOL price
-        let lpsol_price = wsol_price;
+        let lpsol_price = wsol_price * lpsol_swap_amount as u128 / PRICE_UNIT as u128;
         total_price += lpsol_price * user_account.lpsol_amount as u128;
+
+        msg!("LpFinance token price: {}, {} ", lpusd_price, lpsol_price);
 
         // Total Borrowed AMount
         total_borrowed_price += lpusd_price * user_account.borrowed_lpusd as u128;
@@ -544,6 +556,9 @@ pub mod cbs_protocol {
         let solend_config = &mut ctx.accounts.solend_config;
         let apricot_config = &mut ctx.accounts.apricot_config;
 
+        let lpusd_swap_amount: u64 = ctx.accounts.stable_lpusd_pool.get_swap_rate(PRICE_UNIT)?;
+        let lpsol_swap_amount: u64 = ctx.accounts.stable_lpsol_pool.get_swap_rate(PRICE_UNIT)?;
+
         let wsol_amount = user_account.wsol_amount as u128;
         let ray_amount = user_account.ray_amount as u128;
         let msol_amount = user_account.msol_amount as u128;
@@ -612,18 +627,22 @@ pub mod cbs_protocol {
         }
 
         // LpUSD price
-        let lpusd_price = LPUSD_PRICE;        
+        let usdc_price: u128 = get_price(ctx.accounts.pyth_usdc_account.to_account_info())?;
+        let lpusd_price = usdc_price * lpusd_swap_amount as u128/ PRICE_UNIT as u128;        
         total_price += lpusd_price * lpusd_amount;
         if lpusd_price <= 0 {
             return Err(ErrorCode::InvalidPythPrice.into());
         }
 
         // LpSOL price
-        let lpsol_price = sol_price;
+        let lpsol_price = sol_price * lpsol_swap_amount as u128 / PRICE_UNIT as u128;
         total_price += lpsol_price * lpsol_amount;
+        if lpsol_price <= 0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
 
         // LpFi price
-        let lpfi_price: u128 = ctx.accounts.liquidity_pool.get_price()?;
+        let lpfi_price: u128 = usdc_price * ctx.accounts.liquidity_pool.get_price()? / PRICE_DENOMINATOR;
         total_price += lpfi_price * lpfi_amount;
 
         let mut borrowed_total: u128 = 0;
@@ -765,30 +784,31 @@ pub mod cbs_protocol {
             let mut solend_higher = false;
 
             if ctx.accounts.user_dest.mint == config.ray_mint {
-                if ctx.accounts.solend_config.ray_rate >= ctx.accounts.apricot_config.ray_rate {
+                if ctx.accounts.solend_config.ray_rate > ctx.accounts.apricot_config.ray_rate {
                     solend_higher = true;
                 }
             } else if ctx.accounts.user_dest.mint == config.wsol_mint {
-                if ctx.accounts.solend_config.wsol_rate >= ctx.accounts.apricot_config.wsol_rate {
+                if ctx.accounts.solend_config.wsol_rate > ctx.accounts.apricot_config.wsol_rate {
                     solend_higher = true;
                 }
             } else if ctx.accounts.user_dest.mint == config.msol_mint {
-                if ctx.accounts.solend_config.msol_rate >= ctx.accounts.apricot_config.msol_rate {
+                if ctx.accounts.solend_config.msol_rate > ctx.accounts.apricot_config.msol_rate {
                     solend_higher = true;
                 }
             } else if ctx.accounts.user_dest.mint == config.srm_mint {
-                if ctx.accounts.solend_config.srm_rate >= ctx.accounts.apricot_config.srm_rate {
+                if ctx.accounts.solend_config.srm_rate > ctx.accounts.apricot_config.srm_rate {
                     solend_higher = true;
                 }
             } else if ctx.accounts.user_dest.mint == config.scnsol_mint {
-                if ctx.accounts.solend_config.scnsol_rate >= ctx.accounts.apricot_config.scnsol_rate {
+                if ctx.accounts.solend_config.scnsol_rate > ctx.accounts.apricot_config.scnsol_rate {
                     solend_higher = true;
                 }
             } else if ctx.accounts.user_dest.mint == config.stsol_mint {
-                if ctx.accounts.solend_config.stsol_rate >= ctx.accounts.apricot_config.stsol_rate {
+                if ctx.accounts.solend_config.stsol_rate > ctx.accounts.apricot_config.stsol_rate {
                     solend_higher = true;
                 }
             } 
+            
             if solend_higher {
                 msg!("Withdraw from solend {}", require_lending_amount);
                 let cpi_program = ctx.accounts.solend_program.to_account_info();

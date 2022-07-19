@@ -20,6 +20,8 @@ import {
   LpfinanceTokenPDA,
   LpfinanceTokenConfig,
   LiquidityPool,
+  StableLpusdPool,
+  StableLpsolPool,
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
@@ -66,7 +68,10 @@ const borrow = async () => {
         tokensState: LpfinanceTokenPDA,
         lptokenConfig: LpfinanceTokenConfig,
         userLptoken: userLptoken,
-        lptokenMint,
+        stableLpusdPool: StableLpusdPool,
+        stableLpsolPool: StableLpsolPool,
+        lptokenMint,        
+        pythUsdcAccount,
         pythRayAccount,
         pythSolAccount,
         pythMsolAccount,
