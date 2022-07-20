@@ -1,0 +1,30 @@
+[package]
+name = "lpusd-auction"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "lpusd_auction"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
+spl-token = "3.3.0"
+num-derive = "0.3"
+num-traits = "0.2.15"
+nom = "7"
+pyth-client = "0.2.2"
+cbs-protocol = { path = "../../../cbs-protocol/programs/cbs-protocol", features=["cpi"]}
+lpfinance-swap = { path = "../../../lpfinance-swap/programs/lpfinance-swap", features=["cpi"]}

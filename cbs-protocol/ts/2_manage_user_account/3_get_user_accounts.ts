@@ -28,7 +28,7 @@ const get_user_accounts = async () => {
         let list = []
         for(let i = 0; i < len; i++) {
             list.push({
-                "user_account pubkey" : accountData[i].publicKey.toBase58().substring(0,10) + '...',
+                "user_account pubkey" : accountData[i].publicKey.toBase58(), // .substring(0,10) + '...',
                 "owner": accountData[i].account.owner.toBase58().substring(0,5) + '...',
                 "borrowedLpusd" : accountData[i].account.borrowedLpusd.toString(),
                 "borrowedLpsol": accountData[i].account.borrowedLpsol.toString(),

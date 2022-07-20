@@ -5,7 +5,7 @@ use anchor_spl::token::{self, Transfer };
 mod states;
 pub use states::*;
 
-use swap_base::{self, Pool};
+// use swap_base::{self};
 
 use lpfinance_tokens::cpi::accounts::MintLpToken;
 use lpfinance_tokens::{self};
@@ -73,6 +73,7 @@ pub mod cbs_protocol {
 
         Ok(())
     }
+
     pub fn create_lptoken_ata(
         ctx: Context<CreateLpTokenATA>
     ) -> Result<()> {
@@ -655,107 +656,107 @@ pub mod cbs_protocol {
             return Err(ErrorCode::LTVAlreadyExceed.into());
         }        
         
-        let mut dest_price:u128 = 0;
-        let mut owned_amount:u128 = 0;
+        let mut _dest_price:u128 = 0;
+        let mut _owned_amount:u128 = 0;
         let mut require_lending_amount: u64 = 0;
 
         if ctx.accounts.dest_mint.key() == ctx.accounts.config.ray_mint {
             msg!("Ray ----");
             if solend_config.ray_rate > apricot_config.ray_rate {
-                owned_amount = ray_amount + solend_config.ray_rate as u128 * lending_ray_amount / LENDING_DENOMINATOR;
+                _owned_amount = ray_amount + solend_config.ray_rate as u128 * lending_ray_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (solend_config.ray_rate as u128 * lending_ray_amount / LENDING_DENOMINATOR) as u64;
             } else {
-                owned_amount = ray_amount + apricot_config.ray_rate as u128 * lending_ray_amount / LENDING_DENOMINATOR;
+                _owned_amount = ray_amount + apricot_config.ray_rate as u128 * lending_ray_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (apricot_config.ray_rate as u128 * lending_ray_amount / LENDING_DENOMINATOR) as u64;
             }
-            dest_price = ray_price;
-            user_account.ray_amount = owned_amount as u64 - amount;
+            _dest_price = ray_price;
+            user_account.ray_amount = _owned_amount as u64 - amount;
             user_account.lending_ray_amount = 0;
             ctx.accounts.config.total_deposited_ray -= amount;
         } else if ctx.accounts.dest_mint.key() == ctx.accounts.config.wsol_mint {
             if solend_config.wsol_rate > apricot_config.wsol_rate {
-                owned_amount = wsol_amount + solend_config.wsol_rate as u128 * lending_wsol_amount / LENDING_DENOMINATOR;
+                _owned_amount = wsol_amount + solend_config.wsol_rate as u128 * lending_wsol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (solend_config.wsol_rate as u128 * lending_wsol_amount / LENDING_DENOMINATOR) as u64;
             } else {
-                owned_amount = wsol_amount + apricot_config.wsol_rate as u128 * lending_wsol_amount / LENDING_DENOMINATOR;
+                _owned_amount = wsol_amount + apricot_config.wsol_rate as u128 * lending_wsol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (apricot_config.wsol_rate as u128 * lending_wsol_amount / LENDING_DENOMINATOR) as u64;
             }
-            dest_price = sol_price;
-            user_account.wsol_amount = owned_amount as u64 - amount;
+            _dest_price = sol_price;
+            user_account.wsol_amount = _owned_amount as u64 - amount;
             ctx.accounts.config.total_deposited_wsol -= amount;
 
             user_account.lending_wsol_amount = 0;
         } else if ctx.accounts.dest_mint.key() == ctx.accounts.config.msol_mint {
             if solend_config.msol_rate > apricot_config.msol_rate {
-                owned_amount = msol_amount + solend_config.msol_rate as u128 * lending_msol_amount / LENDING_DENOMINATOR;
+                _owned_amount = msol_amount + solend_config.msol_rate as u128 * lending_msol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (solend_config.msol_rate as u128 * lending_msol_amount / LENDING_DENOMINATOR) as u64;
             } else {
-                owned_amount = msol_amount + apricot_config.msol_rate as u128 * lending_msol_amount / LENDING_DENOMINATOR;
+                _owned_amount = msol_amount + apricot_config.msol_rate as u128 * lending_msol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (apricot_config.msol_rate as u128 * lending_msol_amount / LENDING_DENOMINATOR) as u64;
             }
-            dest_price = msol_price;
-            user_account.msol_amount = owned_amount as u64 - amount;
+            _dest_price = msol_price;
+            user_account.msol_amount = _owned_amount as u64 - amount;
             ctx.accounts.config.total_deposited_msol -= amount;
 
             user_account.lending_msol_amount = 0;
         } else if ctx.accounts.dest_mint.key() == ctx.accounts.config.srm_mint {
             if solend_config.srm_rate > apricot_config.srm_rate {
-                owned_amount = srm_amount + solend_config.srm_rate as u128 * lending_srm_amount / LENDING_DENOMINATOR;
+                _owned_amount = srm_amount + solend_config.srm_rate as u128 * lending_srm_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (solend_config.srm_rate as u128 * lending_srm_amount / LENDING_DENOMINATOR) as u64;
             } else {
-                owned_amount = srm_amount + apricot_config.srm_rate as u128 * lending_srm_amount / LENDING_DENOMINATOR;
+                _owned_amount = srm_amount + apricot_config.srm_rate as u128 * lending_srm_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (apricot_config.srm_rate as u128 * lending_srm_amount / LENDING_DENOMINATOR) as u64;
             }
-            dest_price = srm_price;
-            user_account.srm_amount = owned_amount as u64 - amount;
+            _dest_price = srm_price;
+            user_account.srm_amount = _owned_amount as u64 - amount;
             ctx.accounts.config.total_deposited_srm -= amount;
             user_account.lending_srm_amount = 0;
         } else if ctx.accounts.dest_mint.key() == ctx.accounts.config.scnsol_mint {
             if solend_config.scnsol_rate > apricot_config.scnsol_rate {
-                owned_amount = scnsol_amount + solend_config.scnsol_rate as u128 * lending_scnsol_amount / LENDING_DENOMINATOR;
+                _owned_amount = scnsol_amount + solend_config.scnsol_rate as u128 * lending_scnsol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (solend_config.scnsol_rate as u128 * lending_scnsol_amount / LENDING_DENOMINATOR) as u64;
             } else {
-                owned_amount = scnsol_amount + apricot_config.scnsol_rate as u128 * lending_scnsol_amount / LENDING_DENOMINATOR;
+                _owned_amount = scnsol_amount + apricot_config.scnsol_rate as u128 * lending_scnsol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (apricot_config.scnsol_rate as u128 * lending_scnsol_amount / LENDING_DENOMINATOR) as u64;
             }
-            dest_price = scnsol_price;
-            user_account.scnsol_amount = owned_amount as u64 - amount;
+            _dest_price = scnsol_price;
+            user_account.scnsol_amount = _owned_amount as u64 - amount;
             ctx.accounts.config.total_deposited_scnsol -= amount;
             user_account.lending_scnsol_amount = 0;
         } else if ctx.accounts.dest_mint.key() == ctx.accounts.config.stsol_mint {
             if solend_config.stsol_rate > apricot_config.stsol_rate {
-                owned_amount = stsol_amount + solend_config.stsol_rate as u128 * lending_stsol_amount / LENDING_DENOMINATOR;
+                _owned_amount = stsol_amount + solend_config.stsol_rate as u128 * lending_stsol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (solend_config.stsol_rate as u128 * lending_stsol_amount / LENDING_DENOMINATOR) as u64;
             } else {
-                owned_amount = stsol_amount + apricot_config.stsol_rate as u128 * lending_stsol_amount / LENDING_DENOMINATOR;
+                _owned_amount = stsol_amount + apricot_config.stsol_rate as u128 * lending_stsol_amount / LENDING_DENOMINATOR;
                 require_lending_amount = (apricot_config.stsol_rate as u128 * lending_stsol_amount / LENDING_DENOMINATOR) as u64;
             }
-            dest_price = stsol_price;
-            user_account.stsol_amount = owned_amount as u64 - amount;
+            _dest_price = stsol_price;
+            user_account.stsol_amount = _owned_amount as u64 - amount;
             ctx.accounts.config.total_deposited_stsol -= amount;
             user_account.lending_stsol_amount = 0;
         } 
         // else if ctx.accounts.dest_mint.key() == ctx.accounts.config.lpfi_mint {
-        //     dest_price = lpfi_price;
-        //     owned_amount = lpfi_amount;
+        //     _dest_price = lpfi_price;
+        //     _owned_amount = lpfi_amount;
         //     user_account.lpfi_amount -= amount;
         //     ctx.accounts.config.total_deposited_lpfi -= amount;
         // } 
         else if ctx.accounts.dest_mint.key() == ctx.accounts.config.lpusd_mint {
-            dest_price = lpusd_price;
-            owned_amount = lpusd_amount;
+            _dest_price = lpusd_price;
+            _owned_amount = lpusd_amount;
             user_account.lpusd_amount -= amount;
             ctx.accounts.config.total_deposited_lpusd -= amount;
         } else if ctx.accounts.dest_mint.key() == ctx.accounts.config.lpsol_mint {
-            dest_price = lpsol_price;
-            owned_amount = lpsol_amount;
+            _dest_price = lpsol_price;
+            _owned_amount = lpsol_amount;
             user_account.lpsol_amount -= amount;
             ctx.accounts.config.total_deposited_lpsol -= amount;
         } else {
             return Err(ErrorCode::InvalidToken.into());
         }        
 
-        let borrowable_amount = (total_price * LTV / DOMINATOR - borrowed_total) / dest_price;
+        let borrowable_amount = (total_price * LTV / DOMINATOR - borrowed_total) / _dest_price;
         if amount > borrowable_amount as u64{
             return Err(ErrorCode::InvalidAmount.into());
         }
