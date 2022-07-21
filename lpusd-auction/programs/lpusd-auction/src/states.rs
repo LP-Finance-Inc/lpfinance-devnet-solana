@@ -284,7 +284,7 @@ pub struct BurnForLiquidate<'info> {
     #[account(mut)]
     pub config: Box<Account<'info, Config>>,
     /// CHECK: This is safe
-    #[account(seeds = [PREFIX.as_ref()], bump)]
+    #[account(mut, seeds = [PREFIX.as_ref()], bump)]
     pub auction_pda: AccountInfo<'info>,
     // Auction: user account
     #[account(mut, has_one = owner )]
@@ -300,6 +300,10 @@ pub struct BurnForLiquidate<'info> {
         constraint = lpusd_ata.owner == auction_pda.key()
     )]
     pub lpusd_ata: Box<Account<'info, TokenAccount>>,
+    #[account(mut,
+        constraint = lpusd_mint.key() == config.lpusd_mint
+    )]
+    pub lpusd_mint: Box<Account<'info, Mint>>,
     // LpUSD-USDC stableswap pool
     pub stable_lpusd_pool: Box<Account<'info, Pool>>,
     // LpSOL-wSOL stableswap pool

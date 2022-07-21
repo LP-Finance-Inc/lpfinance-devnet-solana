@@ -113,9 +113,9 @@ pub mod lpfinance_tokens {
         }
 
         let cpi_accounts = Burn {
-            mint: ctx.accounts.lptoken_mint.to_account_info(),
-            from: ctx.accounts.cbs_lptoken.to_account_info(),
-            authority: ctx.accounts.cbs_account.to_account_info(),
+            mint: ctx.accounts.token_mint.to_account_info(),
+            from: ctx.accounts.user_token.to_account_info(),
+            authority: ctx.accounts.owner.to_account_info(),
         };
 
         let cpi_program = ctx.accounts.token_program.to_account_info();
@@ -380,19 +380,15 @@ pub struct MintLpToken<'info> {
 #[derive(Accounts)]
 pub struct BurnLpToken<'info> {
     #[account(mut)]
-    pub cbs_account: Signer<'info>,
-    #[account(mut)]
-    pub state_account: Box<Account<'info, TokenStateAccount>>,
-    #[account(mut)] // , has_one = cbs_account
-    pub config: Box<Account<'info, Config>>,
+    pub owner: Signer<'info>,
     #[account(
         mut,
-        constraint = cbs_lptoken.mint == lptoken_mint.key(),
-        constraint = cbs_lptoken.owner == cbs_account.key()
+        constraint = user_token.mint == token_mint.key(),
+        constraint = user_token.owner == owner.key()
     )]
-    pub cbs_lptoken: Box<Account<'info, TokenAccount>>,
+    pub user_token: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub lptoken_mint: Account<'info, Mint>,
+    pub token_mint: Box<Account<'info, Mint>>,
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,

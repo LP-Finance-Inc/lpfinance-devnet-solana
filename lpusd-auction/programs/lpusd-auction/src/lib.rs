@@ -13,6 +13,9 @@ use lpfinance_swap::cpi::accounts::LiquidateToken;
 use lpfinance_swap::program::LpfinanceSwap;
 use lpfinance_swap::{self};
 
+use lpfinance_tokens::cpi::accounts::{BurnLpToken};
+use lpfinance_tokens::{self};
+
 declare_id!("DbQju5NRVunuGz5aKdaqAaUfWSMRsy6hdZQ2zFDkGL9y");
 
 
@@ -355,7 +358,7 @@ pub mod lpusd_auction {
         let (program_authority, program_authority_bump) = 
         Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
     
-        if program_authority != ctx.accounts.state_account.to_account_info().key() {
+        if program_authority != ctx.accounts.auction_pda.to_account_info().key() {
             return Err(ErrorCode::InvalidOwner.into());
         }
 
@@ -366,6 +369,19 @@ pub mod lpusd_auction {
         let signer = &[&seeds[..]];
         // End to get signer
 
+        // Burn
+        let cpi_program = ctx.accounts.lptokens_program.to_account_info();
+        let cpi_accounts = BurnLpToken {
+            owner: ctx.accounts.auction_pda.to_account_info(),
+            token_mint: ctx.accounts.lpusd_mint.to_account_info(),
+            user_token: ctx.accounts.lpusd_ata.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+            rent: ctx.accounts.rent.to_account_info()
+        };
+
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        lpfinance_tokens::cpi::burn_lptoken(cpi_ctx, user_account.lpusd_amount)?;
         Ok(())
     }
 
