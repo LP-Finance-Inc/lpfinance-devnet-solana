@@ -2,11 +2,11 @@ use anchor_lang::prelude::*;
 // use pyth_client;
 use anchor_spl::token::{ Mint, Token, TokenAccount };
 
-use cbs_protocol::program::CbsProtocol;
 use cbs_protocol::{self};
 
-use lpfinance_swap::program::LpfinanceSwap;
-use lpfinance_swap::{self};
+use swap_base::{self, Pool};
+use lpfinance_swap::{self, PoolInfo};
+use lpfinance_tokens::program::LpfinanceTokens;
 
 // Actually DENOMINATOR should be 100 (%)
 // But to calculate percent in more clearly, we consider DECIMAL 4. For example, 101.0014
@@ -19,8 +19,8 @@ const DISCRIMINATOR_LENGTH: usize = 8;
 const PUBLIC_KEY_LENGTH: usize = 32;
 const U64_LENGTH: usize = 8;
 const I64_LENGTH: usize = 8;
-const U8_LENGTH: usize = 1;
-const BOOL_LENGTH: usize =1;
+// const U8_LENGTH: usize = 1;
+// const BOOL_LENGTH: usize =1;
 // const TITLE_LENGTH: usize = 4*2;
 
 #[derive(Accounts)]
@@ -274,6 +274,61 @@ pub struct UpdateConfig<'info> {
     pub owner: Signer<'info>,
     #[account(mut, has_one = owner)]
     pub config: Box<Account<'info, Config>>,
+}
+
+#[derive(Accounts)]
+pub struct BurnForLiquidate<'info> {
+    /// CHECK: this is safe
+    #[account(mut)]
+    pub owner: AccountInfo<'info>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
+    /// CHECK: This is safe
+    #[account(seeds = [PREFIX.as_ref()], bump)]
+    pub auction_pda: AccountInfo<'info>,
+    // Auction: user account
+    #[account(mut, has_one = owner )]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    // CBS: user account
+    #[account(mut, 
+        has_one = owner,
+        constraint = cbs_account.step_num == 0
+    )]
+    pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
+    #[account(mut,
+        constraint = lpusd_ata.mint == config.lpusd_mint,
+        constraint = lpusd_ata.owner == auction_pda.key()
+    )]
+    pub lpusd_ata: Box<Account<'info, TokenAccount>>,
+    // LpUSD-USDC stableswap pool
+    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    // LpSOL-wSOL stableswap pool
+    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    /// CHECK: pyth
+    pub pyth_ray_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_usdc_account: AccountInfo<'info>,
+    // Price feed for wSOL
+    /// CHECK: pyth
+    pub pyth_sol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_msol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_srm_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_scnsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_stsol_account: AccountInfo<'info>,
+    // LpFi<->USDC pool
+    #[account(
+        constraint = liquidity_pool.tokena_mint == config.lpfi_mint
+    )]
+    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+    // Programs and Sysvars
+    pub lptokens_program: Program<'info, LpfinanceTokens>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
 }
 
 // #[derive(Accounts)]

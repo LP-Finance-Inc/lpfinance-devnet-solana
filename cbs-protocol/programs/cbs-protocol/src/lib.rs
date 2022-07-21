@@ -27,8 +27,8 @@ const LENDING_DENOMINATOR: u128 = 10000000; // 100,00000
 // const W_THRESHHOLD: u64 = 90;
 // const S_THRESHHOLD: u64 = 75;
 
-const PRICE_DENOMINATOR: u128 = 100000000;
-
+const PRICE_DENOMINATOR: u128 = 100000000; // 10 ^ 8
+// which means token 1
 const PRICE_UNIT: u64 = 1000000000; // 10^9
 
 pub fn get_price(pyth_account: AccountInfo) -> Result<u128> {

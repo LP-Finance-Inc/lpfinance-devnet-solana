@@ -791,11 +791,13 @@ dependencies = [
  "anchor-spl",
  "cbs-protocol",
  "lpfinance-swap",
+ "lpfinance-tokens",
  "nom",
  "num-derive",
  "num-traits",
  "pyth-client",
  "spl-token",
+ "swap-base",
 ]
 
 [[package]]

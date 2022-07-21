@@ -15,12 +15,21 @@ use lpfinance_swap::{self};
 
 declare_id!("DbQju5NRVunuGz5aKdaqAaUfWSMRsy6hdZQ2zFDkGL9y");
 
-pub fn get_price(pyth_account: AccountInfo) -> Result<u64> {
+
+pub const PRICE_DENOMINATOR: u128 = 100000000; // 10 ^ 8
+// which means token 1
+pub const PRICE_UNIT: u64 = 1000000000; // 10^9
+
+pub fn get_price(pyth_account: AccountInfo) -> Result<u128> {
     let pyth_price_info = &pyth_account;
     let pyth_price_data = &pyth_price_info.try_borrow_data()?;
     let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
-    let price = pyth_price.agg.price as u64;
-    Ok(price)
+    if pyth_price.agg.price <= 0 {
+        Ok(0)
+    } else {
+        let price = pyth_price.agg.price as u128;
+        Ok(price)
+    }
 }
 
 #[program]
@@ -224,6 +233,138 @@ pub mod lpusd_auction {
         }
         // update config
         config.total_lpusd = config.total_lpusd - amount;
+
+        Ok(())
+    }
+
+
+    pub fn burn_for_liquidate(
+        ctx: Context<BurnForLiquidate>
+    ) -> Result<()> {
+
+        let user_account: &mut Account<UserAccount> = &mut ctx.accounts.user_account;
+        let cbs_account: &mut Account<cbs_protocol::UserAccount> = &mut ctx.accounts.cbs_account;
+        let lpusd_ata: &mut Account<TokenAccount> = &mut ctx.accounts.lpusd_ata;
+        // let config = &mut ctx.accounts.config;
+
+        let lpusd_swap_amount_f: f64 = ctx.accounts.stable_lpusd_pool.get_swap_rate(PRICE_UNIT)? as f64;
+        let lpsol_swap_amount_f: f64 = ctx.accounts.stable_lpsol_pool.get_swap_rate(PRICE_UNIT)? as f64;
+        let price_denominator_f: f64 = PRICE_DENOMINATOR as f64;
+        let price_unit_f: f64 = PRICE_UNIT as f64;
+
+        // deposited
+        let ray_amount_f: f64 = cbs_account.ray_amount as f64;
+        let wsol_amount_f: f64 = cbs_account.wsol_amount as f64;
+        let msol_amount_f: f64 = cbs_account.msol_amount as f64;
+        let srm_amount_f: f64 = cbs_account.srm_amount as f64;
+        let scnsol_amount_f: f64 = cbs_account.scnsol_amount as f64;
+        let stsol_amount_f: f64 = cbs_account.stsol_amount as f64;
+        let lpfi_amount_f: f64 = cbs_account.lpfi_amount as f64;
+        let lpusd_amount_f: f64 = cbs_account.lpusd_amount as f64;
+        let lpsol_amount_f: f64 = cbs_account.lpsol_amount as f64;
+        // borrowed
+        let borrowed_lpusd_f: f64 = cbs_account.borrowed_lpusd as f64;
+        let borrowed_lpsol_f: f64 = cbs_account.borrowed_lpsol as f64;
+
+        // RAY price        
+        let ray_price: f64 = get_price(ctx.accounts.pyth_ray_account.to_account_info())? as f64; 
+        if ray_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }   
+        // wSOL price
+        let wsol_price: f64 = get_price(ctx.accounts.pyth_sol_account.to_account_info())? as f64;   
+        if wsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        // mSOL price
+        let msol_price: f64 = get_price(ctx.accounts.pyth_msol_account.to_account_info())? as f64; 
+        if msol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        // srm price
+        let srm_price: f64 = get_price(ctx.accounts.pyth_srm_account.to_account_info())? as f64;    
+        if srm_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        // scnsol price
+        let scnsol_price: f64 = get_price(ctx.accounts.pyth_scnsol_account.to_account_info())? as f64;
+        if scnsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        // stsol price
+        let stsol_price: f64 = get_price(ctx.accounts.pyth_stsol_account.to_account_info())? as f64;
+        if stsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        // USDC price
+        let usdc_price: f64  = get_price(ctx.accounts.pyth_usdc_account.to_account_info())? as f64;
+        if usdc_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        // LpFi price
+        let lpfi_usdc_rate: f64 = ctx.accounts.liquidity_pool.get_price()? as f64; // LpFi = x * USDC here x = rate
+        let lpfi_price: f64 = usdc_price * lpfi_usdc_rate / price_denominator_f;
+        if lpfi_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        // LpUSD price
+        let lpusd_price: f64 = usdc_price * lpusd_swap_amount_f / price_unit_f;   
+        if lpusd_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }     
+
+        // LpSOL price
+        let lpsol_price = wsol_price * lpsol_swap_amount_f / price_unit_f;
+        if lpsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        // Deposited Collateral Tokens' TotalPrice. Need to be calculated with LTV
+        let mut total_deposited_price_f: f64 = 0.0;
+        let mut total_borrowed_price_f: f64 = 0.0;
+
+        // Total deposited cTokens' price
+        total_deposited_price_f += ray_price * ray_amount_f; // + cbs_account.lending_ray_amount
+        total_deposited_price_f += wsol_price * wsol_amount_f; // + cbs_account.lending_wsol_amount
+        total_deposited_price_f += msol_price * msol_amount_f; // + cbs_account.lending_msol_amount
+        total_deposited_price_f += srm_price * srm_amount_f; // + cbs_account.lending_srm_amount
+        total_deposited_price_f += scnsol_price * scnsol_amount_f; // + cbs_account.lending_scnsol_amount
+        total_deposited_price_f += stsol_price * stsol_amount_f; // + cbs_account.lending_stsol_amount
+        total_deposited_price_f += lpfi_price * lpfi_amount_f;
+        total_deposited_price_f += lpusd_price * lpusd_amount_f;
+        total_deposited_price_f += lpsol_price * lpsol_amount_f;
+
+        // Total Borrowed LpTokens' price
+        total_borrowed_price_f += lpusd_price * borrowed_lpusd_f;
+        total_borrowed_price_f += lpsol_price * borrowed_lpsol_f;
+
+        let ltv_permission_f: f64 = LTV_PERMISSION as f64;
+        // If LTV < 94, not be able to liquidate
+        if total_borrowed_price_f * 100.0 < total_deposited_price_f * ltv_permission_f {
+            return Err(ErrorCode::NotEnoughLTV.into());
+        }
+
+        // Burn token users' deposited LpUSD
+        if user_account.lpusd_amount > lpusd_ata.amount {
+            return Err(ErrorCode::InsufficientPoolAmount.into());
+        }
+
+        // Get signer
+        let (program_authority, program_authority_bump) = 
+        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+    
+        if program_authority != ctx.accounts.state_account.to_account_info().key() {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        let seeds = &[
+            PREFIX.as_bytes(),
+            &[program_authority_bump]
+        ];
+        let signer = &[&seeds[..]];
+        // End to get signer
 
         Ok(())
     }
@@ -856,5 +997,7 @@ pub enum ErrorCode {
     #[msg("Not Borrowed LpToken")]
     NotBorrowedLpToken,
     #[msg("PREV Liquidate Not Finished")]
-    FinishPrevLiquidate
+    FinishPrevLiquidate,
+    #[msg("Invalid pyth price")]
+    InvalidPythPrice,
 }

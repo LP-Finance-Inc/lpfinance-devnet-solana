@@ -589,9 +589,35 @@ impl Config {
 
 #[account]
 #[derive(Default)]
+pub struct OracleConfig {
+    pub owner: Pubkey,
+
+    pub pyth_ray_account: Pubkey,
+    pub pyth_usdc_account: Pubkey,
+    pub pyth_sol_account: Pubkey,
+
+    pub pyth_msol_account: Pubkey,
+    pub pyth_srm_account: Pubkey,
+    pub pyth_scnsol_account: Pubkey,
+    pub pyth_stsol_account: Pubkey
+}
+
+impl OracleConfig {
+    pub const LEN:usize = DISCRIMINATOR_LENGTH
+        + PUBLIC_KEY_LENGTH * 8;
+}
+
+#[account]
+#[derive(Default)]
 pub struct UserAccount {
     pub owner: Pubkey,
     // Number to present the current Liquidate process
+    // NOTE: need to check solend & apricot amount
+    // 0: status that be able to deposit & borrow & withdraw & repay
+    // 1: Burn LpUSD from Auction
+    // 2: Swap LpToken (LpSOL, LpFi) to LpUSD
+    // 3: Swap Tokens (Ray, wSOL, mSOL, stSOL, scnSOL, srm) to LpUSD
+    // 4: Transfer LpUSD from CBS to Auction
     pub step_num: u8,
 
     pub borrowed_lpusd: u64,
