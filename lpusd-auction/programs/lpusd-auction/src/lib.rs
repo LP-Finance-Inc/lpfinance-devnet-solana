@@ -240,7 +240,7 @@ pub mod lpusd_auction {
         Ok(())
     }
 
-
+    // Liquidate starts
     pub fn burn_for_liquidate(
         ctx: Context<BurnForLiquidate>
     ) -> Result<()> {
@@ -268,6 +268,19 @@ pub mod lpusd_auction {
         // borrowed
         let borrowed_lpusd_f: f64 = cbs_account.borrowed_lpusd as f64;
         let borrowed_lpsol_f: f64 = cbs_account.borrowed_lpsol as f64;
+
+        if ray_amount_f == 0.0 &&
+           wsol_amount_f == 0.0 &&
+           msol_amount_f == 0.0 &&
+           srm_amount_f == 0.0 &&
+           scnsol_amount_f == 0.0 &&
+           stsol_amount_f == 0.0 &&
+           lpfi_amount_f == 0.0 &&
+           lpusd_amount_f == 0.0 &&
+           lpsol_amount_f == 0.0 
+        {
+            return Err(ErrorCode::EmptyAccount.into());
+        }
 
         // RAY price        
         let ray_price: f64 = get_price(ctx.accounts.pyth_ray_account.to_account_info())? as f64; 
@@ -370,20 +383,42 @@ pub mod lpusd_auction {
         // End to get signer
 
         // Burn
-        let cpi_program = ctx.accounts.lptokens_program.to_account_info();
-        let cpi_accounts = BurnLpToken {
-            owner: ctx.accounts.auction_pda.to_account_info(),
-            token_mint: ctx.accounts.lpusd_mint.to_account_info(),
-            user_token: ctx.accounts.lpusd_ata.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            token_program: ctx.accounts.token_program.to_account_info(),
-            rent: ctx.accounts.rent.to_account_info()
-        };
+        if borrowed_lpusd_f >= 0.0 {
+            let cpi_program = ctx.accounts.lptokens_program.to_account_info();
+            let cpi_accounts = BurnLpToken {
+                owner: ctx.accounts.auction_pda.to_account_info(),
+                token_mint: ctx.accounts.lpusd_mint.to_account_info(),
+                user_token: ctx.accounts.lpusd_ata.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info()
+            };
+    
+            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+            lpfinance_tokens::cpi::burn_lptoken(cpi_ctx, borrowed_lpusd_f as u64)?;
+        }
 
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-        lpfinance_tokens::cpi::burn_lptoken(cpi_ctx, user_account.lpusd_amount)?;
+        if borrowed_lpsol_f >= 0.0 {
+            // swap LpUSD -> LpSOL
+            // Burn LpSOL
+            let cpi_program = ctx.accounts.lptokens_program.to_account_info();
+            let cpi_accounts = BurnLpToken {
+                owner: ctx.accounts.auction_pda.to_account_info(),
+                token_mint: ctx.accounts.lpsol_mint.to_account_info(),
+                user_token: ctx.accounts.lpsol_ata.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info()
+            };
+    
+            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+            lpfinance_tokens::cpi::burn_lptoken(cpi_ctx, borrowed_lpsol_f as u64)?;
+        }
+        
         Ok(())
     }
+
+
 
     // pub fn liquidate_from_cbs(
     //     ctx: Context<LiquidateFromCBS>
@@ -1016,4 +1051,6 @@ pub enum ErrorCode {
     FinishPrevLiquidate,
     #[msg("Invalid pyth price")]
     InvalidPythPrice,
+    #[msg("Empty Account")]
+    EmptyAccount,
 }

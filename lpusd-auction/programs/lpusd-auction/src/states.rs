@@ -295,15 +295,26 @@ pub struct BurnForLiquidate<'info> {
         constraint = cbs_account.step_num == 0
     )]
     pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
+    // LpUSD
+    #[account(mut,
+        constraint = lpusd_mint.key() == config.lpusd_mint
+    )]
+    pub lpusd_mint: Box<Account<'info, Mint>>,
     #[account(mut,
         constraint = lpusd_ata.mint == config.lpusd_mint,
         constraint = lpusd_ata.owner == auction_pda.key()
     )]
     pub lpusd_ata: Box<Account<'info, TokenAccount>>,
+    // LpSOL
     #[account(mut,
-        constraint = lpusd_mint.key() == config.lpusd_mint
+        constraint = lpsol_mint.key() == config.lpsol_mint
     )]
-    pub lpusd_mint: Box<Account<'info, Mint>>,
+    pub lpsol_mint: Box<Account<'info, Mint>>,
+    #[account(mut,
+        constraint = lpsol_ata.mint == config.lpsol_mint,
+        constraint = lpsol_ata.owner == auction_pda.key()
+    )]
+    pub lpsol_ata: Box<Account<'info, TokenAccount>>,
     // LpUSD-USDC stableswap pool
     pub stable_lpusd_pool: Box<Account<'info, Pool>>,
     // LpSOL-wSOL stableswap pool
