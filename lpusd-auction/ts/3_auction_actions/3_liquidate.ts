@@ -65,10 +65,7 @@ const liquidate = async () => {
     cbsProgramId
   );
   
-
-  const withdraw_wei = convert_to_wei("1");
-  const withdraw_amount = new anchor.BN(withdraw_wei);
-  
+ 
   await program.rpc.burnForLiquidate({
     accounts: {
         owner: creatorKeypair.publicKey,

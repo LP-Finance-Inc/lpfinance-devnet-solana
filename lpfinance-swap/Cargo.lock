@@ -743,6 +743,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "pyth-client",
+ "spl-associated-token-account",
  "spl-token",
 ]
 

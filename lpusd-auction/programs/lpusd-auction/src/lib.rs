@@ -399,7 +399,7 @@ pub mod lpusd_auction {
         }
 
         if borrowed_lpsol_f >= 0.0 {
-            // swap LpUSD -> LpSOL
+            // swap LpUSD -> LpSOL missing point
             // Burn LpSOL
             let cpi_program = ctx.accounts.lptokens_program.to_account_info();
             let cpi_accounts = BurnLpToken {

@@ -26,3 +26,4 @@ num-derive = "0.3"
 num-traits = "0.2"
 nom = "7"
 pyth-client = "0.2.2"
+spl-associated-token-account = {version = "1.0.3", features = ["no-entrypoint"]}

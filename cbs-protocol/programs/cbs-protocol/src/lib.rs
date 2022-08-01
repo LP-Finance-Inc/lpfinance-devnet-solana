@@ -1167,8 +1167,12 @@ pub mod cbs_protocol {
         lpsol_rate: u64
     ) -> Result<()> {
         let user_account = &mut ctx.accounts.user_account;
-        user_account.borrowed_lpusd = user_account.borrowed_lpusd * (100 + lpusd_rate) / 100;
-        user_account.borrowed_lpsol = user_account.borrowed_lpsol * (100 + lpsol_rate) / 100;
+        if lpusd_rate > 0 {
+            user_account.borrowed_lpusd = user_account.borrowed_lpusd * (10000 + lpusd_rate) / 10000;
+        }
+        if lpsol_rate > 0 {
+            user_account.borrowed_lpsol = user_account.borrowed_lpsol * (10000 + lpsol_rate) / 10000;
+        }
         Ok(())
     }
 }
