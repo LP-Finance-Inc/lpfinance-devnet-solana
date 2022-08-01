@@ -26,7 +26,7 @@ const get_table_data = async () => {
     const poolAccount = await program.account.poolInfo.fetch(pool_pubkey);
 
     const total_lp_amount = Number(poolAccount.totalLpAmount);
-    const feeRate = Number(poolAccount.fee) / 1000;
+    const feeRate = Number(poolAccount.fee) / 1000; // 0.5 % = return 0.005
     const lpTokenPrice = 2;
     const Liquidity =  lpTokenPrice * total_lp_amount;
     console.log("Liquidity: ", Liquidity);
