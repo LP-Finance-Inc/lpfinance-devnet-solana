@@ -341,6 +341,10 @@ pub struct BorrowLpToken<'info> {
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
     pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+    #[account(mut)]
+    pub solend_config: Box<Account<'info, solend::Config>>,
+    #[account(mut)]
+    pub apricot_config: Box<Account<'info, apricot::Config>>,
     // Programs and Sysvars
     pub lptokens_program: Program<'info, LpfinanceTokens>,
     pub system_program: Program<'info, System>,
@@ -408,6 +412,76 @@ pub struct WithdrawToken<'info> {
     pub apricot_config: Box<Account<'info, apricot::Config>>,
     #[account(mut)]
     pub apricot_pool: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub apricot_account: Box<Account<'info, apricot::UserAccount>>,
+    #[account(mut)]
+    pub apricot_state_account: Box<Account<'info, apricot::StateAccount>>,
+    pub solend_program: Program<'info, Solend>,
+    pub apricot_program: Program<'info, Apricot>,
+
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct WithdrawLending<'info> {
+     #[account(mut)]
+    pub user_authority: Signer<'info>,
+    // state account for user's wallet
+    #[account(
+        mut,
+        constraint = user_account.owner == user_authority.key()
+    )]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
+
+    // LpUSD-USDC stableswap pool
+    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    // LpSOL-wSOL stableswap pool
+    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    /// CHECK: pyth
+    pub pyth_ray_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_usdc_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_sol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_msol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_srm_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_scnsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_stsol_account: AccountInfo<'info>,
+    // LpFi<->USDC pool
+    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+    
+    #[account(mut)]
+    pub dest_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub cbs_pool: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub solend_pool: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub apricot_pool: Box<Account<'info, TokenAccount>>,
+    
+    #[account(mut)]
+    pub solend_config: Box<Account<'info, solend::Config>>,
+    #[account(mut)]
+    pub solend_account: Box<Account<'info, solend::UserAccount>>,
+    #[account(mut)]
+    pub solend_state_account: Box<Account<'info, solend::StateAccount>>,
+    #[account(mut)]
+    pub apricot_config: Box<Account<'info, apricot::Config>>,
     #[account(mut)]
     pub apricot_account: Box<Account<'info, apricot::UserAccount>>,
     #[account(mut)]
@@ -585,6 +659,119 @@ impl Config {
         + PUBLIC_KEY_LENGTH * 19
         + U64_LENGTH * 11
         + BOOL_LENGTH;
+
+    pub fn exist_token (&self, dest_mint: Pubkey) -> Result<bool> {
+        if dest_mint == self.wsol_mint || 
+           dest_mint == self.msol_mint || 
+           dest_mint == self.ray_mint || 
+           dest_mint == self.srm_mint || 
+           dest_mint == self.scnsol_mint || 
+           dest_mint == self.stsol_mint {
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub fn get_key_borrowed_amount (
+        &self, 
+        dest_mint: Pubkey
+    ) -> Result<u64> {
+        let mut _deposited_amount = 0;
+
+        if dest_mint.key() == self.lpsol_mint {
+            _deposited_amount = self.total_borrowed_lpsol;
+
+        }else if dest_mint.key() == self.lpusd_mint {
+            _deposited_amount = self.total_borrowed_lpusd;
+        }
+
+        Ok(_deposited_amount)
+    }
+
+    pub fn get_key_deposited_amount (
+        &self, 
+        dest_mint: Pubkey
+    ) -> Result<u64> {
+        let mut _deposited_amount = 0;
+        if dest_mint.key() == self.ray_mint {
+            _deposited_amount = self.total_deposited_ray;
+        } else if dest_mint.key() == self.wsol_mint {
+            _deposited_amount = self.total_deposited_wsol;
+        } else if dest_mint.key() == self.msol_mint {
+            _deposited_amount = self.total_deposited_msol;
+        } else if dest_mint.key() == self.srm_mint {
+            _deposited_amount = self.total_deposited_srm;
+        } else if dest_mint.key() == self.scnsol_mint {
+            _deposited_amount = self.total_deposited_scnsol;
+        } else if dest_mint.key() == self.stsol_mint {
+            _deposited_amount = self.total_deposited_stsol;
+
+        } else if dest_mint.key() == self.lpsol_mint {
+            _deposited_amount = self.total_deposited_lpsol;
+
+        }else if dest_mint.key() == self.lpusd_mint {
+            _deposited_amount = self.total_deposited_lpusd;
+
+        }else if dest_mint.key() == self.lpfi_mint {
+            _deposited_amount = self.total_deposited_lpfi;
+        }
+
+        Ok(_deposited_amount)
+    }
+
+    pub fn update_borrowed_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey
+    ) -> Result<bool> {
+        if dest_mint.key() == self.lpsol_mint {
+            self.total_borrowed_lpsol = amount;
+        }else if dest_mint.key() == self.lpusd_mint {
+            self.total_borrowed_lpusd = amount;
+        }
+
+        Ok(true)
+    }
+
+    pub fn update_total_deposited_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey
+    ) -> Result<bool> {
+        if dest_mint.key() == self.ray_mint {
+            self.total_deposited_ray = amount;
+        } else if dest_mint.key() == self.wsol_mint {
+            self.total_deposited_wsol = amount;
+        } else if dest_mint.key() == self.msol_mint {
+            self.total_deposited_msol = amount;
+        } else if dest_mint.key() == self.srm_mint {
+            self.total_deposited_srm = amount;
+
+        } else if dest_mint.key() == self.scnsol_mint {
+            self.total_deposited_scnsol = amount;
+
+        } else if dest_mint.key() == self.stsol_mint {
+            self.total_deposited_stsol = amount;
+        }
+
+        Ok(true)
+    }
+
+    pub fn update_total_lp_deposited_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey
+    ) -> Result<bool> {
+        if dest_mint.key() == self.lpusd_mint {
+            self.total_deposited_lpusd = amount;
+        } else if dest_mint.key() == self.lpsol_mint {
+            self.total_deposited_lpsol = amount;
+        } else if dest_mint.key() == self.lpfi_mint {
+            self.total_deposited_lpfi = amount;
+        } 
+        Ok(true)
+    }
 }
 
 #[account]
@@ -648,4 +835,162 @@ impl UserAccount {
         + U64_LENGTH * 28 
         + PUBLIC_KEY_LENGTH // owner pubkey
         + U8_LENGTH;        // Liquidate process
+
+
+    pub fn update_borrowed_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<bool> {
+        if dest_mint.key() == config.lpsol_mint {
+            self.borrowed_lpsol = amount;
+        }else if dest_mint.key() == config.lpusd_mint {
+            self.borrowed_lpusd = amount;
+        }
+
+        Ok(true)
+    }
+
+    pub fn get_key_borrowed_amount (
+        &self, 
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<u64> {
+        let mut _deposited_amount = 0;
+
+        if dest_mint.key() == config.lpsol_mint {
+            _deposited_amount = config.total_borrowed_lpsol;
+
+        }else if dest_mint.key() == config.lpusd_mint {
+            _deposited_amount = config.total_borrowed_lpusd;
+        }
+
+        Ok(_deposited_amount)
+    }
+
+    pub fn get_key_lending_amount (
+        &self, 
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<u64> {
+        let mut _lending_amount = 0;
+        if dest_mint.key() == config.ray_mint {
+            _lending_amount = self.lending_ray_amount;
+        } else if dest_mint.key() == config.wsol_mint {
+            _lending_amount = self.lending_wsol_amount;
+        } else if dest_mint.key() == config.msol_mint {
+            _lending_amount = self.lending_msol_amount;
+        } else if dest_mint.key() == config.srm_mint {
+            _lending_amount = self.lending_srm_amount;
+
+        } else if dest_mint.key() == config.scnsol_mint {
+            _lending_amount = self.lending_scnsol_amount;
+
+        } else if dest_mint.key() == config.stsol_mint {
+            _lending_amount = self.lending_stsol_amount;
+
+        } 
+
+        Ok(_lending_amount)
+    }
+
+    pub fn get_key_amount (
+        &self, 
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<u64> {
+        let mut _amount = 0;
+        if dest_mint.key() == config.ray_mint {
+            _amount = self.ray_amount;
+        } else if dest_mint.key() == config.wsol_mint {
+            _amount = self.wsol_amount;
+        } else if dest_mint.key() == config.msol_mint {
+            _amount = self.msol_amount;
+        } else if dest_mint.key() == config.srm_mint {
+            _amount = self.srm_amount;
+
+        } else if dest_mint.key() == config.scnsol_mint {
+            _amount = self.scnsol_amount;
+
+        } else if dest_mint.key() == config.stsol_mint {
+            _amount = self.stsol_amount;
+
+        } else if dest_mint.key() == config.lpfi_mint {
+            _amount = self.lpfi_amount;
+        } else if dest_mint.key() == config.lpsol_mint {
+            _amount = self.lpsol_amount;
+        } else if dest_mint.key() == config.lpusd_mint {
+            _amount = self.lpusd_amount;
+        }
+
+        Ok(_amount)
+    }
+
+    pub fn update_lending_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<bool> {
+        if dest_mint.key() == config.ray_mint {
+            self.lending_ray_amount = amount;
+        } else if dest_mint.key() == config.wsol_mint {
+            self.lending_wsol_amount = amount;
+        } else if dest_mint.key() == config.msol_mint {
+            self.lending_msol_amount = amount;
+        } else if dest_mint.key() == config.srm_mint {
+            self.lending_srm_amount = amount;
+
+        } else if dest_mint.key() == config.scnsol_mint {
+            self.lending_scnsol_amount = amount;
+
+        } else if dest_mint.key() == config.stsol_mint {
+            self.lending_stsol_amount = amount;
+        }
+
+        Ok(true)
+    }
+
+    pub fn update_deposited_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<bool> {
+        if dest_mint.key() == config.ray_mint {
+            self.ray_amount = amount;
+        } else if dest_mint.key() == config.wsol_mint {
+            self.wsol_amount = amount;
+        } else if dest_mint.key() == config.msol_mint {
+            self.msol_amount = amount;
+        } else if dest_mint.key() == config.srm_mint {
+            self.srm_amount = amount;
+
+        } else if dest_mint.key() == config.scnsol_mint {
+            self.scnsol_amount = amount;
+
+        } else if dest_mint.key() == config.stsol_mint {
+            self.stsol_amount = amount;
+        }
+
+        Ok(true)
+    }
+
+    pub fn update_lp_deposited_amount (
+        &mut self, 
+        amount: u64,
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<bool> {
+        if dest_mint.key() == config.lpusd_mint {
+            self.lpusd_amount = amount;
+        } else if dest_mint.key() == config.lpsol_mint {
+            self.lpsol_amount = amount;
+        } else if dest_mint.key() == config.lpfi_mint {
+            self.lpfi_amount = amount;
+        }
+
+        Ok(true)
+    }
 }

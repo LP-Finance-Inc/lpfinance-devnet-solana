@@ -27,14 +27,14 @@ impl StateAccount {
 #[derive(Default)]
 pub struct Config {
     pub state_account: Pubkey,      // 32
-    // available tokens
+    /// available tokens
     pub wsol_mint: Pubkey,          // 32
     pub msol_mint: Pubkey,          // 32
     pub srm_mint: Pubkey,           // 32
     pub scnsol_mint: Pubkey,        // 32
     pub stsol_mint: Pubkey,         // 32
     pub ray_mint: Pubkey,           // 32
-    // total amount
+    /// total amount
     pub wsol_amount: u64,           // 8
     pub msol_amount: u64,           // 8
     pub srm_amount: u64,            // 8
@@ -164,6 +164,31 @@ pub struct UserAccount {
 
 impl UserAccount {
     pub const LEN: usize = 32 + 8 * 6 + 8;
+    
+    pub fn get_key_amount (
+        &self, 
+        dest_mint: Pubkey,
+        config: &mut Account<Config>
+    ) -> Result<u64> {
+        let mut _amount = 0;
+        if dest_mint.key() == config.ray_mint {
+            _amount = self.ray_amount;
+        } else if dest_mint.key() == config.wsol_mint {
+            _amount = self.wsol_amount;
+        } else if dest_mint.key() == config.msol_mint {
+            _amount = self.msol_amount;
+        } else if dest_mint.key() == config.srm_mint {
+            _amount = self.srm_amount;
+
+        } else if dest_mint.key() == config.scnsol_mint {
+            _amount = self.scnsol_amount;
+
+        } else if dest_mint.key() == config.stsol_mint {
+            _amount = self.stsol_amount;
+        }
+
+        Ok(_amount)
+    }
 }
 
 

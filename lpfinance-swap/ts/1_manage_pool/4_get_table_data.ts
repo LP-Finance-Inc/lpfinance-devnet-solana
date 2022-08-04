@@ -39,3 +39,12 @@ const get_table_data = async () => {
 };
 
 get_table_data();
+
+
+
+// swap LpFi -> USDC
+// LpFi = 1$
+// Deposit 1000 LpFi = 1000$
+// Feevalue = 1000$ * 0.005
+// 5$ 202208011224
+// 10$ 202208011224
