@@ -1,11 +1,8 @@
 use anchor_lang::prelude::*;
-use pyth_client;
 use anchor_spl::token::{self, Transfer, Mint };
 
 mod states;
 pub use states::*;
-
-// use swap_base::{self};
 
 use lpfinance_tokens::cpi::accounts::MintLpToken;
 use lpfinance_tokens::{self};
@@ -22,178 +19,11 @@ const LTV: f64 = 85.0;
 const DOMINATOR: f64 = 100.0;
 
 const LENDING_PERCENT: u64 = 10; // 10%
-// In solend, apricot
-// APR is set as multiplier 100000
-// This means APR could be 0.00001 as accurate rate.
-const LENDING_DENOMINATOR: u128 = 10000000; // 100,00000
 
 // const W_THRESHHOLD: u64 = 90;
 // const S_THRESHHOLD: u64 = 75;
 
-const PRICE_DENOMINATOR: u128 = 100000000; // 10 ^ 8
-// which means token 1
-const PRICE_UNIT: u64 = 1000000000; // 10^9
 
-pub fn get_price(pyth_account: AccountInfo) -> Result<u128> {
-    let pyth_price_info = &pyth_account;
-    let pyth_price_data = &pyth_price_info.try_borrow_data()?;
-    let pyth_price = pyth_client::cast::<pyth_client::Price>(pyth_price_data);
-    if pyth_price.agg.price <= 0 {
-        Ok(0)
-    } else {
-        let price = pyth_price.agg.price as u128;
-        Ok(price)
-    }
-}
-
-// Return: u64, u64
-pub fn get_ltv(
-    dest_mint: Pubkey,
-    config: &mut Account<Config>,
-    user_account: &mut Account<UserAccount>,
-    solend_config: &mut Account<solend::Config>,
-    apricot_config: &mut Account<apricot::Config>,
-    liquidity_pool: &Account<PoolInfo>,
-    stable_lpusd_pool: &Account<Pool>,
-    stable_lpsol_pool: &Account<Pool>,
-    pyth_ray_account: &AccountInfo,
-    pyth_usdc_account: &AccountInfo,
-    pyth_sol_account: &AccountInfo,
-    pyth_msol_account: &AccountInfo,
-    pyth_srm_account: &AccountInfo,
-    pyth_scnsol_account: &AccountInfo,
-    pyth_stsol_account: &AccountInfo
-) -> Result<(u64, u64, f64, f64)> {
-
-    let wsol_amount: f64 = user_account.wsol_amount as f64;
-    let ray_amount: f64 = user_account.ray_amount as f64;
-    let msol_amount: f64 = user_account.msol_amount as f64;
-    let srm_amount: f64 = user_account.srm_amount as f64;
-    let scnsol_amount: f64 = user_account.scnsol_amount as f64;
-    let stsol_amount: f64 = user_account.stsol_amount as f64;
-
-    let lending_wsol_amount: f64 = user_account.lending_wsol_amount as f64;
-    let lending_ray_amount: f64 = user_account.lending_ray_amount as f64;
-    let lending_msol_amount: f64 = user_account.lending_msol_amount as f64;
-    let lending_srm_amount: f64 = user_account.lending_srm_amount as f64;
-    let lending_scnsol_amount: f64 = user_account.lending_scnsol_amount as f64;
-    let lending_stsol_amount: f64 = user_account.lending_stsol_amount as f64;
-
-    let lpsol_amount: f64 = user_account.lpsol_amount as f64;
-    let lpusd_amount: f64 = user_account.lpusd_amount as f64;
-    let lpfi_amount: f64 = user_account.lpfi_amount as f64;
-
-    let borrowed_lpusd: f64 = user_account.borrowed_lpusd as f64;
-    let borrowed_lpsol: f64 = user_account.borrowed_lpsol as f64;
-
-    let lpusd_swap_amount: f64 = stable_lpusd_pool.get_swap_rate(PRICE_UNIT)? as f64;
-    let lpsol_swap_amount: f64 = stable_lpsol_pool.get_swap_rate(PRICE_UNIT)? as f64;
-
-    let ray_rate = if solend_config.ray_rate > apricot_config.ray_rate { solend_config.ray_rate } else { apricot_config.ray_rate };
-    let wsol_rate = if solend_config.wsol_rate > apricot_config.wsol_rate { solend_config.wsol_rate } else { apricot_config.wsol_rate };
-    let msol_rate = if solend_config.msol_rate > apricot_config.msol_rate { solend_config.msol_rate } else { apricot_config.msol_rate };
-    let srm_rate = if solend_config.srm_rate > apricot_config.srm_rate { solend_config.srm_rate } else { apricot_config.srm_rate };
-    let scnsol_rate = if solend_config.scnsol_rate > apricot_config.scnsol_rate { solend_config.scnsol_rate } else { apricot_config.scnsol_rate };
-    let stsol_rate = if solend_config.stsol_rate > apricot_config.stsol_rate { solend_config.stsol_rate } else { apricot_config.stsol_rate };
-
-    // RAY price
-    let ray_price: f64 = get_price(pyth_ray_account.to_account_info())? as f64;     
-    if ray_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // SOL price
-    let sol_price: f64 = get_price(pyth_sol_account.to_account_info())? as f64;  
-    if sol_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // mSOL price
-    let msol_price: f64 = get_price(pyth_msol_account.to_account_info())? as f64;
-    if msol_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // srm price
-    let srm_price: f64 = get_price(pyth_srm_account.to_account_info())? as f64;    
-    if srm_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // scnsol price
-    let scnsol_price: f64 = get_price(pyth_scnsol_account.to_account_info())? as f64; 
-    if scnsol_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // stsol price
-    let stsol_price: f64 = get_price(pyth_stsol_account.to_account_info())? as f64;
-    if stsol_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // LpUSD price
-    let usdc_price: f64 = get_price(pyth_usdc_account.to_account_info())? as f64;
-    let lpusd_price = usdc_price * lpusd_swap_amount as f64/ PRICE_UNIT as f64;    
-    if lpusd_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // LpSOL price
-    let lpsol_price = sol_price * lpsol_swap_amount as f64 / PRICE_UNIT as f64;
-    if lpsol_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    // LpFi price
-    let lpfi_price: f64 = usdc_price * liquidity_pool.get_price()? as f64 / PRICE_DENOMINATOR as f64;
-    if lpfi_price <= 0.0 {
-        return Err(ErrorCode::InvalidPythPrice.into());
-    }
-
-    let mut total_price: f64 = 0.0;
-    total_price += ray_price * (ray_amount + lending_ray_amount * ray_rate as f64 / LENDING_DENOMINATOR as f64);
-    total_price += sol_price * (wsol_amount + lending_wsol_amount * wsol_rate as f64 / LENDING_DENOMINATOR as f64);
-    total_price += msol_price * (msol_amount + lending_msol_amount * msol_rate as f64 / LENDING_DENOMINATOR as f64);
-    total_price += srm_price * (srm_amount + lending_srm_amount * srm_rate as f64 / LENDING_DENOMINATOR as f64);
-    total_price += scnsol_price * (scnsol_amount + lending_scnsol_amount * scnsol_rate as f64 / LENDING_DENOMINATOR as f64);
-    total_price += stsol_price * (stsol_amount + lending_stsol_amount * stsol_rate as f64 / LENDING_DENOMINATOR as f64);
-    total_price += lpusd_price * lpusd_amount;
-    total_price += lpsol_price * lpsol_amount;
-    total_price += lpfi_price * lpfi_amount;
-
-    let mut borrowed_total: f64 = 0.0;
-    borrowed_total += borrowed_lpsol * lpsol_price;
-    borrowed_total += borrowed_lpusd * lpusd_price;
-
-    let mut _dest_price:f64 = 0.0;
-    if dest_mint.key() == config.ray_mint {
-        _dest_price = ray_price;
-    } else if dest_mint.key() == config.wsol_mint {
-        _dest_price = sol_price;
-    } else if dest_mint.key() == config.msol_mint {
-        _dest_price = msol_price;
-    } else if dest_mint.key() == config.srm_mint {
-        _dest_price = srm_price;
-    } else if dest_mint.key() == config.scnsol_mint {
-        _dest_price = scnsol_price;
-    } else if dest_mint.key() == config.stsol_mint {
-        _dest_price = stsol_price;
-    } else if dest_mint.key() == config.lpfi_mint {
-        _dest_price = lpfi_price;
-    } else if dest_mint.key() == config.lpusd_mint {
-        _dest_price = lpusd_price;
-    } else if dest_mint.key() == config.lpsol_mint {
-        _dest_price = lpsol_price;
-    } else {
-        return Err(ErrorCode::InvalidToken.into());
-    }        
-
-
-    let ltv = (borrowed_total * 100.0 / total_price) as u64;
-
-    Ok((ltv, _dest_price as u64, total_price, borrowed_total))
-}
 
 /// Return: 
 /// true if solend APR is bigger than apricot
@@ -405,6 +235,7 @@ pub mod cbs_protocol {
         Ok(())
     }
 
+    
     // Deposit collateral tokens
     pub fn deposit_collateral(
         ctx: Context<DepositCollateral>,
@@ -467,7 +298,7 @@ pub mod cbs_protocol {
 
         //--------Transfer Collateral Token CBS_ATA -> SOLEND_ATA, APRICOT_ATA
         // In case of normal tokens to be able to deposit into lending protocol but not lpfinace tokens
-        if config.exist_token(dest_mint.key())? == true {
+        if config.is_normal_token(dest_mint.key())? == true {
 
             // If solend APY rate is higher than apricot APY rate, return true;
             let mut _solend_higher = false;
@@ -486,7 +317,7 @@ pub mod cbs_protocol {
             let witthdraw_amount: u64 = (lending_amount_f * lending_denominator_f / _lending_rate_f) as u64;
 
             user_account.update_lending_amount(witthdraw_amount, dest_mint.key(), config)?;
-            msg!("LendingRate: {}", _lending_rate);
+            msg!("LendingRate: {}, {}, {}, {}", _lending_rate, _solend_higher, _solend_rate, _apricot_rate );
 
             if _solend_higher {
                 msg!("Solend Deposit");
@@ -527,12 +358,14 @@ pub mod cbs_protocol {
         }
 
         // update user account
-        user_account.update_deposited_amount(pool_amount, dest_mint.key(), config)?;
-        user_account.update_lp_deposited_amount(amount, dest_mint.key(), config)?;
+        let key_amount = user_account.get_key_amount(dest_mint.key(), config)?;
+        user_account.update_deposited_amount(key_amount + pool_amount, dest_mint.key(), config)?;
+        user_account.update_lp_deposited_amount(key_amount + amount, dest_mint.key(), config)?;
 
         // update config account
-        config.update_total_deposited_amount(amount, dest_mint.key())?;
-        config.update_total_lp_deposited_amount(amount, dest_mint.key())?;        
+        let config_key_amount = config.get_key_deposited_amount(dest_mint.key())?;
+        config.update_total_deposited_amount(config_key_amount + amount, dest_mint.key())?;
+        config.update_total_lp_deposited_amount(config_key_amount + amount, dest_mint.key())?;        
         
         Ok(())
     }
@@ -570,6 +403,7 @@ pub mod cbs_protocol {
         let pyth_stsol_account: &AccountInfo = &ctx.accounts.pyth_stsol_account;
 
         if config.exist_token(lptoken_mint.key())? == false {
+            msg!("Invalid token===");
             return Err(ErrorCode::InvalidToken.into());
         }
 
@@ -578,10 +412,9 @@ pub mod cbs_protocol {
         let mut _total_price: f64 = 0.0;
         let mut _borrowed_total: f64 = 0.0;
 
-        (_ltv, _dest_price, _total_price, _borrowed_total) = get_ltv(
+        (_ltv, _dest_price, _total_price, _borrowed_total) = user_account.get_ltv(
             lptoken_mint.key(),
             config,
-            user_account,
             solend_config,
             apricot_config,
             liquidity_pool,
@@ -679,10 +512,9 @@ pub mod cbs_protocol {
         let mut _total_price: f64 = 0.0;
         let mut _borrowed_total: f64 = 0.0;
 
-        (_ltv, _dest_price, _total_price, _borrowed_total) = get_ltv(
+        (_ltv, _dest_price, _total_price, _borrowed_total) = user_account.get_ltv(
             dest_mint.key(),
             config,
-            user_account,
             solend_config,
             apricot_config,
             liquidity_pool,
@@ -902,10 +734,9 @@ pub mod cbs_protocol {
             let mut _total_price: f64 = 0.0;
             let mut _borrowed_total: f64 = 0.0;
 
-            (_ltv, _dest_price, _total_price, _borrowed_total) = get_ltv(
+            (_ltv, _dest_price, _total_price, _borrowed_total) = user_account.get_ltv(
                 dest_mint.key(),
                 config,
-                user_account,
                 solend_config,
                 apricot_config,
                 liquidity_pool,
@@ -1120,231 +951,6 @@ pub mod cbs_protocol {
         Ok(())
     }
 
-    // The first step 
-    pub fn liquidate_collateral(
-        ctx: Context<LiquidateCollateral>
-    ) -> Result<()> {
-        msg!("liquidate_collateral started");
-
-        let user_account = &mut ctx.accounts.user_account;
-
-        let wsol_amount = user_account.wsol_amount;
-        let ray_amount = user_account.ray_amount;
-        let msol_amount = user_account.msol_amount;
-        let srm_amount = user_account.srm_amount;
-        let scnsol_amount = user_account.scnsol_amount;
-        let stsol_amount = user_account.stsol_amount;
-
-        let (program_authority, program_authority_bump) = 
-            Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
-        
-        if program_authority != ctx.accounts.state_account.to_account_info().key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        let seeds = &[
-            PREFIX.as_bytes(),
-            &[program_authority_bump]
-        ];
-        let signer = &[&seeds[..]];
-
-
-        if msol_amount > 0 {
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_msol.to_account_info(),
-                to: ctx.accounts.auction_msol.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, msol_amount)?;
-        }
-
-        if ray_amount > 0 {
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_ray.to_account_info(),
-                to: ctx.accounts.auction_ray.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, ray_amount)?;
-        }
-
-        if wsol_amount > 0 {
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_wsol.to_account_info(),
-                to: ctx.accounts.auction_wsol.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, wsol_amount)?;
-        }
-
-        
-        if srm_amount > 0 {
-            msg!("liquidate_collateral srm_amount");
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_srm.to_account_info(),
-                to: ctx.accounts.auction_srm.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, srm_amount)?;
-        }
-
-        if scnsol_amount > 0 {
-            msg!("liquidate_collateral scnsol_amount");
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_scnsol.to_account_info(),
-                to: ctx.accounts.auction_scnsol.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, scnsol_amount)?;
-        }
-
-        if stsol_amount > 0 {
-            msg!("liquidate_collateral stsol_amount");
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_stsol.to_account_info(),
-                to: ctx.accounts.auction_stsol.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, stsol_amount)?;
-        }
-
-        user_account.step_num = 1;
-
-        // user_account.wsol_amount = 0;
-        // user_account.ray_amount = 0;
-        // user_account.msol_amount = 0;
-        // user_account.srm_amount = 0;
-        // user_account.scnsol_amount = 0;
-        // user_account.stsol_amount = 0;
-
-        Ok(())
-    }
-
-    // Transfer collateral tokens to auction pool from cbs
-    pub fn liquidate_lptoken_collateral(
-        ctx: Context<LiquidateLpTokenCollateral>
-    ) -> Result<()> {
-        msg!("liquidate_collateral started");
-
-        let user_account = &mut ctx.accounts.user_account;
-
-
-        let lpusd_amount = user_account.lpusd_amount;
-        let lpsol_amount = user_account.lpsol_amount;
-        let lpfi_amount = user_account.lpfi_amount;
-
-
-        let (program_authority, program_authority_bump) = 
-            Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
-        
-        if program_authority != ctx.accounts.state_account.to_account_info().key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        let seeds = &[
-            PREFIX.as_bytes(),
-            &[program_authority_bump]
-        ];
-        let signer = &[&seeds[..]];
-
-        msg!("Lpusd amount: !!{:?}!!", lpusd_amount.to_string());
-
-        if lpusd_amount > 0 {
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_lpusd.to_account_info(),
-                to: ctx.accounts.auction_lpusd.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, lpusd_amount)?;
-        }
-
-        if lpsol_amount > 0 {
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_lpsol.to_account_info(),
-                to: ctx.accounts.auction_lpsol.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, lpsol_amount)?;
-        }
-
-        if lpfi_amount > 0 {
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.cbs_lpfi.to_account_info(),
-                to: ctx.accounts.auction_lpfi.to_account_info(),
-                authority: ctx.accounts.state_account.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, lpfi_amount)?;
-        }
-
-        user_account.step_num = 3;
-        // user_account.lpusd_amount = 0;
-        // user_account.lpsol_amount = 0;
-        // user_account.lpfi_amount = 0;
-        
-        Ok(())
-    }
-
-    pub fn update_user_account(
-        ctx: Context<UpdateUserAccount>,
-        step: u8
-    ) -> Result<()> {
-        let user_account = &mut ctx.accounts.user_account;
-        user_account.step_num = step;
-
-        // Need to reset everything
-        if step == 10 {
-            user_account.step_num = 0;
-            
-            user_account.lpusd_amount = 0;
-            user_account.lpsol_amount = 0;
-            user_account.lpfi_amount = 0;
-
-            user_account.wsol_amount = 0;
-            user_account.ray_amount = 0;
-            user_account.msol_amount = 0;
-            user_account.srm_amount = 0;
-            user_account.scnsol_amount = 0;
-            user_account.stsol_amount = 0;
-
-            user_account.borrowed_lpusd = 0;
-            user_account.borrowed_lpsol = 0;
-
-            user_account.lending_ray_amount = 0;
-            user_account.lending_wsol_amount = 0;
-            user_account.lending_msol_amount = 0;
-            user_account.lending_srm_amount = 0;
-            user_account.lending_scnsol_amount = 0;
-            user_account.lending_stsol_amount = 0;
-        }
-        Ok(())
-    }
-
     pub fn apply_dsf(
         ctx: Context<UpdateUserAccount>,
         lpusd_rate: u64,
@@ -1387,4 +993,6 @@ pub enum ErrorCode {
     RepayFinished,
     #[msg("Invalid pyth price")]
     InvalidPythPrice,
+    #[msg("Invalid pyth account")]
+    InvalidPythAccount,
 }

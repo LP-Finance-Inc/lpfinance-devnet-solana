@@ -33,10 +33,10 @@ const deposit = async () => {
   // Config
   const config = getPublicKey('cbs_config');  
   const cbsConfigData = await program.account.config.fetch(config);
-  // const collateralMint= cbsConfigData.rayMint as PublicKey;
-  // const collateralPool= cbsConfigData.poolRay as PublicKey;
-  const collateralMint= cbsConfigData.lpsolMint as PublicKey;
-  const collateralPool= cbsConfigData.poolLpsol as PublicKey;
+  const collateralMint= cbsConfigData.rayMint as PublicKey;
+  const collateralPool= cbsConfigData.poolRay as PublicKey;
+  // const collateralMint= cbsConfigData.lpsolMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolLpsol as PublicKey;
   const userCollateral = await getATAPublicKey(collateralMint, creatorKeypair.publicKey);
   const solendAccount = getPublicKey('cbs_solend_account')
   const apricotAccount = getPublicKey('cbs_apricot_account')
@@ -65,7 +65,7 @@ const deposit = async () => {
   const deposit_wei = convert_to_wei("100");
   const deposit_amount = new anchor.BN(deposit_wei);
   
-  await program.rpc.depositCollateral(deposit_amount, {
+  const tx = await program.rpc.depositCollateral(deposit_amount, {
     accounts: {
       userAuthority: creatorKeypair.publicKey,
       userCollateral,
@@ -88,7 +88,7 @@ const deposit = async () => {
     },
   });
 
-  console.log("Deposit successfully")
+  console.log("Deposit successfully", tx)
 
   const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
   print_config_data(cbsConfigDataAfterDeposit)

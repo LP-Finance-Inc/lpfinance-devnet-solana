@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{ Mint, Token, TokenAccount };
 
 use cbs_protocol::{self};
+use cbs_protocol::program::CbsProtocol;
 
 use swap_base::{self, Pool};
 use lpfinance_swap::{self, PoolInfo};
@@ -340,137 +341,12 @@ pub struct BurnForLiquidate<'info> {
     )]
     pub liquidity_pool: Box<Account<'info, PoolInfo>>,
     // Programs and Sysvars
+    pub cbs_program: Program<'info, CbsProtocol>,
     pub lptokens_program: Program<'info, LpfinanceTokens>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
 }
-
-// #[derive(Accounts)]
-// pub struct LiquidateFromCBS<'info> {
-//     #[account(mut)]
-//     pub user_authority: Signer<'info>,
-//     #[account(mut,
-//         seeds = [PREFIX.as_ref()],
-//         bump
-//     )]
-//     pub state_account: Box<Account<'info, StateAccount>>,
-//     #[account(mut, has_one = state_account)]
-//     pub config: Box<Account<'info, Config>>,
-//     // UserAccount from CBS protocol
-//     #[account(mut)]
-//     pub liquidator: Box<Account<'info, cbs_protocol::UserAccount>>,
-//     #[account(mut)]
-//     pub cbs_account: Box<Account<'info, cbs_protocol::StateAccount>>,
-//     pub cbs_program: Program<'info, CbsProtocol>,
-
-//     #[account(mut)]
-//     pub auction_btc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_msol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_usdc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_eth: Box<Account<'info, TokenAccount>>,
-
-//     #[account(mut)]
-//     pub cbs_btc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_msol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_usdc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_eth: Box<Account<'info, TokenAccount>>,
-    
-//     // Programs and Sysvars
-//     pub system_program: Program<'info, System>,
-//     pub token_program: Program<'info, Token>,
-//     pub rent: Sysvar<'info, Rent>
-// }
-
-
-// #[derive(Accounts)]
-// pub struct LiquidateSecondFromCBS<'info> {
-//     #[account(mut)]
-//     pub user_authority: Signer<'info>,
-//     #[account(mut)]
-//     pub config: Box<Account<'info, Config>>,
-//     // UserAccount from CBS protocol
-//     #[account(mut)]
-//     pub liquidator: Box<Account<'info, cbs_protocol::UserAccount>>,
-//     #[account(mut)]
-//     pub cbs_account: Box<Account<'info, cbs_protocol::StateAccount>>,
-//     pub cbs_program: Program<'info, CbsProtocol>,
-
-//     #[account(mut)]
-//     pub auction_ust: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_srm: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_scnsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_stsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_usdt: Box<Account<'info, TokenAccount>>,
-
-//     #[account(mut)]
-//     pub cbs_ust: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_srm: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_scnsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_stsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_usdt: Box<Account<'info, TokenAccount>>,
-    
-//     // Programs and Sysvars
-//     pub system_program: Program<'info, System>,
-//     pub token_program: Program<'info, Token>,
-//     pub rent: Sysvar<'info, Rent>
-// }
-
-// #[derive(Accounts)]
-// pub struct LiquidateLpTokenFromCBS<'info> {
-//     #[account(mut)]
-//     pub user_authority: Signer<'info>,
-//     #[account(mut,
-//         seeds = [PREFIX.as_ref()],
-//         bump
-//     )]
-//     pub state_account: Box<Account<'info, StateAccount>>,
-//     #[account(mut, has_one = state_account)]
-//     pub config: Box<Account<'info, Config>>,
-//     // UserAccount from CBS protocol
-//     #[account(mut)]
-//     pub liquidator: Box<Account<'info, cbs_protocol::UserAccount>>,
-//     #[account(mut)]
-//     pub cbs_account: Box<Account<'info, cbs_protocol::StateAccount>>,
-//     pub cbs_program: Program<'info, CbsProtocol>,
-
-//     #[account(mut)]
-//     pub auction_lpusd: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_lpsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_lpbtc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_lpeth: Box<Account<'info, TokenAccount>>,
-
-//     #[account(mut)]
-//     pub cbs_lpusd: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_lpsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_lpbtc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_lpeth: Box<Account<'info, TokenAccount>>,
-    
-//     // Programs and Sysvars
-//     pub system_program: Program<'info, System>,
-//     pub token_program: Program<'info, Token>,
-//     pub rent: Sysvar<'info, Rent>
-// }
 
 
 // #[derive(Accounts)]

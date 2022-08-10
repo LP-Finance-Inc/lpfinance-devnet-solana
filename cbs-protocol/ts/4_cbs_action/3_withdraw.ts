@@ -68,7 +68,7 @@ const withdraw = async () => {
   const withdraw_wei = convert_to_wei("1");
   const withdraw_amount = new anchor.BN(withdraw_wei);
   
-  await program.rpc.withdrawToken(withdraw_amount, {
+  const tx = await program.rpc.withdrawToken(withdraw_amount, {
     accounts: {
         userAuthority: creatorKeypair.publicKey,
         userAccount,
@@ -103,7 +103,7 @@ const withdraw = async () => {
     },
   });
 
-  console.log("Deposit successfully")
+  console.log("Withdraw successfully: ", tx);
 
   const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
   print_config_data(cbsConfigDataAfterDeposit)

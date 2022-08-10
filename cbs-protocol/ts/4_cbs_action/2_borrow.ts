@@ -22,6 +22,8 @@ import {
   LiquidityPool,
   StableLpusdPool,
   StableLpsolPool,
+  SolendConfig,
+  ApricotConfig,
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
@@ -59,7 +61,7 @@ const borrow = async () => {
   const borrow_wei = convert_to_wei("5");
   const borrow_amount = new anchor.BN(borrow_wei);
   
-  await program.rpc.borrowLptoken(borrow_amount, {
+  const tx = await program.rpc.borrowLptoken(borrow_amount, {
     accounts: {
         userAuthority: creatorKeypair.publicKey,
         userAccount,
@@ -78,6 +80,8 @@ const borrow = async () => {
         pythSrmAccount,
         pythScnsolAccount,
         pythStsolAccount,
+        solendConfig: SolendConfig,
+        apricotConfig: ApricotConfig,
         liquidityPool: LiquidityPool,
         lptokensProgram: lptokenProgramId,
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -87,7 +91,7 @@ const borrow = async () => {
     },
   });
 
-  console.log("Deposit successfully")
+  console.log("Borrow successfully", tx)
 
   const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
   print_config_data(cbsConfigDataAfterDeposit)
