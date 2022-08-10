@@ -12,6 +12,9 @@ pub use oracle::*;
 use cbs_protocol::program::CbsProtocol;
 use cbs_protocol::{self};
 
+use swap_base::{self, Pool};
+use lpfinance_swap::{self, PoolInfo};
+
 // use lpfinance_swap::cpi::accounts::LiquidateToken;
 // use lpfinance_swap::program::LpfinanceSwap;
 // use lpfinance_swap::{self};
@@ -239,9 +242,18 @@ pub mod lpusd_auction {
         let user_account: &mut Account<UserAccount> = &mut ctx.accounts.user_account;
         let cbs_account: &mut Account<cbs_protocol::UserAccount> = &mut ctx.accounts.cbs_account;
         let lpusd_ata: &mut Account<TokenAccount> = &mut ctx.accounts.lpusd_ata;
-        let cbs_program: Program<CbsProtocol> = ctx.accounts.cbs_program;
-        let lpusd_mint: &mut Account<Mint> = &mut ctx.accounts.lpusd_mint;
 
+        let pyth_ray_account: &AccountInfo = &ctx.accounts.pyth_ray_account;
+        let pyth_usdc_account: &AccountInfo = &ctx.accounts.pyth_usdc_account;
+        let pyth_sol_account: &AccountInfo = &ctx.accounts.pyth_sol_account;
+        let pyth_msol_account: &AccountInfo = &ctx.accounts.pyth_msol_account;
+        let pyth_srm_account: &AccountInfo = &ctx.accounts.pyth_srm_account;
+        let pyth_scnsol_account: &AccountInfo = &ctx.accounts.pyth_scnsol_account;
+        let pyth_stsol_account: &AccountInfo = &ctx.accounts.pyth_stsol_account;
+
+        let liquidity_pool: &Account<PoolInfo> = &ctx.accounts.liquidity_pool;
+        let stable_lpusd_pool: &Account<Pool> = &ctx.accounts.stable_lpusd_pool;
+        let stable_lpsol_pool: &Account<Pool> = &ctx.accounts.stable_lpsol_pool;
         // let config = &mut ctx.accounts.config;
 
         let is_liquidatable = cbs_account.check_liquidatable()?;
@@ -249,11 +261,6 @@ pub mod lpusd_auction {
         if is_liquidatable == false {
             return Err(ErrorCode::ReadyErrorForLiquidate.into());
         }
-
-        let lpusd_swap_amount_f: f64 = ctx.accounts.stable_lpusd_pool.get_swap_rate(PRICE_UNIT)? as f64;
-        let lpsol_swap_amount_f: f64 = ctx.accounts.stable_lpsol_pool.get_swap_rate(PRICE_UNIT)? as f64;
-        let price_denominator_f: f64 = PRICE_DENOMINATOR as f64;
-        let price_unit_f: f64 = PRICE_UNIT as f64;
 
         // deposited
         let ray_amount_f: f64 = cbs_account.ray_amount as f64;
@@ -283,15 +290,10 @@ pub mod lpusd_auction {
         }
 
         let mut _ltv: u64 = 0;
-        let mut _dest_price: u64 = 0;
         let mut _total_price: f64 = 0.0;
         let mut _borrowed_total: f64 = 0.0;
 
-        (_ltv, _dest_price, _total_price, _borrowed_total) = cbs_account.get_ltv(
-            lpusd_mint.key(),
-            config,
-            solend_config,
-            apricot_config,
+        (_ltv, _total_price, _borrowed_total) = cbs_account.get_ltv_from_auction(
             liquidity_pool,
             stable_lpusd_pool,
             stable_lpsol_pool,
@@ -304,9 +306,10 @@ pub mod lpusd_auction {
             pyth_stsol_account
         )?;        
 
-        let ltv_permission_f: f64 = LTV_PERMISSION as f64;
+        msg!("LTV {} Camount {} Bamount {}", _ltv, _total_price, _borrowed_total);
+
         // If LTV < 94, not be able to liquidate
-        if total_borrowed_price_f * 100.0 < total_deposited_price_f * ltv_permission_f {
+        if _ltv < LTV_PERMISSION {
             return Err(ErrorCode::NotEnoughLTV.into());
         }
 

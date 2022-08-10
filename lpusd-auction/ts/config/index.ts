@@ -30,7 +30,7 @@ export const StableLpsolPool = new PublicKey("Hi9bZiEgdto5gHdMNfcZxHe1SZh63ifnD3
 export const solendPool = new PublicKey("AjU3jz8zc7vksB42VhvH3D1Rx5M5s2Bfh94WbJdYS79Y") // RAY ata
 export const apricotPool = new PublicKey("3iHXjSSpVwg8rtUFDt6LNQRu8ttdYvBLnAj6cmW2zkqs") // RAY ata
 
-export const LiquidityPool = new PublicKey("DcB2ZfvRU5ac9FgYF9doWYjHWtRXbStH7wDhciQcmF6v")
+export const LiquidityPool = new PublicKey("GVcycXRoAR5Lt9H2wJTCRp6hJHVL4pHVLDtQbvMyhtPc")
 
 // ======> PYTH
 export const pythRayAccount = new PublicKey("EhgAdTrgxi4ZoVZLQx1n93vULucPpiFi2BQtz9RJr1y6"); // 3m1y5h2uv7EQL3KaJZehvAJa4yDNvgc5yAdL9KPMKwvk

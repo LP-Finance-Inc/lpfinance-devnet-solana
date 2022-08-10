@@ -3,7 +3,6 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{ Mint, Token, TokenAccount };
 
 use cbs_protocol::{self};
-use cbs_protocol::program::CbsProtocol;
 
 use swap_base::{self, Pool};
 use lpfinance_swap::{self, PoolInfo};
@@ -12,7 +11,7 @@ use lpfinance_tokens::program::LpfinanceTokens;
 // Actually DENOMINATOR should be 100 (%)
 // But to calculate percent in more clearly, we consider DECIMAL 4. For example, 101.0014
 pub const DENOMINATOR: u64 = 1000000;
-pub const LTV_PERMISSION:u128 = 94;
+pub const LTV_PERMISSION: u64 = 94;
 
 pub const PREFIX: &str = "lpusd-auction";
 
@@ -320,6 +319,7 @@ pub struct BurnForLiquidate<'info> {
     pub stable_lpusd_pool: Box<Account<'info, Pool>>,
     // LpSOL-wSOL stableswap pool
     pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     /// CHECK: pyth
@@ -337,11 +337,9 @@ pub struct BurnForLiquidate<'info> {
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
     #[account(
-        constraint = liquidity_pool.tokena_mint == config.lpfi_mint
+        constraint = liquidity_pool.tokena_mint == config.lpfi_mint || liquidity_pool.tokenb_mint == config.lpfi_mint
     )]
     pub liquidity_pool: Box<Account<'info, PoolInfo>>,
-    // Programs and Sysvars
-    pub cbs_program: Program<'info, CbsProtocol>,
     pub lptokens_program: Program<'info, LpfinanceTokens>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
