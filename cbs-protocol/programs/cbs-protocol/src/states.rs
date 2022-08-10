@@ -1174,6 +1174,136 @@ impl UserAccount {
 
         Ok((ltv, _dest_price as u64, total_price, borrowed_total))
     }
+
+    // Return: LTV, TOTAL_PRICE, Borrowed Total
+    pub fn get_ltv_from_auction(
+        &self,
+        liquidity_pool: &Account<PoolInfo>,
+        stable_lpusd_pool: &Account<Pool>,
+        stable_lpsol_pool: &Account<Pool>,
+        pyth_ray_account: &AccountInfo,
+        pyth_usdc_account: &AccountInfo,
+        pyth_sol_account: &AccountInfo,
+        pyth_msol_account: &AccountInfo,
+        pyth_srm_account: &AccountInfo,
+        pyth_scnsol_account: &AccountInfo,
+        pyth_stsol_account: &AccountInfo
+    ) -> Result<(u64, f64, f64)> {
+        let mut _is_pyth_valid: bool = true;
+        _is_pyth_valid = check_pyth_accounts(
+            pyth_sol_account,
+            pyth_ray_account,
+            pyth_msol_account,
+            pyth_stsol_account,
+            pyth_scnsol_account,
+            pyth_srm_account
+        )?;
+
+        if _is_pyth_valid == false {
+            return Err(ErrorCode::InvalidPythAccount.into());
+        }
+
+        _is_pyth_valid = check_pyth_account(PYTH_USDC_ADDRESS, pyth_usdc_account)?;
+
+        if _is_pyth_valid == false {
+            return Err(ErrorCode::InvalidPythAccount.into());
+        }
+
+        let wsol_amount: f64 = self.wsol_amount as f64;
+        let ray_amount: f64 = self.ray_amount as f64;
+        let msol_amount: f64 = self.msol_amount as f64;
+        let srm_amount: f64 = self.srm_amount as f64;
+        let scnsol_amount: f64 = self.scnsol_amount as f64;
+        let stsol_amount: f64 = self.stsol_amount as f64;
+
+        let lpsol_amount: f64 = self.lpsol_amount as f64;
+        let lpusd_amount: f64 = self.lpusd_amount as f64;
+        let lpfi_amount: f64 = self.lpfi_amount as f64;
+
+        let borrowed_lpusd: f64 = self.borrowed_lpusd as f64;
+        let borrowed_lpsol: f64 = self.borrowed_lpsol as f64;
+
+        let lpusd_swap_amount: f64 = stable_lpusd_pool.get_swap_rate(PRICE_UNIT)? as f64;
+        let lpsol_swap_amount: f64 = stable_lpsol_pool.get_swap_rate(PRICE_UNIT)? as f64;
+
+        // RAY price    
+        let ray_price: f64 = get_price(pyth_ray_account)? as f64;     
+        if ray_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("RAY price {}", ray_price);
+
+        // SOL price
+        let sol_price: f64 = get_price(pyth_sol_account)? as f64;  
+        if sol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("SOL price {}", sol_price);
+        // mSOL price
+        let msol_price: f64 = get_price(pyth_msol_account)? as f64;
+        if msol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("mSOL price {}", msol_price);
+        // srm price
+        let srm_price: f64 = get_price(pyth_srm_account)? as f64;    
+        if srm_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("srm price {}", srm_price);
+        // scnsol price
+        let scnsol_price: f64 = get_price(pyth_scnsol_account)? as f64; 
+        if scnsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("scnsol price {}", scnsol_price);
+        // stsol price
+        let stsol_price: f64 = get_price(pyth_stsol_account)? as f64;
+        if stsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("stsol price {}", stsol_price);
+        // LpUSD price
+        let usdc_price: f64 = get_price(pyth_usdc_account)? as f64;
+        msg!("LpUSD price {}", usdc_price);
+        let lpusd_price = usdc_price * lpusd_swap_amount as f64/ PRICE_UNIT as f64;    
+        if lpusd_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        // LpSOL price
+        let lpsol_price = sol_price * lpsol_swap_amount as f64 / PRICE_UNIT as f64;
+        if lpsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("LpSOL price {}", lpsol_price);
+
+        // LpFi price
+        let lpfi_price: f64 = usdc_price * liquidity_pool.get_price()? as f64 / PRICE_DENOMINATOR as f64;
+        if lpfi_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("LpFi price {}", lpfi_price);
+
+        let mut total_price: f64 = 0.0;
+        total_price += ray_price * ray_amount;
+        total_price += sol_price * wsol_amount;
+        total_price += msol_price * msol_amount;
+        total_price += srm_price * srm_amount;
+        total_price += scnsol_price * scnsol_amount;
+        total_price += stsol_price * stsol_amount;
+        total_price += lpusd_price * lpusd_amount;
+        total_price += lpsol_price * lpsol_amount;
+        total_price += lpfi_price * lpfi_amount;
+
+        let mut borrowed_total: f64 = 0.0;
+        borrowed_total += borrowed_lpsol * lpsol_price;
+        borrowed_total += borrowed_lpusd * lpusd_price;
+
+        let ltv = (borrowed_total * 100.0 / total_price) as u64;
+
+        Ok((ltv, total_price, borrowed_total))
+    }
 }
 
 #[error_code]
