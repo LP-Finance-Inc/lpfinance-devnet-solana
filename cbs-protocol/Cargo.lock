@@ -412,7 +412,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "apricot",
- "lpfinance-swap",
  "lpfinance-tokens",
  "nom",
  "num-derive",
@@ -420,7 +419,9 @@ dependencies = [
  "pyth-sdk-solana",
  "solend",
  "spl-token",
- "swap-base",
+ "stable-swap",
+ "swap-router",
+ "uniswap",
 ]
 
 [[package]]
@@ -774,20 +775,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "lpfinance-swap"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "nom",
- "num-derive",
- "num-traits",
- "pyth-client",
- "spl-associated-token-account",
- "spl-token",
 ]
 
 [[package]]
@@ -1342,19 +1329,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "stable-swap"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "nom",
+ "num-derive",
+ "num-traits",
+ "pyth-client",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
 name = "subtle"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
-name = "swap-base"
+name = "swap-router"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "nom",
+ "num-derive",
+ "num-traits",
+ "pyth-client",
  "spl-associated-token-account",
  "spl-token",
+ "stable-swap",
+ "test-tokens",
+ "uniswap",
 ]
 
 [[package]]
@@ -1432,6 +1440,20 @@ name = "unicode-segmentation"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e8820f5d777f6224dc4be3632222971ac30164d4a258d595640799554ebfd99"
+
+[[package]]
+name = "uniswap"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "nom",
+ "num-derive",
+ "num-traits",
+ "pyth-client",
+ "spl-associated-token-account",
+ "spl-token",
+]
 
 [[package]]
 name = "version_check"

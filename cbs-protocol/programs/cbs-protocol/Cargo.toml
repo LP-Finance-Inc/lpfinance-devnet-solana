@@ -27,8 +27,9 @@ num-traits = "0.2.15"
 nom = "7"
 pyth-sdk-solana = "0.4.2"
 
-swap-base = { path = "../../../../swap-base/programs/swap-base", features=["cpi"]}
-lpfinance-swap = { path = "../../../lpfinance-swap/programs/lpfinance-swap", features=["cpi"]}
+stable-swap = { path = "../../../stable-swap/programs/stable-swap", features=["cpi"] }
+uniswap = { path = "../../../uniswap/programs/uniswap", features=["cpi"]}
+swap-router = { path = "../../../swap-router/programs/swap-router", features=["cpi"]}
 lpfinance-tokens = { path = "../../../lpfinance-tokens/programs/lpfinance-tokens", features=["cpi"]}
 solend = { path = "../../../solend/programs/solend", features=["cpi"]}
 apricot = { path = "../../../apricot/programs/apricot", features=["cpi"]}

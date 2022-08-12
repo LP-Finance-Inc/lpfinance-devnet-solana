@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
 // use pyth_client;
 use anchor_spl::token::{ Mint, Token, TokenAccount };
+use anchor_spl::associated_token::AssociatedToken;
 
 use cbs_protocol::{self};
 
-use swap_base::{self, Pool};
-use lpfinance_swap::{self, PoolInfo};
-use lpfinance_tokens::program::LpfinanceTokens;
+use stable_swap::{self, StableswapPool};
+use uniswap::{self, UniswapPool};
 
 // Actually DENOMINATOR should be 100 (%)
 // But to calculate percent in more clearly, we consider DECIMAL 4. For example, 101.0014
@@ -277,7 +277,7 @@ pub struct UpdateConfig<'info> {
 }
 
 #[derive(Accounts)]
-pub struct BurnForLiquidate<'info> {
+pub struct BurnLpUSDForLiquidate<'info> {
     /// CHECK: this is safe
     #[account(mut)]
     pub owner: AccountInfo<'info>,
@@ -287,11 +287,10 @@ pub struct BurnForLiquidate<'info> {
     #[account(mut, seeds = [PREFIX.as_ref()], bump)]
     pub auction_pda: AccountInfo<'info>,
     // Auction: user account
-    #[account(mut, has_one = owner )]
+    #[account(mut)]
     pub user_account: Box<Account<'info, UserAccount>>,
     // CBS: user account
     #[account(mut, 
-        has_one = owner,
         constraint = cbs_account.step_num == 0
     )]
     pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
@@ -316,9 +315,9 @@ pub struct BurnForLiquidate<'info> {
     )]
     pub lpsol_ata: Box<Account<'info, TokenAccount>>,
     // LpUSD-USDC stableswap pool
-    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
     // LpSOL-wSOL stableswap pool
-    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
 
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
@@ -337,188 +336,120 @@ pub struct BurnForLiquidate<'info> {
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
     #[account(
-        constraint = liquidity_pool.tokena_mint == config.lpfi_mint || liquidity_pool.tokenb_mint == config.lpfi_mint
+        constraint = liquidity_pool.token_a == config.lpfi_mint || liquidity_pool.token_b == config.lpfi_mint
     )]
-    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
-    pub lptokens_program: Program<'info, LpfinanceTokens>,
+    pub liquidity_pool: Box<Account<'info, UniswapPool>>,
+    /// CHECK: this is safe
+    pub lptokens_program: AccountInfo<'info>,
+    /// CHECK: this is safe
+    pub cbs_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
 }
 
-
-// #[derive(Accounts)]
-// pub struct Liquidate<'info> {
-//     #[account(mut,
-//         seeds = [PREFIX.as_ref()],
-//         bump
-//     )]
-//     pub state_account: Box<Account<'info, StateAccount>>,
-//     #[account(mut, has_one = state_account)]
-//     pub config: Box<Account<'info, Config>>,
-//     // UserAccount from CBS protocol
-//     #[account(mut)]
-//     pub liquidator: Box<Account<'info, cbs_protocol::UserAccount>>,
-
-//     pub cbs_program: Program<'info, CbsProtocol>,
-//     pub swap_program: Program<'info, LpfinanceSwap>,
-
-//     #[account(mut)]
-//     pub auction_lpusd: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_lpsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_lpbtc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_lpeth: Box<Account<'info, TokenAccount>>,
-
-//     #[account(mut)]
-//     pub lpbtc_mint: Box<Account<'info,Mint>>,
-//     #[account(mut)]
-//     pub lpsol_mint: Box<Account<'info,Mint>>,
-
-//     #[account(mut)]
-//     pub cbs_lpusd: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_lpsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_lpbtc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub cbs_lpeth: Box<Account<'info, TokenAccount>>,
+#[derive(Accounts)]
+pub struct BurnLpSOLForLiquidate<'info> {
+    /// CHECK: this is safe
+    #[account(mut)]
+    pub owner: AccountInfo<'info>,
+    // CBS: user account
+    #[account(mut, 
+        constraint = cbs_account.step_num == 1
+    )]
+    pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub auction_pda: AccountInfo<'info>,
+    // LpUSD-USDC stableswap pool
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
+    // LpSOL-wSOL stableswap pool
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
+    /// CHECK: cbs is user for swap
+    #[account(mut)]
+    pub swap_escrow: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub stable_swap_pool: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub token_state_account: AccountInfo<'info>,
     
-//     #[account(mut)]
-//     pub swap_account: Box<Account<'info, lpfinance_swap::StateAccount>>,
-//     // pyth
-//     pub pyth_btc_account: AccountInfo<'info>,
-//     pub pyth_usdc_account: AccountInfo<'info>,
-//     pub pyth_sol_account: AccountInfo<'info>,
-//     pub pyth_msol_account: AccountInfo<'info>,
-//     pub pyth_ust_account: AccountInfo<'info>,
-//     pub pyth_srm_account: AccountInfo<'info>,
-//     pub pyth_scnsol_account: AccountInfo<'info>,
-//     pub pyth_stsol_account: AccountInfo<'info>,
-//     pub pyth_usdt_account: AccountInfo<'info>,
-//     pub pyth_eth_account: AccountInfo<'info>,
-//     // Programs and Sysvars
-//     pub system_program: Program<'info, System>,
-//     pub token_program: Program<'info, Token>,
-//     pub rent: Sysvar<'info, Rent>
-// }
+    #[account(mut)]
+    pub token_lpsol: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_wsol: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_usdc: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_lpusd: Box<Account<'info, Mint>>,
 
-// #[derive(Accounts)]
-// pub struct LiquidateSwap<'info> {
-//     #[account(mut)]
-//     pub user_authority: Signer<'info>,
-//     #[account(mut,
-//         seeds = [PREFIX.as_ref()],
-//         bump
-//     )]
-//     pub state_account: Box<Account<'info, StateAccount>>,
-//     #[account(mut, has_one = state_account)]
-//     pub config: Box<Account<'info, Config>>,
-//     // UserAccount from CBS protocol
-//     #[account(mut)]
-//     pub liquidator: Box<Account<'info, cbs_protocol::UserAccount>>,
-//     #[account(mut)]
-//     pub swap_account: Box<Account<'info, lpfinance_swap::StateAccount>>,
-//     pub cbs_program: Program<'info, CbsProtocol>,
-//     pub swap_program: Program<'info, LpfinanceSwap>,
+    /// CHECK:
+    pub pyth_usdc: AccountInfo<'info>,
+    /// CHECK:
+    pub pyth_wsol: AccountInfo<'info>,
 
-//     #[account(mut)]
-//     pub lpusd_mint: Box<Account<'info,Mint>>,
+    #[account(mut)]
+    pub auction_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub auction_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK: this is safe
+    pub lptokens_program: AccountInfo<'info>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+    /// CHECK:
+    pub testtokens_program: AccountInfo<'info>,    
+    /// CHECK:
+    pub swaprouter_program: AccountInfo<'info>,  
+    /// CHECK: this is safe
+    pub cbs_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
 
-//     #[account(mut)]
-//     pub swap_btc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_usdc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_msol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_eth: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_ust: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_srm: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_scnsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_stsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_usdt: Box<Account<'info, TokenAccount>>,
-
-//     #[account(mut)]
-//     pub auction_btc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_usdc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_msol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_eth: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_ust: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_srm: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_scnsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_stsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_usdt: Box<Account<'info, TokenAccount>>,
-
-//     // Programs and Sysvars
-//     pub system_program: Program<'info, System>,
-//     pub token_program: Program<'info, Token>,
-//     pub rent: Sysvar<'info, Rent>
-// }
-
-// #[derive(Accounts)]
-// pub struct LiquidateSecondSwap<'info> {
-//     #[account(mut)]
-//     pub user_authority: Signer<'info>,
-//     #[account(mut,
-//         seeds = [PREFIX.as_ref()],
-//         bump
-//     )]
-//     pub state_account: Box<Account<'info, StateAccount>>,
-//     #[account(mut, has_one = state_account)]
-//     pub config: Box<Account<'info, Config>>,
-//     // UserAccount from CBS protocol
-//     #[account(mut)]
-//     pub liquidator: Box<Account<'info, cbs_protocol::UserAccount>>,
-//     #[account(mut)]
-//     pub swap_account: Box<Account<'info, lpfinance_swap::StateAccount>>,
-//     pub cbs_program: Program<'info, CbsProtocol>,
-//     pub swap_program: Program<'info, LpfinanceSwap>,
-
-//     #[account(mut)]
-//     pub lpusd_mint: Box<Account<'info,Mint>>,
-
-//     #[account(mut)]
-//     pub swap_lpusd: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_lpsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_lpbtc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub swap_lpeth: Box<Account<'info, TokenAccount>>,
-
-//     #[account(mut)]
-//     pub auction_lpusd: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_lpsol: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_lpbtc: Box<Account<'info, TokenAccount>>,
-//     #[account(mut)]
-//     pub auction_lpeth: Box<Account<'info, TokenAccount>>,
-
-//     // Programs and Sysvars
-//     pub system_program: Program<'info, System>,
-//     pub token_program: Program<'info, Token>,
-//     pub rent: Sysvar<'info, Rent>
-// }
-
-
-
+#[derive(Accounts)]
+pub struct DistributeRewardFromLiquidate<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>, 
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub auction_pda: AccountInfo<'info>,
+    // CBS: user account
+    #[account(mut, 
+        constraint = cbs_account.step_num == 5
+    )]
+    pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
+    /// CHECK: this is safe
+    pub cbs_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>    
+}
 
 #[account]
 #[derive(Default)]

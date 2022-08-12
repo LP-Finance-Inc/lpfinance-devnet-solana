@@ -1,0 +1,18 @@
+[features]
+seeds = false
+
+[programs.localnet]
+uniswap = "3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc"
+
+[programs.devnet]
+uniswap = "3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "devnet"
+wallet = "/Users/coredev0927/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

@@ -1,0 +1,18 @@
+[features]
+seeds = false
+
+[programs.localnet]
+stable_swap = "EDvp5kbQi9ogJtRgnxWaX58V66xEeZqWXxy4QUrhNC2V"
+
+[programs.devnet]
+stable_swap = "EDvp5kbQi9ogJtRgnxWaX58V66xEeZqWXxy4QUrhNC2V"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "devnet"
+wallet = "/Users/coredev0927/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

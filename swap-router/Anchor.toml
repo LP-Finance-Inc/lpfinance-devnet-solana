@@ -1,0 +1,18 @@
+[features]
+seeds = false
+
+[programs.localnet]
+swap_router = "APGnD1z3h8nei6uvZ4gGEhRhyqBy7axFdhJGM3LB61jF"
+
+[programs.devnet]
+swap_router = "APGnD1z3h8nei6uvZ4gGEhRhyqBy7axFdhJGM3LB61jF"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "devnet"
+wallet = "/Users/coredev0927/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

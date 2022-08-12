@@ -249,7 +249,7 @@ pub mod apricot {
             return Err(ErrorCode::TooOftenMint.into());
         }
 
-        let mut mint_amount = 0;
+        let mut _mint_amount = 0;
         if config.wsol_mint == ctx.accounts.token_mint.key() {
             let reward_amount = config.wsol_amount * (rate - DENOMINATOR) / DENOMINATOR;
 
@@ -257,7 +257,7 @@ pub mod apricot {
 
             config.wsol_amount = config.wsol_amount + reward_amount;
             config.wsol_rate = rate_will;
-            mint_amount = reward_amount;
+            _mint_amount = reward_amount;
         } else if config.msol_mint == ctx.accounts.token_mint.key() {
             let reward_amount = config.msol_amount * (rate - DENOMINATOR) / DENOMINATOR;
 
@@ -265,7 +265,7 @@ pub mod apricot {
 
             config.msol_amount = config.msol_amount + reward_amount;
             config.msol_rate = rate_will;
-            mint_amount = reward_amount;
+            _mint_amount = reward_amount;
         } else if config.srm_mint == ctx.accounts.token_mint.key() {
             let reward_amount = config.srm_amount * (rate - DENOMINATOR) / DENOMINATOR;
 
@@ -273,7 +273,7 @@ pub mod apricot {
 
             config.srm_amount = config.srm_amount + reward_amount;
             config.srm_rate = rate_will;
-            mint_amount = reward_amount;
+            _mint_amount = reward_amount;
         } else if config.scnsol_mint == ctx.accounts.token_mint.key() {
             let reward_amount = config.scnsol_amount * (rate - DENOMINATOR) / DENOMINATOR;
 
@@ -281,7 +281,7 @@ pub mod apricot {
 
             config.scnsol_amount = config.scnsol_amount + reward_amount;
             config.scnsol_rate = rate_will;
-            mint_amount = reward_amount;
+            _mint_amount = reward_amount;
         } else if config.stsol_mint == ctx.accounts.token_mint.key() {
             let reward_amount = config.stsol_amount * (rate - DENOMINATOR) / DENOMINATOR;
 
@@ -289,7 +289,7 @@ pub mod apricot {
 
             config.stsol_amount = config.stsol_amount + reward_amount;
             config.stsol_rate = rate_will;
-            mint_amount = reward_amount;
+            _mint_amount = reward_amount;
         } else if config.ray_mint == ctx.accounts.token_mint.key() {
             let reward_amount = config.ray_amount * (rate - DENOMINATOR) / DENOMINATOR;
 
@@ -297,7 +297,7 @@ pub mod apricot {
 
             config.ray_amount = config.ray_amount + reward_amount;
             config.ray_rate = rate_will;
-            mint_amount = reward_amount;
+            _mint_amount = reward_amount;
         } else {
             return Err(ErrorCode::InvalidToken.into())
         }
@@ -315,7 +315,7 @@ pub mod apricot {
             rent: ctx.accounts.rent.to_account_info()
         };
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        test_tokens::cpi::mint_token(cpi_ctx, mint_amount)?;
+        test_tokens::cpi::mint_token(cpi_ctx, _mint_amount)?;
         // END MINT
         
         config.last_mint_timestamp = clock.unix_timestamp;

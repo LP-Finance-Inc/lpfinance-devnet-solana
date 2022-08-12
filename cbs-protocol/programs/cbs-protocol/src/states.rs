@@ -10,9 +10,8 @@ use anchor_spl::{
 mod oracle;
 pub use oracle::*;
 
-use swap_base::{self, Pool};
-
-use lpfinance_swap::{self, PoolInfo};
+use stable_swap::{self, StableswapPool};
+use uniswap::{self, UniswapPool};
 
 use lpfinance_tokens::{self, TokenStateAccount};
 use lpfinance_tokens::program::LpfinanceTokens;
@@ -332,9 +331,9 @@ pub struct BorrowLpToken<'info> {
     )]
     pub user_lptoken : Box<Account<'info,TokenAccount>>,
     // LpUSD-USDC stableswap pool
-    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
     // LpSOL-wSOL stableswap pool
-    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
     #[account(mut)]
     pub lptoken_mint: Box<Account<'info,Mint>>,
     /// CHECK: pyth
@@ -353,7 +352,7 @@ pub struct BorrowLpToken<'info> {
     /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
-    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+    pub liquidity_pool: Box<Account<'info, UniswapPool>>,
     #[account(mut)]
     pub solend_config: Box<Account<'info, solend::Config>>,
     #[account(mut)]
@@ -393,9 +392,9 @@ pub struct WithdrawToken<'info> {
     #[account(mut)]
     pub dest_mint: Box<Account<'info,Mint>>,
     // LpUSD-USDC stableswap pool
-    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
     // LpSOL-wSOL stableswap pool
-    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     /// CHECK: pyth
@@ -411,7 +410,7 @@ pub struct WithdrawToken<'info> {
     /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
-    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+    pub liquidity_pool: Box<Account<'info, UniswapPool>>,
 
     #[account(mut)]
     pub solend_config: Box<Account<'info, solend::Config>>,
@@ -458,9 +457,9 @@ pub struct WithdrawLending<'info> {
     pub config: Box<Account<'info, Config>>,
 
     // LpUSD-USDC stableswap pool
-    pub stable_lpusd_pool: Box<Account<'info, Pool>>,
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
     // LpSOL-wSOL stableswap pool
-    pub stable_lpsol_pool: Box<Account<'info, Pool>>,
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
     /// CHECK: pyth
     pub pyth_ray_account: AccountInfo<'info>,
     /// CHECK: pyth
@@ -476,7 +475,7 @@ pub struct WithdrawLending<'info> {
     /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
-    pub liquidity_pool: Box<Account<'info, PoolInfo>>,
+    pub liquidity_pool: Box<Account<'info, UniswapPool>>,
     
     #[account(mut)]
     pub dest_mint: Box<Account<'info, Mint>>,
@@ -508,32 +507,6 @@ pub struct WithdrawLending<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
-#[derive(Accounts)]
-pub struct LiquidateLpTokenCollateral<'info> {
-    #[account(mut)]
-    pub user_account: Box<Account<'info, UserAccount>>,
-    #[account(mut)]
-    pub state_account: Box<Account<'info, StateAccount>>,
-
-    #[account(mut)]
-    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub auction_lpsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub auction_lpfi: Box<Account<'info, TokenAccount>>,
-
-    #[account(mut)]
-    pub cbs_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_lpsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_lpfi: Box<Account<'info, TokenAccount>>,
-
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
 
 #[derive(Accounts)]
 pub struct RepayToken<'info> {
@@ -543,12 +516,6 @@ pub struct RepayToken<'info> {
     pub user_dest : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
     pub dest_mint: Box<Account<'info,Mint>>,
-    // state account for user's wallet
-    #[account(mut,
-        seeds = [PREFIX.as_bytes()],
-        bump
-    )]
-    pub state_account: Box<Account<'info, StateAccount>>,
     #[account(mut)]
     pub config: Box<Account<'info, Config>>,
     #[account(mut)]
@@ -565,9 +532,279 @@ pub struct RepayToken<'info> {
 }
 
 #[derive(Accounts)]
+pub struct RepayTokenWithWSOL<'info> {
+    #[account(mut)]
+    pub user_authority: Signer<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub swap_escrow: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub stable_swap_pool: AccountInfo<'info>,
+
+    /// WOSL
+    #[account(mut,
+        constraint = config.wsol_mint == token_src.key()
+    )]
+    pub token_src: Box<Account<'info, Mint>>,
+    /// LpSOL
+    #[account(mut,
+        constraint = config.lpsol_mint == token_src.key()
+    )]
+    pub token_dest: Box<Account<'info, Mint>>,
+    /// WSOL
+    #[account(mut,
+        constraint = user_ata_src.mint == token_src.key()
+    )]
+    pub user_ata_src : Box<Account<'info,TokenAccount>>,
+    #[account(mut,
+        constraint = cbs_ata_src.mint == token_src.key()
+    )]
+    pub cbs_ata_src : Box<Account<'info,TokenAccount>>,
+    #[account(mut,
+        constraint = cbs_ata_dest.mint == token_dest.key()
+    )]
+    pub cbs_ata_dest : Box<Account<'info,TokenAccount>>,
+
+    #[account(mut,
+        constraint = swap_ata_src.mint == token_src.key()
+    )]
+    pub swap_ata_src : Box<Account<'info,TokenAccount>>,
+    #[account(mut,
+        constraint = swap_ata_dest.mint == token_dest.key()
+    )]
+    pub swap_ata_dest : Box<Account<'info,TokenAccount>>,
+
+    #[account(mut,
+        constraint = escrow_ata_src.mint == token_src.key()
+    )]
+    pub escrow_ata_src : Box<Account<'info,TokenAccount>>,
+    #[account(mut,
+        constraint = escrow_ata_dest.mint == token_dest.key()
+    )]
+    pub escrow_ata_dest : Box<Account<'info,TokenAccount>>,
+
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(
+        mut,
+        constraint = user_account.owner == user_authority.key()
+    )]
+    pub user_account: Box<Account<'info, UserAccount>>,
+
+    // Programs and Sysvars
+    /// CHECK:
+    pub swap_program: AccountInfo<'info>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
 pub struct UpdateUserAccount<'info> {
     #[account(mut)]
     pub user_account: Box<Account<'info, UserAccount>>
+}
+
+#[derive(Accounts)]
+pub struct LiquidateNormalSwap<'info> {
+    #[account(mut)]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    /// CHECK: cbs is user for swap
+    #[account(mut)]
+    pub swap_escrow: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub stable_swap_pool: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub token_state_account: AccountInfo<'info>,
+    // wsol, ray, msol, srm, scnsol, stsol
+    #[account(mut)]
+    pub token_src: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_lpusd: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_usdc: Box<Account<'info, Mint>>,
+
+    /// CHECK:
+    pub pyth_src: AccountInfo<'info>,
+    /// CHECK:
+    pub pyth_usdc: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub cbs_ata_src: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+    /// CHECK:
+    pub testtokens_program: AccountInfo<'info>,    
+    /// CHECK:
+    pub swaprouter_program: AccountInfo<'info>,  
+
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct LiquidateLpSOLTokenSwap<'info> {
+    #[account(mut)]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    /// CHECK: cbs is user for swap
+    #[account(mut)]
+    pub swap_escrow: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub stable_swap_pool: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub token_state_account: AccountInfo<'info>,
+    
+    #[account(mut)]
+    pub token_lpsol: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_wsol: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_usdc: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_lpusd: Box<Account<'info, Mint>>,
+
+    /// CHECK:
+    pub pyth_usdc: AccountInfo<'info>,
+    /// CHECK:
+    pub pyth_wsol: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+    /// CHECK:
+    pub testtokens_program: AccountInfo<'info>,    
+    /// CHECK:
+    pub swaprouter_program: AccountInfo<'info>,  
+
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct LiquidateLpFITokenSwap<'info> {
+    #[account(mut)]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    /// CHECK: cbs is user for swap
+    #[account(mut)]
+    pub swap_escrow: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub stable_swap_pool: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub uniswap_pool: AccountInfo<'info>,
+    
+    #[account(mut)]
+    pub token_lpusd: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_lpfi: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_usdc: Box<Account<'info, Mint>>,
+
+    #[account(mut)]
+    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_lpfi: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub uniswap_pool_ata_lpfi: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+    /// CHECK:
+    pub uniswap_program: AccountInfo<'info>,    
+    /// CHECK:
+    pub swaprouter_program: AccountInfo<'info>,  
+
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
 }
 
 #[account]
@@ -813,7 +1050,10 @@ pub struct UserAccount {
     pub lending_msol_amount: u64,
     pub lending_srm_amount: u64,
     pub lending_scnsol_amount: u64,
-    pub lending_stsol_amount: u64
+    pub lending_stsol_amount: u64,
+
+    // Escrow LpUSD amount after Liquidate
+    pub escrow_lpusd_amount: i64
 }
 
 impl UserAccount {
@@ -822,7 +1062,10 @@ impl UserAccount {
         + PUBLIC_KEY_LENGTH // owner pubkey
         + U8_LENGTH;        // Liquidate process
 
-
+    pub fn update_current_step(&mut self, step_num: u8) -> Result<bool> {
+        self.step_num = step_num;
+        Ok(true)
+    }
 
     pub fn check_liquidatable ( &self ) -> Result<bool> {
         let mut _is_able_to_liquidate = true;
@@ -846,6 +1089,30 @@ impl UserAccount {
         }
 
         Ok(_is_able_to_liquidate)
+    }
+
+    pub fn is_empty_account (&self) -> Result<bool> {
+        let mut _is_empty = true;
+        if self.ray_amount != 0 {
+            _is_empty = false;
+        }
+        if self.wsol_amount != 0 {
+            _is_empty = false;
+        }
+        if self.msol_amount != 0 {
+            _is_empty = false;
+        }
+        if self.srm_amount != 0 {
+            _is_empty = false;
+        }
+        if self.scnsol_amount != 0 {
+            _is_empty = false;
+        }
+        if self.stsol_amount != 0 {
+            _is_empty = false;
+        }
+
+        Ok(_is_empty)
     }
 
     pub fn update_borrowed_amount (
@@ -1012,9 +1279,9 @@ impl UserAccount {
         config: &mut Account<Config>,
         solend_config: &mut Account<solend::Config>,
         apricot_config: &mut Account<apricot::Config>,
-        liquidity_pool: &Account<PoolInfo>,
-        stable_lpusd_pool: &Account<Pool>,
-        stable_lpsol_pool: &Account<Pool>,
+        liquidity_pool: &Account<UniswapPool>,
+        stable_lpusd_pool: &Account<StableswapPool>,
+        stable_lpsol_pool: &Account<StableswapPool>,
         pyth_ray_account: &AccountInfo,
         pyth_usdc_account: &AccountInfo,
         pyth_sol_account: &AccountInfo,
@@ -1178,9 +1445,9 @@ impl UserAccount {
     // Return: LTV, TOTAL_PRICE, Borrowed Total
     pub fn get_ltv_from_auction(
         &self,
-        liquidity_pool: &Account<PoolInfo>,
-        stable_lpusd_pool: &Account<Pool>,
-        stable_lpsol_pool: &Account<Pool>,
+        liquidity_pool: &Account<UniswapPool>,
+        stable_lpusd_pool: &Account<StableswapPool>,
+        stable_lpsol_pool: &Account<StableswapPool>,
         pyth_ray_account: &AccountInfo,
         pyth_usdc_account: &AccountInfo,
         pyth_sol_account: &AccountInfo,

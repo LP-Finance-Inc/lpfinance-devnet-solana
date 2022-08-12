@@ -24,13 +24,13 @@ export const ApricotConfig= new PublicKey("1MA4Cp4wkLipThnYB1M6QpJ12mJvdH2ESbAvQ
 export const SolendStateAccount= new PublicKey("76XJ35ToUi7ivAc9p62t8t4ukvE9BQPsNRSbUKiZmmuW")
 export const ApricotStateAccount= new PublicKey("7bAetJoCfBiUmg8kZmQxUjnwCy7C7fPWUeYzAg1edFDM")
 
-export const StableLpusdPool = new PublicKey("4Mcu9CJj8EPtsijxtwqo5kpPJSmzyeTZKE7Won5Q6iyL");
-export const StableLpsolPool = new PublicKey("Hi9bZiEgdto5gHdMNfcZxHe1SZh63ifnD3HJEyWhcgKF");
+export const StableLpusdPool = new PublicKey("B51GTPYfj8FvVLq71wStjAkkc4mSDgXbfDQgLygDpczc");
+export const StableLpsolPool = new PublicKey("CVsmW8n6Wm8YfF6ssMgpvaURdFCY2je55WBnHTUjX7hz");
 
 export const solendPool = new PublicKey("AjU3jz8zc7vksB42VhvH3D1Rx5M5s2Bfh94WbJdYS79Y") // RAY ata
 export const apricotPool = new PublicKey("3iHXjSSpVwg8rtUFDt6LNQRu8ttdYvBLnAj6cmW2zkqs") // RAY ata
 
-export const LiquidityPool = new PublicKey("GVcycXRoAR5Lt9H2wJTCRp6hJHVL4pHVLDtQbvMyhtPc")
+export const LiquidityPool = new PublicKey("C4rkcFbPi2E9jUcuLxfFakJQZKaRRuKgjnCdLSYWBSeq")
 
 // ======> PYTH
 export const pythRayAccount = new PublicKey("EhgAdTrgxi4ZoVZLQx1n93vULucPpiFi2BQtz9RJr1y6"); // 3m1y5h2uv7EQL3KaJZehvAJa4yDNvgc5yAdL9KPMKwvk

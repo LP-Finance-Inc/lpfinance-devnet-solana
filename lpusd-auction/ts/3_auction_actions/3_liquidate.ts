@@ -87,6 +87,7 @@ const liquidate = async () => {
         pythScnsolAccount,
         pythStsolAccount,
         liquidityPool: LiquidityPool,
+        cbsProgram: cbsProgramId,
         lptokensProgram: lptokenProgramId,
         systemProgram: anchor.web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,

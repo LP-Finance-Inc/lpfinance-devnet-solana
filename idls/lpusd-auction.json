@@ -682,6 +682,11 @@
       "code": 6010,
       "name": "EmptyAccount",
       "msg": "Empty Account"
+    },
+    {
+      "code": 6011,
+      "name": "ReadyErrorForLiquidate",
+      "msg": "Withdraw collateral tokens before Liquidate"
     }
   ],
   "metadata": {
