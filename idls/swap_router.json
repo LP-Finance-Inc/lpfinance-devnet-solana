@@ -91,7 +91,8 @@
           "name": "amountSrc",
           "type": "u64"
         }
-      ]
+      ],
+      "returns": "u64"
     },
     {
       "name": "swapUniswap",
@@ -500,7 +501,8 @@
           "name": "amountLpfi",
           "type": "u64"
         }
-      ]
+      ],
+      "returns": "u64"
     },
     {
       "name": "swapLpusdToLpsolStep1",
@@ -894,7 +896,8 @@
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [],
+      "returns": "u64"
     },
     {
       "name": "swapLpusdToNormal",
@@ -1126,7 +1129,8 @@
           "name": "amountSrc",
           "type": "u64"
         }
-      ]
+      ],
+      "returns": "u64"
     },
     {
       "name": "swapLpsolToNormal",
