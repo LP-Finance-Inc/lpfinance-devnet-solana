@@ -872,22 +872,17 @@
           "isSigner": true
         },
         {
-          "name": "userDest",
+          "name": "tokenSrc",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "destMint",
+          "name": "userAtaSrc",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "config",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "destPool",
           "isMut": true,
           "isSigner": false
         },

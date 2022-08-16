@@ -315,9 +315,9 @@ pub mod cbs_protocol {
 
             _lending_rate_f = _lending_rate as f64;
 
-            let witthdraw_amount: u64 = (lending_amount_f * lending_denominator_f / _lending_rate_f) as u64;
-
-            user_account.update_lending_amount(witthdraw_amount, dest_mint.key(), config)?;
+            let additional_lending_amount: u64 = (lending_amount_f * lending_denominator_f / _lending_rate_f) as u64;
+            let total_lending_amount = user_account.get_key_lending_amount(dest_mint.key(), config)? + additional_lending_amount;
+            user_account.update_lending_amount(total_lending_amount, dest_mint.key(), config)?;
             msg!("LendingRate: {}, {}, {}, {}", _lending_rate, _solend_higher, _solend_rate, _apricot_rate );
 
             if _solend_higher {
@@ -530,6 +530,7 @@ pub mod cbs_protocol {
             pyth_stsol_account
         )?;
 
+        msg!("LTV {} {} {} {}", _ltv, _dest_price, _total_price, _borrowed_total);
 
         if _ltv > LTV as u64{
             return Err(ErrorCode::LTVAlreadyExceed.into());
@@ -547,14 +548,15 @@ pub mod cbs_protocol {
             apricot_config
         );
 
+
         let key_lending_amount = user_account.get_key_lending_amount(dest_mint.key(), config)?;
         let key_amount = user_account.get_key_amount(dest_mint.key(), config)?;
         let key_total_deposited_amount = config.get_key_deposited_amount(dest_mint.key())?;
 
+        let withdrawable_amount: f64 = (_total_price - _borrowed_total * DOMINATOR / LTV) / _dest_price as f64;
+        msg!("Borrowable {} {}", withdrawable_amount, _solend_higher);
 
-
-        let borrowable_amount: f64 = (_total_price * LTV / DOMINATOR - _borrowed_total) / _dest_price as f64;
-        if amount > borrowable_amount as u64{
+        if amount > withdrawable_amount as u64{
             return Err(ErrorCode::InsufficientAmount.into());
         }
         
@@ -586,37 +588,41 @@ pub mod cbs_protocol {
                     _user_lending_amount_for = (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
                 } else {
                     _solend_withdraw_amount = solend_total_amount;
-                    let apricot_withdraw_amount = withdraw_amount_from_lending- solend_total_amount;
+                    _apricot_withdraw_amount = withdraw_amount_from_lending- solend_total_amount;
                     
-                    if apricot_withdraw_amount > apricot_total_amount {
+                    if _apricot_withdraw_amount > apricot_total_amount {
                         return Err(ErrorCode::InsufficientAmount.into());
                     }
 
-                    _user_lending_amount_for = (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
-                    _user_lending_amount_for += (apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
+                    _user_lending_amount_for = solend_key_amount;
+                    _user_lending_amount_for += (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
                 }
+
             } else {
                 if withdraw_amount_from_lending<= apricot_total_amount {
                     _apricot_withdraw_amount = withdraw_amount_from_lending;
 
-                    _user_lending_amount_for = (_solend_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
+                    _user_lending_amount_for = (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
                 } else {
                     _apricot_withdraw_amount = apricot_total_amount;
 
-                    let solend_withdraw_amount = withdraw_amount_from_lending- apricot_total_amount;
-                    if solend_withdraw_amount > solend_total_amount {
+                    _solend_withdraw_amount = withdraw_amount_from_lending- apricot_total_amount;
+                    if _solend_withdraw_amount > solend_total_amount {
                         return Err(ErrorCode::InsufficientAmount.into());
                     }
 
-                    _user_lending_amount_for = (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
-                    _user_lending_amount_for += (solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
+                    _user_lending_amount_for = apricot_key_amount;
+                    _user_lending_amount_for += (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
                 }
             }
+            msg!("Lending: {} {}", _solend_withdraw_amount, _apricot_withdraw_amount );
         }
         
 
         let owned_amount: u64 = if amount > key_amount { 0} else { key_amount - amount };
         let total_deposited_amount = key_total_deposited_amount - amount;
+
+        msg!("Lending: {} {}", key_lending_amount - _user_lending_amount_for, owned_amount );
 
         user_account.update_lending_amount(key_lending_amount - _user_lending_amount_for, dest_mint.key(), config)?;
         user_account.update_deposited_amount(owned_amount, dest_mint.key(), config)?;  
@@ -885,21 +891,27 @@ pub mod cbs_protocol {
         ctx: Context<RepayToken>,
         amount: u64
     ) -> Result<()> {
-        if ctx.accounts.user_dest.amount < amount {
+        if ctx.accounts.user_ata_src.amount < amount {
             return Err(ErrorCode::InsufficientAmount.into());
         }
 
         let user_account =&mut ctx.accounts.user_account;
+        let config = &mut ctx.accounts.config;
 
         if user_account.step_num > 0 && user_account.step_num < 6 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
-        let config = &mut ctx.accounts.config;
+        if (user_account.borrowed_lpsol < amount && ctx.accounts.token_src.key() == config.lpsol_mint) ||
+            (user_account.borrowed_lpusd < amount && ctx.accounts.token_src.key() == config.lpusd_mint) ||
+            amount == 0
+        {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
 
         // Validate Token
-        if ctx.accounts.user_dest.mint != config.lpusd_mint &&
-            ctx.accounts.user_dest.mint != config.lpsol_mint
+        if ctx.accounts.user_ata_src.mint != config.lpusd_mint &&
+            ctx.accounts.user_ata_src.mint != config.lpsol_mint
         {
             return Err(ErrorCode::InvalidToken.into());
         }
@@ -907,22 +919,22 @@ pub mod cbs_protocol {
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Burn {
-                mint: ctx.accounts.dest_mint.to_account_info(),
-                from: ctx.accounts.user_dest.to_account_info(),
+                mint: ctx.accounts.token_src.to_account_info(),
+                from: ctx.accounts.user_ata_src.to_account_info(),
                 authority: ctx.accounts.user_authority.to_account_info()
             }
         );
 
         token::burn(cpi_ctx, amount)?;
 
-        if ctx.accounts.user_dest.mint == config.lpusd_mint{  
+        if ctx.accounts.user_ata_src.mint == config.lpusd_mint{  
             if user_account.borrowed_lpusd < amount || config.total_borrowed_lpusd < amount {
                 return Err(ErrorCode::RepayFinished.into());
             }
 
             user_account.borrowed_lpusd = user_account.borrowed_lpusd - amount;
             config.total_borrowed_lpusd = config.total_borrowed_lpusd - amount;  
-        } else if ctx.accounts.user_dest.mint == config.lpsol_mint {
+        } else if ctx.accounts.user_ata_src.mint == config.lpsol_mint {
             if user_account.borrowed_lpsol < amount || config.total_borrowed_lpsol < amount {
                 return Err(ErrorCode::RepayFinished.into());
             }
@@ -969,6 +981,7 @@ pub mod cbs_protocol {
             return Err(ErrorCode::InvalidOwner.into());
         }
 
+        msg!("Repay with wSOL token");
         let seeds = &[
             PREFIX.as_bytes(),
             &[program_authority_bump]
@@ -1386,7 +1399,7 @@ pub mod cbs_protocol {
 pub enum ErrorCode {
     #[msg("Insufficient Amount From User Account")]
     InsufficientUserAmount,
-    #[msg("Insufficient Amount")]
+    #[msg("CBS: Insufficient Amount")]
     InsufficientAmount,
     #[msg("Borrow Failed")]
     BorrowFailed,

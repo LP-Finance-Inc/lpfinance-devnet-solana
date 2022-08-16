@@ -5,13 +5,14 @@ import * as fs from "fs";
 export { default as SolendIDL } from "../../../solend/target/idl/solend.json"
 export { default as  ApricotIDL } from "../../../apricot/target/idl/apricot.json"
 export { default as  LpfinanceTokenIDL } from "../../../lpfinance-tokens/target/idl/lpfinance_tokens.json";
+export { default as SwapRouterIDL } from "../../../swap-router/target/idl/swap_router.json"
+export { default as StableSwapIDL } from "../../../stable-swap/target/idl/stable_swap.json"
 
 export const NETWORK = "https://api.devnet.solana.com";
 
 export const PREFIX = "cbs-pda";
 export const SOLEND_PREFIX = "solend0";
 export const APRICOT_PREFIX = "apricot0";
-
 
 export const LpfinanceTokenPDA = new PublicKey("64iaARaRU9sXwLmAVy1a5NkYVM82GJ9Lvk2VfJ8PMChk");
 export const LpfinanceTokenConfig = new PublicKey("3Lpjwy6tGj4XQVJBMcr8ESRpLDgdat3ozedQD5AjSf5a");

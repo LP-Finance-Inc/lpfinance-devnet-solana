@@ -3,7 +3,7 @@ import { PublicKey } from "@solana/web3.js";
 export const NETWORK = "https://api.devnet.solana.com";
 // export const NETWORK = "http://localhost:8899";
 
-export const stableswap_programID = new PublicKey("9rqUhixcYwZYeisZEXs48kERZdqz4DBzAamNz2noSjVv");
+export const stableswap_programID = new PublicKey("EDvp5kbQi9ogJtRgnxWaX58V66xEeZqWXxy4QUrhNC2V");
 export const uniswap_programID = new PublicKey("2ejhKmqZXS5kBH8GxQ8jcwEBShCpGBNew1ARwmopLzX4");
 export const testToken_programID = new PublicKey("Bf3gzixnjrMhCznHppNrU9UvSY1oER1T2TyW7TQXZoqk");
 
@@ -11,11 +11,11 @@ export const StableswapLpusdUsdc = new PublicKey("92zqwB54bWHgsQiADXrJcSEEeWQSGv
 export const StableswapLpsolWsol = new PublicKey("C72jLZxpPqBLW66RCE3ArLNUKH1hR6jJtpT4eZ8H3oJp")
 export const UniswapLpfiUsdc = new PublicKey("8c8Z8exDD8KYTKgxvAvwvVW5pkwWQNmn4ZxFCtRqmEr9")
 
-export const LpUSD = new PublicKey("6sXVhftnZbEJcigBxyYrLG3YW1LLV9H7qfbcWz3ZAjQS")
-export const LpSOL = new PublicKey("9bYosypxgNvgWQvapZbHeEZWn9uCTPVVCLwe4siXppjA")
-export const LpFI = new PublicKey("9hfxXUDxxQZHZy3JPQCD1bwj8jdMsDKR1YEWZcyrGHRx");
+export const LpUSD = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL")
+export const LpSOL = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ")
+export const LpFI = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p");
 
-export const WSOL = new PublicKey("ALHSqrBBzyFEdbRSiSDYRZqNrBqEn38VKxvf2RyAn4Ju")
+export const WSOL = new PublicKey("6hPAQy93EbDzwHyU843zcWKATy8NrJ1ZsKCRi2JkuXcT")
 export const WSOL_PYTH = new PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix")
 
 export const MSOL = new PublicKey("ANfCF4STCJGBeZiVDeQktT3tL4WaPGCjoy1ZS8TxUm5A")

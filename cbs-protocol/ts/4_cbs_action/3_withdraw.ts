@@ -65,7 +65,7 @@ const withdraw = async () => {
   const apricotProgramId = new PublicKey(ApricotIDL.metadata.address) 
 
 
-  const withdraw_wei = convert_to_wei("1");
+  const withdraw_wei = convert_to_wei("5");
   const withdraw_amount = new anchor.BN(withdraw_wei);
   
   const tx = await program.rpc.withdrawToken(withdraw_amount, {

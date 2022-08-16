@@ -70,5 +70,7 @@ const print_user_data = (userData) => {
       { "Property": "lending_srm_amount", "Value" : userData.lendingSrmAmount.toString()},
       { "Property": "lending_scnsol_amount", "Value" : userData.lendingScnsolAmount.toString()},
       { "Property": "lending_stsol_amount", "Value" : userData.lendingStsolAmount.toString()},
+      { "Property": "step num", "Value" : userData.stepNum.toString()},
+      { "Property": "escrowLpusd amount", "Value" : userData.escrowLpusdAmount.toString()},
     ]);
   }

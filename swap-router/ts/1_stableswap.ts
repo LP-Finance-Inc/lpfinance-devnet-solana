@@ -64,7 +64,7 @@ const stable_swap = async () => {
   // const token_src = USDC;
   // const token_dest = LpUSD;
 
-  const stableswap_pool = StableswapLpsolWsol;
+  const stableswap_pool = getPublicKey('lpsol-wsol-pool');
 
   const token_src = LpSOL;
   const token_dest = WSOL;

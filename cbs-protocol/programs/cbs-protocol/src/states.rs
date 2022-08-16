@@ -513,13 +513,11 @@ pub struct RepayToken<'info> {
     #[account(mut)]
     pub user_authority: Signer<'info>,
     #[account(mut)]
-    pub user_dest : Box<Account<'info,TokenAccount>>,
+    pub token_src: Box<Account<'info,Mint>>,
     #[account(mut)]
-    pub dest_mint: Box<Account<'info,Mint>>,
+    pub user_ata_src : Box<Account<'info,TokenAccount>>,
     #[account(mut)]
     pub config: Box<Account<'info, Config>>,
-    #[account(mut)]
-    pub dest_pool: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         constraint = user_account.owner == user_authority.key()
@@ -535,7 +533,7 @@ pub struct RepayToken<'info> {
 pub struct RepayTokenWithWSOL<'info> {
     #[account(mut)]
     pub user_authority: Signer<'info>,
-    /// CHECK:
+    /// CHECK: escrow_pda
     #[account(mut)]
     pub swap_escrow: AccountInfo<'info>,
     /// CHECK:
@@ -549,7 +547,7 @@ pub struct RepayTokenWithWSOL<'info> {
     pub token_src: Box<Account<'info, Mint>>,
     /// LpSOL
     #[account(mut,
-        constraint = config.lpsol_mint == token_src.key()
+        constraint = config.lpsol_mint == token_dest.key()
     )]
     pub token_dest: Box<Account<'info, Mint>>,
     /// WSOL
@@ -566,6 +564,7 @@ pub struct RepayTokenWithWSOL<'info> {
     )]
     pub cbs_ata_dest : Box<Account<'info,TokenAccount>>,
 
+    // stableswap ata
     #[account(mut,
         constraint = swap_ata_src.mint == token_src.key()
     )]
@@ -575,14 +574,12 @@ pub struct RepayTokenWithWSOL<'info> {
     )]
     pub swap_ata_dest : Box<Account<'info,TokenAccount>>,
 
-    #[account(mut,
-        constraint = escrow_ata_src.mint == token_src.key()
-    )]
-    pub escrow_ata_src : Box<Account<'info,TokenAccount>>,
-    #[account(mut,
-        constraint = escrow_ata_dest.mint == token_dest.key()
-    )]
-    pub escrow_ata_dest : Box<Account<'info,TokenAccount>>,
+    /// CHECK: Swap-router escrow ata
+    #[account(mut)]
+    pub escrow_ata_src : AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub escrow_ata_dest : AccountInfo<'info>,
 
     /// CHECK: this is safe
     #[account(mut,
@@ -1380,14 +1377,15 @@ impl UserAccount {
         msg!("stsol price {}", stsol_price);
         // LpUSD price
         let usdc_price: f64 = get_price(pyth_usdc_account)? as f64;
-        msg!("LpUSD price {}", usdc_price);
-        let lpusd_price = usdc_price * lpusd_swap_amount as f64/ PRICE_UNIT as f64;    
+        let lpusd_price = usdc_price * lpusd_swap_amount as f64/ PRICE_UNIT as f64;  
+        msg!("LpUSD price {}", lpusd_price);  
         if lpusd_price <= 0.0 {
             return Err(ErrorCode::InvalidPythPrice.into());
         }
 
         // LpSOL price
         let lpsol_price = sol_price * lpsol_swap_amount as f64 / PRICE_UNIT as f64;
+        msg!("LpSOL price {}", lpsol_price);  
         if lpsol_price <= 0.0 {
             return Err(ErrorCode::InvalidPythPrice.into());
         }

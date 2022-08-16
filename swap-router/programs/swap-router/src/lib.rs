@@ -15,7 +15,7 @@ use stable_swap::cpi::accounts::StableswapTokens;
 use uniswap::cpi::accounts::UniswapTokens;
 use test_tokens::cpi::accounts::MintToken;
 
-declare_id!("APGnD1z3h8nei6uvZ4gGEhRhyqBy7axFdhJGM3LB61jF");
+declare_id!("AxfYaVXibrtcLB58SmFWvTjLKE6ejkJmuEoPpWap87VB");
 
 #[program]
 pub mod swap_router {
@@ -24,6 +24,7 @@ pub mod swap_router {
     use super::*;
 
     pub fn swap_stableswap(ctx: Context<SwapStableswap>, amount_src: u64) -> Result<u64> {
+        msg!("SWAP stableswap");
         if amount_src == 0 {
             return Err(ErrorCode::AmountZeroError.into());
         }
@@ -103,7 +104,7 @@ pub mod swap_router {
         let cpi_program = token_program.to_account_info();
         let cpi_ctx_dest = CpiContext::new_with_signer(cpi_program, cpi_accounts_dest, signer);
         token::transfer(cpi_ctx_dest, amount_dest)?;
-
+        
         Ok(amount_dest)
     }
 

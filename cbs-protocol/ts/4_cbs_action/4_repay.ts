@@ -7,101 +7,61 @@ import {
 } from "@solana/web3.js";
 
 import { 
-  NETWORK, 
-  PREFIX, 
-  pythRayAccount,
-  pythUsdcAccount,
-  pythSolAccount,
-  pythMsolAccount,
-  pythSrmAccount,
-  pythScnsolAccount,
-  pythStsolAccount,
-  LpfinanceTokenIDL,
-  LpfinanceTokenPDA,
-  LpfinanceTokenConfig,
-  LiquidityPool,
-  StableLpusdPool,
-  StableLpsolPool,
-  SolendConfig,
-  ApricotConfig,
+    NETWORK, 
+    PREFIX
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const { Wallet } = anchor;
 
-const borrow = async () => {
-  const connection = new Connection(NETWORK, "confirmed");
+const repay_token = async () => {
+    const connection = new Connection(NETWORK, "confirmed");
 
-  const creatorKeypair = getCreatorKeypair();
+    const creatorKeypair = getCreatorKeypair();
 
-  anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
-  const program = anchor.workspace.CbsProtocol as Program<CbsProtocol>;
+    anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
+    const program = anchor.workspace.CbsProtocol as Program<CbsProtocol>;
+    // Config
+    const config = getPublicKey('cbs_config');  
+    const cbsConfigData = await program.account.config.fetch(config);
 
-  // Config
-  const config = getPublicKey('cbs_config');  
-  const cbsConfigData = await program.account.config.fetch(config);
+    const tokenSrc= cbsConfigData.lpsolMint as PublicKey;
+    const userAtaSrc = await getATAPublicKey(tokenSrc, creatorKeypair.publicKey);
 
-  // const lptokenMint= cbsConfigData.lpusdMint as PublicKey;
-  const lptokenMint= cbsConfigData.lpsolMint as PublicKey;
-  const userLptoken = await getATAPublicKey(lptokenMint, creatorKeypair.publicKey);
+    const [userAccount, bump] = await PublicKey.findProgramAddress(
+        [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
+        program.programId
+    );
 
-  const [userAccount, bump] = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
-    program.programId
-  );
+    const repay_wei = convert_to_wei("0.5");
+    const repay_amount = new anchor.BN(repay_wei);
+    
+    if (tokenSrc == cbsConfigData.lpusdMint || tokenSrc == cbsConfigData.lpsolMint) {
+        const tx = await program.rpc.repayToken(repay_amount, {
+        accounts: {
+            userAuthority: creatorKeypair.publicKey,
+            userAccount,
+            config: config,
+            tokenSrc,
+            userAtaSrc,      
+            systemProgram: anchor.web3.SystemProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            rent: SYSVAR_RENT_PUBKEY
+        },
+        });
+        console.log("repay successfully: ", tx);
+    } 
 
-  const PDA = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX)],
-    program.programId
-  );
+    const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
+    print_config_data(cbsConfigDataAfterDeposit)
 
-  const lptokenProgramId = LpfinanceTokenIDL.metadata.address;
-
-  const borrow_wei = convert_to_wei("1");
-  const borrow_amount = new anchor.BN(borrow_wei);
-  
-  const tx = await program.rpc.borrowLptoken(borrow_amount, {
-    accounts: {
-        userAuthority: creatorKeypair.publicKey,
-        userAccount,
-        cbsPda: PDA[0],
-        config: config,
-        tokensState: LpfinanceTokenPDA,
-        lptokenConfig: LpfinanceTokenConfig,
-        userLptoken: userLptoken,
-        stableLpusdPool: StableLpusdPool,
-        stableLpsolPool: StableLpsolPool,
-        lptokenMint,        
-        pythUsdcAccount,
-        pythRayAccount,
-        pythSolAccount,
-        pythMsolAccount,
-        pythSrmAccount,
-        pythScnsolAccount,
-        pythStsolAccount,
-        solendConfig: SolendConfig,
-        apricotConfig: ApricotConfig,
-        liquidityPool: LiquidityPool,
-        lptokensProgram: lptokenProgramId,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        rent: SYSVAR_RENT_PUBKEY
-    },
-  });
-
-  console.log("Borrow successfully", tx)
-
-  const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
-  print_config_data(cbsConfigDataAfterDeposit)
-
-  const userData = await program.account.userAccount.fetch(userAccount);
-  print_user_data(userData)
+    const userData = await program.account.userAccount.fetch(userAccount);
+    print_user_data(userData)
 }
 
-borrow();
+repay_token();
 
 const print_config_data = (configData) => {     
   console.log("===== Config Data =====") 

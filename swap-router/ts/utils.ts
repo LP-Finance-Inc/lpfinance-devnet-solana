@@ -11,14 +11,14 @@ export const logError = (msg: string) => {
 
 export const writePublicKey = (publicKey: PublicKey, name: string) => {
   fs.writeFileSync(
-    `./keys/${name}_pub.json`,
+    `../keys/${name}_pub.json`,
     JSON.stringify(publicKey.toString())
   );
 };
 
 export const getPublicKey = (name: string) =>
   new PublicKey(
-    JSON.parse(fs.readFileSync(`./keys/${name}_pub.json`) as unknown as string)
+    JSON.parse(fs.readFileSync(`../keys/${name}_pub.json`) as unknown as string)
   );
 
 export const getPrivateKey = (name: string) =>
@@ -34,7 +34,7 @@ export const getKeypair = (name: string) =>
 
 export const getCreatorKeypair = () => {
   const pk = Uint8Array.from(
-    JSON.parse(fs.readFileSync(`/home/olaf/.config/solana/id.json`) as unknown as string)
+    JSON.parse(fs.readFileSync(`/Users/coredev0927/.config/solana/id.json`) as unknown as string)
   );
   const keypair = Keypair.fromSecretKey(pk);
   return keypair;
