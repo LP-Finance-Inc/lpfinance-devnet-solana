@@ -76,37 +76,38 @@ pub struct CreateLpTokenATA<'info> {
     pub cbs_pda: AccountInfo<'info>,
     // LpSOL POOL
     #[account(
-        init,
-        token::mint = lpsol_mint,
-        token::authority = cbs_pda,
-        payer = authority
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = lpsol_mint,
+        associated_token::authority = cbs_pda
     )]
     pub pool_lpsol: Box<Account<'info, TokenAccount>>,
 
     // LpUSD POOL
     #[account(
-        init,
-        token::mint = lpusd_mint,
-        token::authority = cbs_pda,
+        init_if_needed,
+        associated_token::mint = lpusd_mint,
+        associated_token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_lpusd: Box<Account<'info, TokenAccount>>,
     // LpFi POOL
     #[account(
-        init,
-        token::mint = lpfi_mint,
-        token::authority = cbs_pda,
+        init_if_needed,
+        associated_token::mint = lpfi_mint,
+        associated_token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_lpfi: Box<Account<'info, TokenAccount>>,    
 
     pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
 }
 
 #[derive(Accounts)]
-pub struct CreateTokenATA<'info> {
+pub struct CreateTokenATA1<'info> {
     // Token program authority
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -121,6 +122,54 @@ pub struct CreateTokenATA<'info> {
     pub wsol_mint: Box<Account<'info, Mint>>,
     pub ray_mint: Box<Account<'info, Mint>>,
     pub msol_mint: Box<Account<'info, Mint>>,
+
+    /// CHECK: This is safe
+    #[account(seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+
+    // wSOL POOL
+    #[account(
+        init_if_needed,
+        associated_token::mint = wsol_mint,
+        associated_token::authority = cbs_pda,
+        payer = authority
+    )]
+    pub pool_wsol: Box<Account<'info, TokenAccount>>,
+    // Ray POOL
+    #[account(
+        init_if_needed,
+        associated_token::mint = ray_mint,
+        associated_token::authority = cbs_pda,
+        payer = authority
+    )]
+    pub pool_ray: Box<Account<'info, TokenAccount>>,
+    // mSOL POOL
+    #[account(
+        init_if_needed,
+        associated_token::mint = msol_mint,
+        associated_token::authority = cbs_pda,
+        payer = authority
+    )]
+    pub pool_msol: Box<Account<'info, TokenAccount>>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct CreateTokenATA2<'info> {
+    // Token program authority
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    // Config Accounts
+    #[account(mut,
+        constraint = config.owner == authority.key()
+    )]
+    pub config: Box<Account<'info, Config>>,
+    
+    // Tokens
     pub srm_mint: Box<Account<'info, Mint>>,
     pub scnsol_mint: Box<Account<'info, Mint>>,
     pub stsol_mint: Box<Account<'info, Mint>>,
@@ -129,56 +178,33 @@ pub struct CreateTokenATA<'info> {
     #[account(seeds = [PREFIX.as_ref()], bump)]
     pub cbs_pda: AccountInfo<'info>,
 
-    // wSOL POOL
-    #[account(
-        init,
-        token::mint = wsol_mint,
-        token::authority = cbs_pda,
-        payer = authority
-    )]
-    pub pool_wsol: Box<Account<'info, TokenAccount>>,
-    // Ray POOL
-    #[account(
-        init,
-        token::mint = ray_mint,
-        token::authority = cbs_pda,
-        payer = authority
-    )]
-    pub pool_ray: Box<Account<'info, TokenAccount>>,
-    // mSOL POOL
-    #[account(
-        init,
-        token::mint = msol_mint,
-        token::authority = cbs_pda,
-        payer = authority
-    )]
-    pub pool_msol: Box<Account<'info, TokenAccount>>,
     // srm POOL
     #[account(
-        init,
-        token::mint = srm_mint,
-        token::authority = cbs_pda,
+        init_if_needed,
+        associated_token::mint = srm_mint,
+        associated_token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_srm: Box<Account<'info, TokenAccount>>,
     // scnsol POOL
     #[account(
-        init,
-        token::mint = scnsol_mint,
-        token::authority = cbs_pda,
+        init_if_needed,
+        associated_token::mint = scnsol_mint,
+        associated_token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_scnsol: Box<Account<'info, TokenAccount>>,
     // stsol POOL
     #[account(
-        init,
-        token::mint = stsol_mint,
-        token::authority = cbs_pda,
+        init_if_needed,
+        associated_token::mint = stsol_mint,
+        associated_token::authority = cbs_pda,
         payer = authority
     )]
     pub pool_stsol: Box<Account<'info, TokenAccount>>,    
 
     pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
 }
@@ -542,12 +568,12 @@ pub struct RepayTokenWithWSOL<'info> {
 
     /// WOSL
     #[account(mut,
-        constraint = config.wsol_mint == token_src.key()
+        // constraint = config.wsol_mint == token_src.key()
     )]
     pub token_src: Box<Account<'info, Mint>>,
     /// LpSOL
     #[account(mut,
-        constraint = config.lpsol_mint == token_dest.key()
+        // constraint = config.lpsol_mint == token_dest.key()
     )]
     pub token_dest: Box<Account<'info, Mint>>,
     /// WSOL
@@ -573,13 +599,6 @@ pub struct RepayTokenWithWSOL<'info> {
         constraint = swap_ata_dest.mint == token_dest.key()
     )]
     pub swap_ata_dest : Box<Account<'info,TokenAccount>>,
-
-    /// CHECK: Swap-router escrow ata
-    #[account(mut)]
-    pub escrow_ata_src : AccountInfo<'info>,
-    /// CHECK:
-    #[account(mut)]
-    pub escrow_ata_dest : AccountInfo<'info>,
 
     /// CHECK: this is safe
     #[account(mut,

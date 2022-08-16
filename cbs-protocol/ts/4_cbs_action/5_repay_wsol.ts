@@ -32,7 +32,7 @@ const repay_wsol = async () => {
 
     const tokenSrc= cbsConfigData.wsolMint as PublicKey;
     const tokenDest= cbsConfigData.lpsolMint as PublicKey;    
-    const cbsAtaSrc = cbsConfigData.poolWsol as PublicKey;    
+    // const cbsAtaSrc = cbsConfigData.poolWsol as PublicKey;    
     const cbsAtaDest = cbsConfigData.poolLpsol as PublicKey;    
 
     const swapAtaSrc = await getATAPublicKey(tokenSrc, StableLpsolPool);
@@ -52,6 +52,7 @@ const repay_wsol = async () => {
         program.programId
     );
 
+    const cbsAtaSrc = await getATAPublicKey(tokenSrc, PDA[0]);
     // ====== swap router =====
     const swapRouterProgramId = new PublicKey(SwapRouterIDL.metadata.address);
     const stableswapProgramId = new PublicKey(StableSwapIDL.metadata.address);
@@ -68,25 +69,6 @@ const repay_wsol = async () => {
 
     const repay_wei = convert_to_wei("0.1");
     const repay_amount = new anchor.BN(repay_wei);
-    console.log(
-        "creatorKeypair" , creatorKeypair.publicKey.toBase58(), "\n",
-        "userAccount" , userAccount.toBase58(), "\n",
-        "config" , config.toBase58(), "\n",
-        "swap_escrow_pool_pda" , swap_escrow_pool_pda[0].toBase58(), "\n",
-        "StableLpsolPool" , StableLpsolPool.toBase58(), "\n",
-        "tokenSrc" , tokenSrc.toBase58(), "\n",
-        "tokenDest" , tokenDest.toBase58(), "\n",
-        "userAtaSrc" , userAtaSrc.toBase58(), "\n",
-        "cbsAtaSrc" , cbsAtaSrc.toBase58(), "\n",
-        "cbsAtaDest" , cbsAtaDest.toBase58(), "\n",
-        "swapAtaSrc" , swapAtaSrc.toBase58(), "\n",
-        "swapAtaDest" , swapAtaDest.toBase58(), "\n",
-        "escrowAtaSrc" , escrowAtaSrc.toBase58(), "\n",
-        "escrowAtaDest" , escrowAtaDest.toBase58(), "\n",
-        "PDA" , PDA[0].toBase58(), "\n",
-        "swapRouterProgramId" , swapRouterProgramId.toBase58(), "\n",
-        "stableswapProgramId" , stableswapProgramId.toBase58()
-    )
 
     if (tokenSrc == cbsConfigData.wsolMint) {
         const tx = await program.rpc.repayWsol(repay_amount, {
@@ -103,8 +85,6 @@ const repay_wsol = async () => {
                 cbsAtaDest,
                 swapAtaSrc,
                 swapAtaDest,
-                escrowAtaSrc,
-                escrowAtaDest,
                 cbsPda: PDA[0],
                 swapProgram: swapRouterProgramId,
                 stableswapProgram: stableswapProgramId,       

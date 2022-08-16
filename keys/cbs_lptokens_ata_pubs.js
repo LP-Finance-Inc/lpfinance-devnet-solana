@@ -1,5 +1,5 @@
-const poolLpsol = new PublicKey("4wMx7npkqqgEAqy51VaYeg9zGrNNVAnDdYSX2cpxmBJ");
-const poolLpusd = new PublicKey("G5riR8rcevKLfHMQ2TSdVxzVEMi1xkbx7UKFnpzwtxm");
-const poolLpfi = new PublicKey("7CadK2dH3pUXMdw8x9uGCVZtgrYDwSdn51FToeHE86WA");
+const poolLpsol = new PublicKey("Ab3Gi7BmCwTvB61Qws3RSVLuFvdAtLbTvZrjgFByPiV6");
+const poolLpusd = new PublicKey("13RG3AEARHT3XpoaVqygFGnUGBfQdobADUddMtBcR6jP");
+const poolLpfi = new PublicKey("5gEe9EnkQteastPr9zDr6zvU3XGofhGjGYmKdMhTeHPh");
 
 const cbsPDA = new PublicKey("Gu6urAi7fg5eV5Jvohdo6U1pxYTSxheh5RxUzprdENLq");

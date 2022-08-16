@@ -418,6 +418,7 @@ dependencies = [
  "num-traits",
  "pyth-sdk-solana",
  "solend",
+ "spl-associated-token-account",
  "spl-token",
  "stable-swap",
  "swap-router",

@@ -66,11 +66,11 @@ const stable_swap = async () => {
 
   const stableswap_pool = getPublicKey('lpsol-wsol-pool');
 
-  const token_src = LpSOL;
-  const token_dest = WSOL;
+  // const token_src = LpSOL;
+  // const token_dest = WSOL;
 
-  // const token_src = WSOL;
-  // const token_dest = LpSOL;
+  const token_src = WSOL;
+  const token_dest = LpSOL;
 
   const user_ata_src = await findAssociatedTokenAddress(
     authKeypair.publicKey,

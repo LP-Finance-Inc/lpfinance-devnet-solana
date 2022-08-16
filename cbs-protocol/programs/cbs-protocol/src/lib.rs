@@ -124,8 +124,8 @@ pub mod cbs_protocol {
         Ok(())
     }
 
-    pub fn create_token_ata(
-        ctx: Context<CreateTokenATA>
+    pub fn create_token_ata1(
+        ctx: Context<CreateTokenATA1>
     ) -> Result<()> {
         msg!("INITIALIZE Token ATAs");
 
@@ -139,13 +139,32 @@ pub mod cbs_protocol {
         config.wsol_mint = ctx.accounts.wsol_mint.key();
         config.ray_mint = ctx.accounts.ray_mint.key();
         config.msol_mint = ctx.accounts.msol_mint.key();
+
+        // token account
+        config.pool_ray = ctx.accounts.pool_ray.key();
+        config.pool_wsol = ctx.accounts.pool_wsol.key();
+        config.pool_msol = ctx.accounts.pool_msol.key();
+
+        Ok(())
+    }
+
+    pub fn create_token_ata2(
+        ctx: Context<CreateTokenATA2>
+    ) -> Result<()> {
+        msg!("INITIALIZE Token ATAs");
+
+        let config = &mut ctx.accounts.config;
+
+        if config.owner != ctx.accounts.authority.key() {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        // token mint
         config.srm_mint = ctx.accounts.srm_mint.key();
         config.scnsol_mint = ctx.accounts.scnsol_mint.key();
         config.stsol_mint = ctx.accounts.stsol_mint.key();
 
-        config.pool_ray = ctx.accounts.pool_ray.key();
-        config.pool_wsol = ctx.accounts.pool_wsol.key();
-        config.pool_msol = ctx.accounts.pool_msol.key();
+        // token account
         config.pool_srm = ctx.accounts.pool_srm.key();
         config.pool_scnsol = ctx.accounts.pool_scnsol.key();
         config.pool_stsol = ctx.accounts.pool_stsol.key();
@@ -961,6 +980,10 @@ pub mod cbs_protocol {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
+        if user_account.borrowed_lpsol < amount || config.total_borrowed_lpsol < amount {
+            return Err(ErrorCode::RepayFinished.into());
+        }
+        
         {
             // Swap wsol to LpSOL and burn LpSOL            
             let cpi_accounts = Transfer {
@@ -988,38 +1011,43 @@ pub mod cbs_protocol {
         ];
         let signer = &[&seeds[..]];
 
-        let cpi_program = ctx.accounts.swap_program.to_account_info();
-        let cpi_accounts = swap_router::cpi::accounts::SwapStableswap {
-            user: ctx.accounts.cbs_pda.to_account_info(),
-            swap_escrow: ctx.accounts.swap_escrow.to_account_info(),
+        let cpi_program = ctx.accounts.stableswap_program.to_account_info();
+        let cpi_accounts_swap = stable_swap::cpi::accounts::StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
+            user: ctx.accounts.cbs_pda.to_account_info(),
             token_src: ctx.accounts.token_src.to_account_info(),
             token_dest: ctx.accounts.token_dest.to_account_info(),
             user_ata_src: ctx.accounts.cbs_ata_src.to_account_info(),
             user_ata_dest: ctx.accounts.cbs_ata_dest.to_account_info(),
             pool_ata_src: ctx.accounts.swap_ata_src.to_account_info(),
             pool_ata_dest: ctx.accounts.swap_ata_dest.to_account_info(),
-            escrow_ata_src: ctx.accounts.escrow_ata_src.to_account_info(),
-            escrow_ata_dest: ctx.accounts.escrow_ata_dest.to_account_info(),
-            stableswap_program: ctx.accounts.stableswap_program.to_account_info(),
             system_program: ctx.accounts.system_program.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
             associated_token_program: ctx.accounts.associated_token_program.to_account_info(),
             rent: ctx.accounts.rent.to_account_info()
         };
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        let cpi_swap = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap, signer);
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap, amount)?;
 
-        let tx = swap_router::cpi::swap_stableswap(cpi_ctx, amount)?;
-        let return_amount = tx.get();
+        {
+            let return_amount: u64 = tx.get();
+            msg!("Return value: {}", return_amount);
 
-        msg!("Input amount {}, Output amount {}", amount, return_amount);
-
-        if user_account.borrowed_lpsol < return_amount || config.total_borrowed_lpsol < return_amount {
-            return Err(ErrorCode::RepayFinished.into());
+            let cpi_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                token::Burn {
+                    mint: ctx.accounts.token_dest.to_account_info(),
+                    from: ctx.accounts.cbs_ata_dest.to_account_info(),
+                    authority: ctx.accounts.cbs_pda.to_account_info()
+                },
+                signer
+            );
+            token::burn(cpi_ctx, return_amount)?;            
         }
-        user_account.borrowed_lpsol = user_account.borrowed_lpsol - return_amount;
-        config.total_borrowed_lpsol = config.total_borrowed_lpsol - return_amount;     
-        
+
+
+        user_account.borrowed_lpsol = user_account.borrowed_lpsol - amount;
+        config.total_borrowed_lpsol = config.total_borrowed_lpsol - amount;             
 
         Ok(())
     }
