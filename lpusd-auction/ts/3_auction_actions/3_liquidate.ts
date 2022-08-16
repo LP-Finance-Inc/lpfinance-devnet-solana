@@ -66,7 +66,7 @@ const liquidate = async () => {
   );
   
  
-  await program.rpc.burnForLiquidate({
+  await program.rpc.burnLpusdLiquidate({
     accounts: {
         owner: creatorKeypair.publicKey,
         auctionPda: PDA[0],
@@ -95,7 +95,7 @@ const liquidate = async () => {
     },
   });
 
-  console.log("Deposit successfully")
+  console.log("Burn LpUSD successfully")
 
   const auctionConfigDataAfterDeposit = await program.account.config.fetch(config);
   print_config_data(auctionConfigDataAfterDeposit)

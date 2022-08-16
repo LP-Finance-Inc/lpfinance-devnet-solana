@@ -38,7 +38,6 @@ const get_user_accounts = async () => {
                 "srmAmount" : accountData[i].account.srmAmount.toString(),
                 "scnsolAmount" : accountData[i].account.scnsolAmount.toString(),
                 "stsolAmount" : accountData[i].account.stsolAmount.toString(),
-
                 "lpsolAmount" : accountData[i].account.lpsolAmount.toString(),
                 "lpusdAmount" : accountData[i].account.lpusdAmount.toString(),
                 "lpfiAmount" : accountData[i].account.lpfiAmount.toString(),
@@ -60,6 +59,17 @@ const get_user_accounts = async () => {
             { "Property": "owner", "Value": accountData.owner.toBase58()},
             { "Property": "step num", "Value" : accountData.stepNum.toString()},,
             { "Property": "escrowLpusd amount", "Value" : accountData.escrowLpusdAmount.toString()},
+            { "Property": "borrowedLpusd", "Value": accountData.borrowedLpusd.toString()},
+            { "Property": "borrowedLpsol", "Value" : accountData.borrowedLpsol.toString()},
+            { "Property": "rayAmount", "Value": accountData.rayAmount.toString()},
+            { "Property": "wsolAmount", "Value" : accountData.wsolAmount.toString()},
+            { "Property": "msolAmount", "Value": accountData.msolAmount.toString()},
+            { "Property": "srmAmount", "Value" : accountData.srmAmount.toString()},
+            { "Property": "scnsolAmount", "Value": accountData.scnsolAmount.toString()},
+            { "Property": "stsolAmount", "Value" : accountData.stsolAmount.toString()},
+            { "Property": "lpsolAmount", "Value": accountData.lpsolAmount.toString()},
+            { "Property": "lpusdAmount", "Value" : accountData.lpusdAmount.toString()},
+            { "Property": "lpfiAmount", "Value" : accountData.lpfiAmount.toString()},
         ]);
     } catch(err) {
         console.log(err)

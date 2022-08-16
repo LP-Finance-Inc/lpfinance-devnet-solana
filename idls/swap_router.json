@@ -11,6 +11,11 @@
           "isSigner": true
         },
         {
+          "name": "swapEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "stableSwapPool",
           "isMut": true,
           "isSigner": false
@@ -42,6 +47,16 @@
         },
         {
           "name": "poolAtaDest",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAtaSrc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAtaDest",
           "isMut": true,
           "isSigner": false
         },

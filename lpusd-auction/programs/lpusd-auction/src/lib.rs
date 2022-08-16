@@ -291,9 +291,9 @@ pub mod lpusd_auction {
         msg!("LTV {} Camount {} Bamount {}", _ltv, _total_price, _borrowed_total);
 
         // If LTV < 94, not be able to liquidate
-        if _ltv < LTV_PERMISSION {
-            return Err(ErrorCode::NotEnoughLTV.into());
-        }
+        // if _ltv < LTV_PERMISSION {
+        //     return Err(ErrorCode::NotEnoughLTV.into());
+        // }
 
         // Burn token users' deposited LpUSD
         if user_account.lpusd_amount > lpusd_ata.amount {
