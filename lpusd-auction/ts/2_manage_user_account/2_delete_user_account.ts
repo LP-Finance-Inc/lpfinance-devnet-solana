@@ -37,7 +37,7 @@ const create_user_account = async () => {
             console.log("Account has been deleted!");
         }
     } catch (err) {
-        console.log("Account does not exist.") 
+        console.log("Account does not exist.", err) 
     }
 }
 

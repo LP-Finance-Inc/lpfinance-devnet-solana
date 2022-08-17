@@ -801,7 +801,6 @@ dependencies = [
  "pyth-sdk-solana",
  "spl-token",
  "stable-swap",
- "swap-router",
  "test-tokens",
  "uniswap",
 ]

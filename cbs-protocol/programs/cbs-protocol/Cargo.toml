@@ -32,5 +32,7 @@ stable-swap = { path = "../../../stable-swap/programs/stable-swap", features=["c
 uniswap = { path = "../../../uniswap/programs/uniswap", features=["cpi"]}
 swap-router = { path = "../../../swap-router/programs/swap-router", features=["cpi"]}
 lpfinance-tokens = { path = "../../../lpfinance-tokens/programs/lpfinance-tokens", features=["cpi"]}
+test-tokens = { path="../../../test-tokens/programs/test-tokens", features = ["cpi"]}
+
 solend = { path = "../../../solend/programs/solend", features=["cpi"]}
 apricot = { path = "../../../apricot/programs/apricot", features=["cpi"]}

@@ -4,7 +4,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{ Mint, Token, TokenAccount }
 };
-
+use std::mem::size_of;
 
 use cbs_protocol::{self};
 
@@ -20,9 +20,9 @@ pub const LTV_PERMISSION: u64 = 94;
 pub const PREFIX: &str = "lpusd-auction";
 
 const DISCRIMINATOR_LENGTH: usize = 8;
-const PUBLIC_KEY_LENGTH: usize = 32;
-const U64_LENGTH: usize = 8;
-const I64_LENGTH: usize = 8;
+// const PUBLIC_KEY_LENGTH: usize = 32;
+// const U64_LENGTH: usize = 8;
+// const I64_LENGTH: usize = 8;
 // const U8_LENGTH: usize = 1;
 // const BOOL_LENGTH: usize =1;
 // const TITLE_LENGTH: usize = 4*2;
@@ -36,7 +36,7 @@ pub struct Initialize <'info>{
     // Config Accounts
     #[account(init,
         payer = authority,
-        space = Config::LEN
+        space = size_of::<Config>() + DISCRIMINATOR_LENGTH
     )]
     pub config: Box<Account<'info, Config>>,
     pub system_program: Program<'info, System>,
@@ -85,13 +85,54 @@ pub struct CreateLpTokenATA<'info> {
 }
 
 #[derive(Accounts)]
+pub struct CreateNormalTokenATA<'info> {
+    // Auction program deployer
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    // Config Accounts
+    #[account(mut,
+        constraint = config.owner == authority.key()
+    )]
+    pub config: Box<Account<'info, Config>>,
+
+    pub usdc_mint: Box<Account<'info, Mint>>,   
+    pub wsol_mint: Box<Account<'info, Mint>>,
+    /// CHECK: This is safe
+    #[account(seeds = [PREFIX.as_ref()], bump)]
+    pub auction_pda: AccountInfo<'info>,
+    // usdc POOL
+    #[account(
+        init_if_needed,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = auction_pda,
+        payer = authority
+    )]
+    pub pool_usdc: Box<Account<'info, TokenAccount>>,
+
+    // wsol POOL
+    #[account(
+        init_if_needed,
+        associated_token::mint = wsol_mint,
+        associated_token::authority = auction_pda,
+        payer = authority
+    )]
+    pub pool_wsol: Box<Account<'info, TokenAccount>>,
+
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
 pub struct InitUserAccount<'info> {
     // State account for each user/wallet
     #[account(
         init,
         seeds = [PREFIX.as_bytes(), user_authority.key().as_ref()],
         bump,
-        space = UserAccount::LEN,
+        space = size_of::<UserAccount>() + DISCRIMINATOR_LENGTH,
         payer = user_authority
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
@@ -196,9 +237,21 @@ pub struct UpdateConfig<'info> {
 
 #[derive(Accounts)]
 pub struct BurnLpUSDForLiquidate<'info> {
+    #[account(mut)]
+    pub user_authority: Signer<'info>,
     /// CHECK: this is safe
     #[account(mut)]
     pub owner: AccountInfo<'info>,
+    // Auction: user account
+    #[account(
+        init_if_needed,
+        seeds = [PREFIX.as_bytes(), owner.key().as_ref()],
+        bump,
+        space = size_of::<UserAccount>() + DISCRIMINATOR_LENGTH,
+        payer = user_authority
+    )]
+    pub user_account: Box<Account<'info, UserAccount>>,
+
     #[account(mut)]
     pub config: Box<Account<'info, Config>>,
     /// CHECK: This is safe
@@ -262,13 +315,13 @@ pub struct BurnLpUSDForLiquidate<'info> {
 
 #[derive(Accounts)]
 pub struct BurnLpSOLForLiquidate1<'info> {
-    /// CHECK: this is safe
-    #[account(mut)]
+    /// CHECK: this is for cbs participatant
     pub owner: AccountInfo<'info>,
+    // Auction: user account
+    #[account(mut, constraint = user_account.owner == owner.key())]
+    pub user_account: Box<Account<'info, UserAccount>>,
     // CBS: user account
-    #[account(mut, 
-        constraint = cbs_account.step_num == 1
-    )]
+    #[account(mut, constraint = cbs_account.owner == owner.key())]
     pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
     /// CHECK: this is safe
     #[account(mut,
@@ -282,9 +335,7 @@ pub struct BurnLpSOLForLiquidate1<'info> {
     // LpSOL-wSOL stableswap pool
     #[account(mut)]
     pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
-    /// CHECK: cbs is user for swap
-    #[account(mut)]
-    pub swap_escrow: AccountInfo<'info>,
+    // This would be used for burn usdc <-> mint wsol
     #[account(mut)]
     pub token_state_account: Box<Account<'info, TokenStateAccount>>,
     
@@ -303,26 +354,19 @@ pub struct BurnLpSOLForLiquidate1<'info> {
     #[account(mut)]
     pub auction_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
+    pub auction_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub auction_ata_wsol: Box<Account<'info, TokenAccount>>,
+
+    #[account(mut)]
     pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_lpusd: AccountInfo<'info>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_wsol: AccountInfo<'info>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_usdc: AccountInfo<'info>,
-    /// CHECK: this is safe
-    pub lptokens_program: AccountInfo<'info>,
+    
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
     /// CHECK:
     pub testtokens_program: AccountInfo<'info>,    
-    /// CHECK:
-    pub swaprouter_program: AccountInfo<'info>,  
     /// CHECK: this is safe
     pub cbs_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
@@ -334,11 +378,13 @@ pub struct BurnLpSOLForLiquidate1<'info> {
 #[derive(Accounts)]
 pub struct BurnLpSOLForLiquidate2<'info> {
     /// CHECK: this is safe
-    #[account(mut)]
     pub owner: AccountInfo<'info>,
+    // Auction: user account
+    #[account(mut, constraint = user_account.owner == owner.key())]
+    pub user_account: Box<Account<'info, UserAccount>>,
     // CBS: user account
     #[account(mut, 
-        constraint = cbs_account.step_num == 1
+        constraint = cbs_account.owner == owner.key()
     )]
     pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
     /// CHECK: this is safe
@@ -347,65 +393,28 @@ pub struct BurnLpSOLForLiquidate2<'info> {
         bump
     )]
     pub auction_pda: AccountInfo<'info>,
-    // LpUSD-USDC stableswap pool
-    #[account(mut)]
-    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
+    
     // LpSOL-wSOL stableswap pool
     #[account(mut)]
     pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
-    /// CHECK: cbs is user for swap
-    #[account(mut)]
-    pub swap_escrow: AccountInfo<'info>,
-    #[account(mut)]
-    pub token_state_account: Box<Account<'info, TokenStateAccount>>,
-    
     #[account(mut)]
     pub token_lpsol: Box<Account<'info, Mint>>,
     #[account(mut)]
     pub token_wsol: Box<Account<'info, Mint>>,
+    
     #[account(mut)]
-    pub token_usdc: Box<Account<'info, Mint>>,
+    pub auction_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub token_lpusd: Box<Account<'info, Mint>>,
+    pub auction_ata_wsol: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK:
-    pub pyth_usdc: AccountInfo<'info>,
-    /// CHECK:
-    pub pyth_wsol: AccountInfo<'info>,
-
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub auction_ata_lpsol: AccountInfo<'info>,
-    #[account(mut)]
-    pub auction_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_lpsol: AccountInfo<'info>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_lpusd: AccountInfo<'info>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_wsol: AccountInfo<'info>,
-    /// CHECK: this is safe
-    #[account(mut)]
-    pub escrow_ata_usdc: AccountInfo<'info>,
-    /// CHECK: this is safe
-    pub lptokens_program: AccountInfo<'info>,
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
     /// CHECK:
-    pub testtokens_program: AccountInfo<'info>,    
-    /// CHECK:
-    pub swaprouter_program: AccountInfo<'info>,  
+    pub lptokens_program: AccountInfo<'info>,
     /// CHECK: this is safe
     pub cbs_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
@@ -444,9 +453,13 @@ pub struct Config {
 
     pub lpsol_mint: Pubkey,
     pub lpusd_mint: Pubkey,
+    pub usdc_mint: Pubkey,
+    pub wsol_mint: Pubkey,
 
     pub pool_lpsol: Pubkey,     // Auction ATA
     pub pool_lpusd: Pubkey,     // Auction ATA
+    pub pool_usdc: Pubkey,      // Auction ATA
+    pub pool_wsol: Pubkey,      // Auction ATA
 
     pub total_deposited_lpusd: u64, // for now, dump
     // Current auction pool's balance of LpUSD including epoch profits
@@ -462,27 +475,14 @@ pub struct Config {
     pub last_epoch_profit: i64
 }
 
-impl Config {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH
-        + PUBLIC_KEY_LENGTH * 5 // pubkey
-        + U64_LENGTH * 4 
-        + I64_LENGTH * 2;
-}
-
-
 #[account]
 #[derive(Default)]
 pub struct UserAccount {
     pub owner: Pubkey,
     // deposited lpusd
     // NOTE: only lpusd is able to be deposited
-    pub lpusd_amount: u64
+    pub lpusd_amount: u64,
+    // LpUSD -> USDC -> Wsol -> LpSOL
+    pub minted_wsol_amount: u64
 }
-
-impl UserAccount {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH
-        + PUBLIC_KEY_LENGTH  // owner pubkey
-        + U64_LENGTH;        // Deposited LpUSD amount
-}
-
 

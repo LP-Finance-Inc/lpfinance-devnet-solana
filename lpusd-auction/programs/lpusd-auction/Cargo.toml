@@ -29,7 +29,6 @@ pyth-sdk-solana = "0.4.2"
 
 stable-swap = { path = "../../../stable-swap/programs/stable-swap", features=["cpi"] }
 uniswap = { path = "../../../uniswap/programs/uniswap", features=["cpi"]}
-swap-router = { path = "../../../swap-router/programs/swap-router", features=["cpi"]}
 test-tokens = { path="../../../test-tokens/programs/test-tokens", features = ["cpi"]}
 
 cbs-protocol = { path = "../../../cbs-protocol/programs/cbs-protocol", features=["cpi"]}

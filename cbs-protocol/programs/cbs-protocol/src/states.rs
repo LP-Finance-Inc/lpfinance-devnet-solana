@@ -500,11 +500,11 @@ pub struct WithdrawLending<'info> {
     
     #[account(mut)]
     pub dest_mint: Box<Account<'info, Mint>>,
-    #[account(mut)]
+    #[account(mut, constraint=cbs_pool.mint == dest_mint.key())]
     pub cbs_pool: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
+    #[account(mut, constraint=cbs_pool.mint == dest_mint.key())]
     pub solend_pool: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
+    #[account(mut, constraint=cbs_pool.mint == dest_mint.key())]
     pub apricot_pool: Box<Account<'info, TokenAccount>>,
     
     #[account(mut)]
@@ -664,15 +664,11 @@ pub struct LiquidateNormalSwap<'info> {
         bump
     )]
     pub cbs_pda: AccountInfo<'info>,
-    /// CHECK: cbs is user for swap
     #[account(mut)]
-    pub swap_escrow: AccountInfo<'info>,
-    /// CHECK:
+    pub stable_swap_pool: Box<Account<'info, StableswapPool>>,
     #[account(mut)]
-    pub stable_swap_pool: AccountInfo<'info>,
-    /// CHECK:
-    #[account(mut)]
-    pub token_state_account: AccountInfo<'info>,
+    pub token_state_account: Box<Account<'info, test_tokens::TokenStateAccount>>,
+
     // wsol, ray, msol, srm, scnsol, stsol
     #[account(mut)]
     pub token_src: Box<Account<'info, Mint>>,
@@ -689,23 +685,20 @@ pub struct LiquidateNormalSwap<'info> {
     #[account(mut)]
     pub cbs_ata_src: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
+    pub cbs_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
     pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub auction_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
     /// CHECK:
     pub testtokens_program: AccountInfo<'info>,    
-    /// CHECK:
-    pub swaprouter_program: AccountInfo<'info>,  
 
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
@@ -843,17 +836,6 @@ pub struct LiquidateLpFITokenSwap<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>
-}
-
-#[account]
-#[derive(Default)]
-pub struct StateAccount {
-    pub owner: Pubkey,
-    pub liquidation_run: bool
-}
-
-impl StateAccount {
-    pub const LEN: usize = 32 + 1 + 8;
 }
 
 #[account]

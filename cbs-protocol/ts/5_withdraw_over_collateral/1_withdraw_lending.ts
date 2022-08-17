@@ -7,29 +7,41 @@ import {
 } from "@solana/web3.js";
 
 import { 
-  NETWORK, 
-  PREFIX, 
-  pythRayAccount,
-  pythUsdcAccount,
-  pythSolAccount,
-  pythMsolAccount,
-  pythSrmAccount,
-  pythScnsolAccount,
-  pythStsolAccount,
-  SolendIDL,
-  SolendConfig,
-  ApricotConfig,
-  ApricotIDL,
-  solendPool,
-  apricotPool,
-  StableLpsolPool,
-  StableLpusdPool,
-  LiquidityPool,
-  SolendStateAccount,
-  ApricotStateAccount
+    NETWORK, 
+    PREFIX, 
+    pythRayAccount,
+    pythUsdcAccount,
+    pythSolAccount,
+    pythMsolAccount,
+    pythSrmAccount,
+    pythScnsolAccount,
+    pythStsolAccount,
+    SolendIDL,
+    SolendConfig,
+    ApricotConfig,
+    ApricotIDL,
+    solendPool,
+    apricotPool,
+    StableLpsolPool,
+    StableLpusdPool,
+    LiquidityPool,
+    SolendStateAccount,
+    ApricotStateAccount,
+    solendRAYPool,
+    solendwSOLPool,
+    solendMSOLPool,
+    solendSRMPool,
+    solendSCNSOLPool,
+    solendSTSOLPool,
+    apricotRAYPool,
+    apricotwSOLPool,
+    apricotMSOLPool,
+    apricotSRMPool,
+    apricotSCNSOLPool,
+    apricotSTSOLPool
 } from "../config";
 
-import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
+import { getCreatorKeypair, getPublicKey } from "../utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const { Wallet } = anchor;
@@ -59,22 +71,22 @@ const withdraw_lending_ctokens = async () => {
 
     let tokenDatas = [];
     tokenDatas.push({
-        destMint: cbsConfigData.rayMint,    cbsPool: cbsConfigData.poolRay
+        destMint: cbsConfigData.rayMint, cbsPool: cbsConfigData.poolRay, solendPool: solendRAYPool, apricotPool: apricotRAYPool 
     })
     tokenDatas.push({
-        destMint: cbsConfigData.wsolMint,    cbsPool: cbsConfigData.poolWsol
+        destMint: cbsConfigData.wsolMint, cbsPool: cbsConfigData.poolWsol, solendPool: solendwSOLPool, apricotPool: apricotwSOLPool 
     })
     tokenDatas.push({
-        destMint: cbsConfigData.msolMint,    cbsPool: cbsConfigData.poolMsol
+        destMint: cbsConfigData.msolMint, cbsPool: cbsConfigData.poolMsol, solendPool: solendMSOLPool, apricotPool: apricotMSOLPool 
     })
     tokenDatas.push({
-        destMint: cbsConfigData.srmMint,    cbsPool: cbsConfigData.poolSrm
+        destMint: cbsConfigData.srmMint, cbsPool: cbsConfigData.poolSrm, solendPool: solendSRMPool, apricotPool: apricotSRMPool 
     })
     tokenDatas.push({
-        destMint: cbsConfigData.scnsolMint,    cbsPool: cbsConfigData.poolScnsol
+        destMint: cbsConfigData.scnsolMint, cbsPool: cbsConfigData.poolScnsol, solendPool: solendSCNSOLPool, apricotPool: apricotSCNSOLPool 
     })
     tokenDatas.push({
-        destMint: cbsConfigData.stsolMint,    cbsPool: cbsConfigData.poolStsol
+        destMint: cbsConfigData.stsolMint, cbsPool: cbsConfigData.poolStsol, solendPool: solendSTSOLPool, apricotPool: apricotSTSOLPool 
     })
 
     const accountData = await program.account.userAccount.all();        
@@ -126,11 +138,11 @@ const withdraw_lending_ctokens = async () => {
                             cbsPool: tokenData.cbsPool,
                             solendConfig: SolendConfig,
                             solendAccount,
-                            solendPool,
+                            solendPool: tokenData.solendPool,
                             solendStateAccount: SolendStateAccount,
                             apricotConfig: ApricotConfig,
                             apricotAccount,
-                            apricotPool,
+                            apricotPool: tokenData.apricotPool,
                             apricotStateAccount: ApricotStateAccount,
                             solendProgram: solendProgramId,
                             apricotProgram: apricotProgramId,
