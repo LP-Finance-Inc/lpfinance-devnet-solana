@@ -70,6 +70,12 @@ const get_user_accounts = async () => {
             { "Property": "lpsolAmount", "Value": accountData.lpsolAmount.toString()},
             { "Property": "lpusdAmount", "Value" : accountData.lpusdAmount.toString()},
             { "Property": "lpfiAmount", "Value" : accountData.lpfiAmount.toString()},
+            { "Property": "Lending: rayAmount", "Value": accountData.lendingRayAmount.toString()},
+            { "Property": "Lending: wsolAmount", "Value" : accountData.lendingWsolAmount.toString()},
+            { "Property": "Lending: msolAmount", "Value": accountData.lendingMsolAmount.toString()},
+            { "Property": "Lending: srmAmount", "Value" : accountData.lendingSrmAmount.toString()},
+            { "Property": "Lending: scnsolAmount", "Value": accountData.lendingScnsolAmount.toString()},
+            { "Property": "Lending: stsolAmount", "Value" : accountData.lendingStsolAmount.toString()}
         ]);
     } catch(err) {
         console.log(err)

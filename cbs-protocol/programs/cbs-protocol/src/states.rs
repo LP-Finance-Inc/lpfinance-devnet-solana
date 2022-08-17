@@ -465,13 +465,8 @@ pub struct WithdrawToken<'info> {
 
 #[derive(Accounts)]
 pub struct WithdrawLending<'info> {
-     #[account(mut)]
-    pub user_authority: Signer<'info>,
     // state account for user's wallet
-    #[account(
-        mut,
-        constraint = user_account.owner == user_authority.key()
-    )]
+    #[account(mut)]
     pub user_account: Box<Account<'info, UserAccount>>,
     /// CHECK: this is safe
     #[account(mut,
@@ -533,6 +528,33 @@ pub struct WithdrawLending<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
+#[derive(Accounts)]
+pub struct GetLTV<'info> {
+    // state account for user's wallet
+    pub user_account: Box<Account<'info, UserAccount>>,
+    // LpUSD-USDC stableswap pool
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
+    // LpSOL-wSOL stableswap pool
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
+    /// CHECK: pyth
+    pub pyth_ray_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_usdc_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_sol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_msol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_srm_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_scnsol_account: AccountInfo<'info>,
+    /// CHECK: pyth
+    pub pyth_stsol_account: AccountInfo<'info>,
+    // LpFi<->USDC pool
+    pub liquidity_pool: Box<Account<'info, UniswapPool>>,
+    pub solend_config: Box<Account<'info, solend::Config>>,
+    pub apricot_config: Box<Account<'info, apricot::Config>>,
+}
 
 #[derive(Accounts)]
 pub struct RepayToken<'info> {
@@ -1457,6 +1479,152 @@ impl UserAccount {
         let ltv = (borrowed_total * 100.0 / total_price) as u64;
 
         Ok((ltv, _dest_price as u64, total_price, borrowed_total))
+    }
+
+    // return view value
+    pub fn get_ltv_view(
+        &self,
+        solend_config: &Account<solend::Config>,
+        apricot_config: &Account<apricot::Config>,
+        liquidity_pool: &Account<UniswapPool>,
+        stable_lpusd_pool: &Account<StableswapPool>,
+        stable_lpsol_pool: &Account<StableswapPool>,
+        pyth_ray_account: &AccountInfo,
+        pyth_usdc_account: &AccountInfo,
+        pyth_sol_account: &AccountInfo,
+        pyth_msol_account: &AccountInfo,
+        pyth_srm_account: &AccountInfo,
+        pyth_scnsol_account: &AccountInfo,
+        pyth_stsol_account: &AccountInfo
+    ) -> Result<u64> {
+        let mut _is_pyth_valid: bool = true;
+        _is_pyth_valid = check_pyth_accounts(
+            pyth_sol_account,
+            pyth_ray_account,
+            pyth_msol_account,
+            pyth_stsol_account,
+            pyth_scnsol_account,
+            pyth_srm_account
+        )?;
+
+        if _is_pyth_valid == false {
+            return Err(ErrorCode::InvalidPythAccount.into());
+        }
+
+        _is_pyth_valid = check_pyth_account(PYTH_USDC_ADDRESS, pyth_usdc_account)?;
+
+        if _is_pyth_valid == false {
+            return Err(ErrorCode::InvalidPythAccount.into());
+        }
+
+        let wsol_amount: f64 = self.wsol_amount as f64;
+        let ray_amount: f64 = self.ray_amount as f64;
+        let msol_amount: f64 = self.msol_amount as f64;
+        let srm_amount: f64 = self.srm_amount as f64;
+        let scnsol_amount: f64 = self.scnsol_amount as f64;
+        let stsol_amount: f64 = self.stsol_amount as f64;
+
+        let lending_wsol_amount: f64 = self.lending_wsol_amount as f64;
+        let lending_ray_amount: f64 = self.lending_ray_amount as f64;
+        let lending_msol_amount: f64 = self.lending_msol_amount as f64;
+        let lending_srm_amount: f64 = self.lending_srm_amount as f64;
+        let lending_scnsol_amount: f64 = self.lending_scnsol_amount as f64;
+        let lending_stsol_amount: f64 = self.lending_stsol_amount as f64;
+
+        let lpsol_amount: f64 = self.lpsol_amount as f64;
+        let lpusd_amount: f64 = self.lpusd_amount as f64;
+        let lpfi_amount: f64 = self.lpfi_amount as f64;
+
+        let borrowed_lpusd: f64 = self.borrowed_lpusd as f64;
+        let borrowed_lpsol: f64 = self.borrowed_lpsol as f64;
+
+        let lpusd_swap_amount: f64 = stable_lpusd_pool.get_swap_rate(PRICE_UNIT)? as f64;
+        let lpsol_swap_amount: f64 = stable_lpsol_pool.get_swap_rate(PRICE_UNIT)? as f64;
+
+        let ray_rate = if solend_config.ray_rate > apricot_config.ray_rate { solend_config.ray_rate } else { apricot_config.ray_rate };
+        let wsol_rate = if solend_config.wsol_rate > apricot_config.wsol_rate { solend_config.wsol_rate } else { apricot_config.wsol_rate };
+        let msol_rate = if solend_config.msol_rate > apricot_config.msol_rate { solend_config.msol_rate } else { apricot_config.msol_rate };
+        let srm_rate = if solend_config.srm_rate > apricot_config.srm_rate { solend_config.srm_rate } else { apricot_config.srm_rate };
+        let scnsol_rate = if solend_config.scnsol_rate > apricot_config.scnsol_rate { solend_config.scnsol_rate } else { apricot_config.scnsol_rate };
+        let stsol_rate = if solend_config.stsol_rate > apricot_config.stsol_rate { solend_config.stsol_rate } else { apricot_config.stsol_rate };
+
+        // RAY price    
+        let ray_price: f64 = get_price(pyth_ray_account)? as f64;     
+        if ray_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("RAY price {}", ray_price);
+
+        // SOL price
+        let sol_price: f64 = get_price(pyth_sol_account)? as f64;  
+        if sol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("SOL price {}", sol_price);
+        // mSOL price
+        let msol_price: f64 = get_price(pyth_msol_account)? as f64;
+        if msol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("mSOL price {}", msol_price);
+        // srm price
+        let srm_price: f64 = get_price(pyth_srm_account)? as f64;    
+        if srm_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("srm price {}", srm_price);
+        // scnsol price
+        let scnsol_price: f64 = get_price(pyth_scnsol_account)? as f64; 
+        if scnsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("scnsol price {}", scnsol_price);
+        // stsol price
+        let stsol_price: f64 = get_price(pyth_stsol_account)? as f64;
+        if stsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+        msg!("stsol price {}", stsol_price);
+        // LpUSD price
+        let usdc_price: f64 = get_price(pyth_usdc_account)? as f64;
+        let lpusd_price = usdc_price * lpusd_swap_amount as f64/ PRICE_UNIT as f64;  
+        msg!("LpUSD price {}", lpusd_price);  
+        if lpusd_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        // LpSOL price
+        let lpsol_price = sol_price * lpsol_swap_amount as f64 / PRICE_UNIT as f64;
+        msg!("LpSOL price {}", lpsol_price);  
+        if lpsol_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        // LpFi price
+        let lpfi_price: f64 = usdc_price * liquidity_pool.get_price()? as f64 / PRICE_DENOMINATOR as f64;
+        if lpfi_price <= 0.0 {
+            return Err(ErrorCode::InvalidPythPrice.into());
+        }
+
+        let mut total_price: f64 = 0.0;
+        total_price += ray_price * (ray_amount + lending_ray_amount * ray_rate as f64 / LENDING_DENOMINATOR as f64);
+        total_price += sol_price * (wsol_amount + lending_wsol_amount * wsol_rate as f64 / LENDING_DENOMINATOR as f64);
+        total_price += msol_price * (msol_amount + lending_msol_amount * msol_rate as f64 / LENDING_DENOMINATOR as f64);
+        total_price += srm_price * (srm_amount + lending_srm_amount * srm_rate as f64 / LENDING_DENOMINATOR as f64);
+        total_price += scnsol_price * (scnsol_amount + lending_scnsol_amount * scnsol_rate as f64 / LENDING_DENOMINATOR as f64);
+        total_price += stsol_price * (stsol_amount + lending_stsol_amount * stsol_rate as f64 / LENDING_DENOMINATOR as f64);
+        total_price += lpusd_price * lpusd_amount;
+        total_price += lpsol_price * lpsol_amount;
+        total_price += lpfi_price * lpfi_amount;
+
+        let mut borrowed_total: f64 = 0.0;
+        borrowed_total += borrowed_lpsol * lpsol_price;
+        borrowed_total += borrowed_lpusd * lpusd_price;
+
+
+        let ltv = (borrowed_total * 100.0 / total_price) as u64;
+
+        Ok(ltv)
     }
 
     // Return: LTV, TOTAL_PRICE, Borrowed Total

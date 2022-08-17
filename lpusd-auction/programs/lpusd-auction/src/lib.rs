@@ -65,46 +65,14 @@ pub mod lpusd_auction {
         // token mint        
         config.lpusd_mint = ctx.accounts.lpusd_mint.key();
         config.lpsol_mint = ctx.accounts.lpsol_mint.key();
-        config.lpfi_mint = ctx.accounts.lpfi_mint.key();
 
         // lptoken pool
         config.pool_lpsol = ctx.accounts.pool_lpsol.key();
         config.pool_lpusd = ctx.accounts.pool_lpusd.key();
-        config.pool_lpfi = ctx.accounts.pool_lpfi.key();  
 
         Ok(())
     }
-
-    // Create Token's ATA for auction pool
-    pub fn create_token_ata(
-        ctx: Context<CreateTokenATA>
-    ) -> Result<()> {
-        msg!("INITIALIZE Token ATAs");
-
-        let config = &mut ctx.accounts.config;
-
-        if config.owner != ctx.accounts.authority.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        // token mint
-        config.wsol_mint = ctx.accounts.wsol_mint.key();
-        config.ray_mint = ctx.accounts.ray_mint.key();
-        config.msol_mint = ctx.accounts.msol_mint.key();
-        config.srm_mint = ctx.accounts.srm_mint.key();
-        config.scnsol_mint = ctx.accounts.scnsol_mint.key();
-        config.stsol_mint = ctx.accounts.stsol_mint.key();
-
-        config.pool_ray = ctx.accounts.pool_ray.key();
-        config.pool_wsol = ctx.accounts.pool_wsol.key();
-        config.pool_msol = ctx.accounts.pool_msol.key();
-        config.pool_srm = ctx.accounts.pool_srm.key();
-        config.pool_scnsol = ctx.accounts.pool_scnsol.key();
-        config.pool_stsol = ctx.accounts.pool_stsol.key();
-
-        Ok(())
-    }
-
+    
     // Init user account
     pub fn init_user_account(
         ctx: Context<InitUserAccount>
@@ -237,8 +205,6 @@ pub mod lpusd_auction {
     pub fn burn_lpusd_liquidate(
         ctx: Context<BurnLpUSDForLiquidate>
     ) -> Result<()> {
-
-        let user_account: &mut Account<UserAccount> = &mut ctx.accounts.user_account;
         let cbs_account: &mut Account<cbs_protocol::UserAccount> = &mut ctx.accounts.cbs_account;
         let lpusd_ata: &mut Account<TokenAccount> = &mut ctx.accounts.lpusd_ata;
 
@@ -296,7 +262,7 @@ pub mod lpusd_auction {
         // }
 
         // Burn token users' deposited LpUSD
-        if user_account.lpusd_amount > lpusd_ata.amount {
+        if borrowed_lpusd > lpusd_ata.amount {
             return Err(ErrorCode::InsufficientPoolAmount.into());
         }
 
@@ -348,8 +314,8 @@ pub mod lpusd_auction {
     }
 
     // Liquidate starts
-    pub fn burn_lpsol_liquidate(
-        ctx: Context<BurnLpSOLForLiquidate>
+    pub fn burn_lpsol_liquidate1(
+        ctx: Context<BurnLpSOLForLiquidate1>
     ) -> Result<()> {
         let cbs_account: &mut Account<cbs_protocol::UserAccount> = &mut ctx.accounts.cbs_account;
 
@@ -358,7 +324,103 @@ pub mod lpusd_auction {
         // let config = &mut ctx.accounts.config;
 
         let swap_escrow = &mut ctx.accounts.swap_escrow;
-        let stable_swap_pool = &mut ctx.accounts.stable_swap_pool;
+        let token_state_account = &mut ctx.accounts.token_state_account;
+        let token_wsol = &mut ctx.accounts.token_wsol;
+        let token_lpusd = &mut ctx.accounts.token_lpusd;
+        let token_usdc = &mut ctx.accounts.token_usdc;
+        let pyth_usdc = &mut ctx.accounts.pyth_usdc;
+        let pyth_wsol = &mut ctx.accounts.pyth_wsol;
+        let auction_ata_lpusd = &ctx.accounts.auction_ata_lpusd;
+        let stableswap_pool_ata_lpusd = &ctx.accounts.stableswap_pool_ata_lpusd;
+        let stableswap_pool_ata_usdc = &ctx.accounts.stableswap_pool_ata_usdc;
+        let escrow_ata_lpusd = &ctx.accounts.escrow_ata_lpusd;
+        let escrow_ata_wsol = &ctx.accounts.escrow_ata_wsol;
+        let escrow_ata_usdc = &ctx.accounts.escrow_ata_usdc;
+        let stableswap_program = &ctx.accounts.stableswap_program;
+        let testtokens_program = &ctx.accounts.testtokens_program;
+        let system_program = &ctx.accounts.system_program;
+        let token_program = &ctx.accounts.token_program;
+        let associated_token_program = &ctx.accounts.associated_token_program;
+        let rent = &ctx.accounts.rent;
+
+        if cbs_account.step_num != 1 {
+            return Err(ErrorCode::InvalidLiquidateNum.into());
+        }
+        
+        // borrowed
+        let borrowed_lpsol: f64 = cbs_account.borrowed_lpsol as f64;
+        let lpusd_swap_amount: f64 = stable_lpusd_pool.get_swap_rate(PRICE_UNIT)? as f64;
+        let lpsol_swap_amount: f64 = stable_lpsol_pool.get_swap_rate(PRICE_UNIT)? as f64;
+        let swap_amount = (borrowed_lpsol * lpsol_swap_amount / lpusd_swap_amount) as u64;
+
+        if swap_amount == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+        // Get signer
+        let (program_authority, program_authority_bump) = 
+        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+
+        if program_authority != ctx.accounts.auction_pda.to_account_info().key() {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        let seeds = &[
+            PREFIX.as_bytes(),
+            &[program_authority_bump]
+        ];
+        let signer = &[&seeds[..]];
+        // End to get signer
+
+        {
+            let cpi_program = ctx.accounts.swaprouter_program.to_account_info();
+            let cpi_accounts = swap_router::cpi::accounts::SwapLpusdToLpsolStep1 {
+                user: ctx.accounts.auction_pda.to_account_info(),
+                swap_escrow: swap_escrow.to_account_info(),
+                stable_swap_pool: stable_lpusd_pool.to_account_info(),
+                token_state_account: token_state_account.to_account_info(),
+                token_lpusd: token_lpusd.to_account_info(),
+                token_wsol: token_wsol.to_account_info(),
+                token_usdc: token_usdc.to_account_info(),
+                pyth_wsol: pyth_wsol.to_account_info(),
+                pyth_usdc: pyth_usdc.to_account_info(),
+                user_ata_lpusd: auction_ata_lpusd.to_account_info(),
+                stableswap_pool_ata_lpusd: stableswap_pool_ata_lpusd.to_account_info(),
+                stableswap_pool_ata_usdc: stableswap_pool_ata_usdc.to_account_info(),
+                escrow_ata_lpusd: escrow_ata_lpusd.to_account_info(),
+                escrow_ata_wsol: escrow_ata_wsol.to_account_info(),
+                escrow_ata_usdc: escrow_ata_usdc.to_account_info(),
+                stableswap_program: stableswap_program.to_account_info(),
+                testtokens_program: testtokens_program.to_account_info(),
+                system_program: system_program.to_account_info(),
+                token_program: token_program.to_account_info(),
+                associated_token_program: associated_token_program.to_account_info(),
+                rent: rent.to_account_info(),
+            };
+            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
+            swap_router::cpi::swap_lpusd_to_lpsol_step1(cpi_ctx, swap_amount)?;
+        }
+        
+        let cpi_program = ctx.accounts.cbs_program.to_account_info();
+        let cpi_accounts = UpdateUserAccount {
+            user_account: cbs_account.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        cbs_protocol::cpi::liquidate_step2(cpi_ctx, swap_amount)?;
+        
+        Ok(())
+    }
+
+    // Liquidate starts
+    pub fn burn_lpsol_liquidate2(
+        ctx: Context<BurnLpSOLForLiquidate2>
+    ) -> Result<()> {
+        let cbs_account: &mut Account<cbs_protocol::UserAccount> = &mut ctx.accounts.cbs_account;
+
+        let stable_lpusd_pool: &Account<StableswapPool> = &ctx.accounts.stable_lpusd_pool;
+        let stable_lpsol_pool: &Account<StableswapPool> = &ctx.accounts.stable_lpsol_pool;
+        // let config = &mut ctx.accounts.config;
+
+        let swap_escrow = &mut ctx.accounts.swap_escrow;
         let token_state_account = &mut ctx.accounts.token_state_account;
         let token_lpsol = &mut ctx.accounts.token_lpsol;
         let token_wsol = &mut ctx.accounts.token_wsol;
@@ -416,7 +478,7 @@ pub mod lpusd_auction {
             let cpi_accounts = swap_router::cpi::accounts::SwapLpusdToLpsolStep1 {
                 user: ctx.accounts.auction_pda.to_account_info(),
                 swap_escrow: swap_escrow.to_account_info(),
-                stable_swap_pool: stable_swap_pool.to_account_info(),
+                stable_swap_pool: stable_lpusd_pool.to_account_info(),
                 token_state_account: token_state_account.to_account_info(),
                 token_lpusd: token_lpusd.to_account_info(),
                 token_wsol: token_wsol.to_account_info(),
@@ -446,7 +508,7 @@ pub mod lpusd_auction {
             let cpi_accounts = swap_router::cpi::accounts::SwapLpusdToLpsolStep2 {
                 user: ctx.accounts.auction_pda.to_account_info(),
                 swap_escrow: swap_escrow.to_account_info(),
-                stable_swap_pool: stable_swap_pool.to_account_info(),
+                stable_swap_pool: stable_lpsol_pool.to_account_info(),
                 token_lpsol: token_lpsol.to_account_info(),
                 token_wsol: token_wsol.to_account_info(),
                 user_ata_lpsol: auction_ata_lpsol.to_account_info(),

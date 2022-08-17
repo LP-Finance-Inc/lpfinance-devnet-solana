@@ -9,12 +9,24 @@ import {
 import { 
   NETWORK, 
   PREFIX, 
+  pythRayAccount,
+  pythUsdcAccount,
+  pythSolAccount,
+  pythMsolAccount,
+  pythSrmAccount,
+  pythScnsolAccount,
+  pythStsolAccount,
   SolendIDL,
   SolendConfig,
   ApricotConfig,
   ApricotIDL,
   solendPool,
-  apricotPool
+  apricotPool,
+  StableLpsolPool,
+  StableLpusdPool,
+  LiquidityPool,
+  SolendStateAccount,
+  ApricotStateAccount
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
@@ -23,78 +35,118 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 const { Wallet } = anchor;
 
 const withdraw_lending_ctokens = async () => {
-  const connection = new Connection(NETWORK, "confirmed");
+    const connection = new Connection(NETWORK, "confirmed");
 
-  const creatorKeypair = getCreatorKeypair();
+    const creatorKeypair = getCreatorKeypair();
 
-  anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
-  const program = anchor.workspace.CbsProtocol as Program<CbsProtocol>;
+    anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
+    const program = anchor.workspace.CbsProtocol as Program<CbsProtocol>;
 
-  // Config
-  const config = getPublicKey('cbs_config');  
-  const cbsConfigData = await program.account.config.fetch(config);
-  const collateralMint= cbsConfigData.rayMint as PublicKey;
-  const collateralPool= cbsConfigData.poolRay as PublicKey;
-  // const collateralMint= cbsConfigData.lpsolMint as PublicKey;
-  // const collateralPool= cbsConfigData.poolLpsol as PublicKey;
-  const userCollateral = await getATAPublicKey(collateralMint, creatorKeypair.publicKey);
-  const solendAccount = getPublicKey('cbs_solend_account')
-  const apricotAccount = getPublicKey('cbs_apricot_account')
-  const [userAccount, bump] = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
-    program.programId
-  );
+    // Config
+    const config = getPublicKey('cbs_config');  
+    const cbsConfigData = await program.account.config.fetch(config);
+    const solendAccount = getPublicKey('cbs_solend_account')
+    const apricotAccount = getPublicKey('cbs_apricot_account')
 
-  const PDA = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX)],
-    program.programId
-  );    
+    const PDA = await PublicKey.findProgramAddress(
+        [Buffer.from(PREFIX)],
+        program.programId
+    );    
 
-  const solendProgramId = new PublicKey(SolendIDL.metadata.address) 
-  // const solendProgram = new anchor.Program(SolendIDL as anchor.Idl, solendProgramId);
-  // const solendConfigData = await solendProgram.account.config.fetch(SolendConfig);
-  /* Dynamic token */
-  // const solendPool = solendConfigData.poolRay as PublicKey;
+    const solendProgramId = new PublicKey(SolendIDL.metadata.address) 
 
-  const apricotProgramId = new PublicKey(ApricotIDL.metadata.address) 
-  // const apricotProgram = new anchor.Program(ApricotIDL as anchor.Idl, apricotProgramId);
-  // const apricotConfigData = await apricotProgram.account.config.fetch(ApricotConfig);
-  /* Dynamic token */
-  // const apricotPool = apricotConfigData.poolRay as PublicKey;
+    const apricotProgramId = new PublicKey(ApricotIDL.metadata.address) 
 
-  const deposit_wei = convert_to_wei("100");
-  const deposit_amount = new anchor.BN(deposit_wei);
-  
-  const tx = await program.rpc.withdrawLending({
-    accounts: {
-      userAuthority: creatorKeypair.publicKey,
-      userCollateral,
-      collateralMint,
-      config,
-      cbsPda: PDA[0],
-      collateralPool,
-      userAccount,
-      solendConfig: SolendConfig,
-      solendAccount,
-      solendPool,
-      apricotConfig: ApricotConfig,
-      apricotAccount,
-      apricotPool,
-      solendProgram: solendProgramId,
-      apricotProgram: apricotProgramId,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: SYSVAR_RENT_PUBKEY,
-    },
-  });
+    let tokenDatas = [];
+    tokenDatas.push({
+        destMint: cbsConfigData.rayMint,    cbsPool: cbsConfigData.poolRay
+    })
+    tokenDatas.push({
+        destMint: cbsConfigData.wsolMint,    cbsPool: cbsConfigData.poolWsol
+    })
+    tokenDatas.push({
+        destMint: cbsConfigData.msolMint,    cbsPool: cbsConfigData.poolMsol
+    })
+    tokenDatas.push({
+        destMint: cbsConfigData.srmMint,    cbsPool: cbsConfigData.poolSrm
+    })
+    tokenDatas.push({
+        destMint: cbsConfigData.scnsolMint,    cbsPool: cbsConfigData.poolScnsol
+    })
+    tokenDatas.push({
+        destMint: cbsConfigData.stsolMint,    cbsPool: cbsConfigData.poolStsol
+    })
 
-  console.log("Deposit successfully", tx)
+    const accountData = await program.account.userAccount.all();        
+    const len = accountData.length;
+    for(let j = 0; j < len; j++) {
+        const userAccount = accountData[j].publicKey;
+        try {
+            const LTV = await program.views.getLtv({
+                accounts: {
+                    userAccount,
+                    stableLpsolPool: StableLpsolPool,
+                    stableLpusdPool: StableLpusdPool,
+                    pythUsdcAccount,
+                    pythRayAccount,
+                    pythSolAccount,
+                    pythMsolAccount,
+                    pythSrmAccount,
+                    pythScnsolAccount,
+                    pythStsolAccount,
+                    liquidityPool: LiquidityPool,
+                    solendConfig: SolendConfig,
+                    apricotConfig: ApricotConfig,
+                }
+            });
+            console.log("LTV:", Number(LTV));
+            if (Number(LTV) > 90) {
+                for (let i = 0; i < tokenDatas.length; i++) {
+                    let tokenData = tokenDatas[i];
+                    const tx = await program.rpc.withdrawLending({
+                        accounts: {
+                            userAccount,
+                            cbsPda: PDA[0],
+                            config,
+                            stableLpsolPool: StableLpsolPool,
+                            stableLpusdPool: StableLpusdPool,
+                            pythUsdcAccount,
+                            pythRayAccount,
+                            pythSolAccount,
+                            pythMsolAccount,
+                            pythSrmAccount,
+                            pythScnsolAccount,
+                            pythStsolAccount,
+                            liquidityPool: LiquidityPool,
+                            destMint: tokenData.destMint,
+                            cbsPool: tokenData.cbsPool,
+                            solendConfig: SolendConfig,
+                            solendAccount,
+                            solendPool,
+                            solendStateAccount: SolendStateAccount,
+                            apricotConfig: ApricotConfig,
+                            apricotAccount,
+                            apricotPool,
+                            apricotStateAccount: ApricotStateAccount,
+                            solendProgram: solendProgramId,
+                            apricotProgram: apricotProgramId,
+                            systemProgram: anchor.web3.SystemProgram.programId,
+                            tokenProgram: TOKEN_PROGRAM_ID,
+                            rent: SYSVAR_RENT_PUBKEY,
+                        },
+                    });
+                    console.log("Deposit successfully", tx)
+                }
+                const userData = await program.account.userAccount.fetch(userAccount);
+                print_user_data(userData)
+            }
+        } catch (e) {
+            console.log("Failed", e)
+        }
+    }
 
-  const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
-  print_config_data(cbsConfigDataAfterDeposit)
-
-  const userData = await program.account.userAccount.fetch(userAccount);
-  print_user_data(userData)
+    const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
+    print_config_data(cbsConfigDataAfterDeposit)
 }
 
 withdraw_lending_ctokens();

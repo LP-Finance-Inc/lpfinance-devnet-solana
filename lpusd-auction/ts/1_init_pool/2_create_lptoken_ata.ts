@@ -4,6 +4,7 @@ import { LpusdAuction } from "../../target/types/lpusd_auction";
 import LpfinanceTokenIDL from "../../../lpfinance-tokens/target/idl/lpfinance_tokens.json";
 
 import { 
+  ASSOCIATED_TOKEN_PROGRAM_ID,
     TOKEN_PROGRAM_ID
 } from '@solana/spl-token';
 import {
@@ -12,7 +13,7 @@ import {
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 import { LpfinanceTokenConfig, NETWORK, PREFIX } from "../config";
-import { getCreatorKeypair, getPublicKey, writePublicKeys } from "../utils";
+import { getATAPublicKey, getCreatorKeypair, getPublicKey, writePublicKeys } from "../utils";
 
 const { Wallet } = anchor;
 
@@ -28,33 +29,30 @@ const create_lptoken_ata = async () => {
     let pubkeys = "";
     // Config
     const config = getPublicKey('auction_config');
-
+    // const configData = await program.account.config.fetch(config);
+    // console.log(configData.poolLpsol.toBase58());
+    // return;
     const lptokenProgram = new anchor.Program(LpfinanceTokenIDL as anchor.Idl, LpfinanceTokenIDL.metadata.address);
     const lptokenConfigData = await lptokenProgram.account.config.fetch(LpfinanceTokenConfig);
-
+    
     const lpsolMint = lptokenConfigData.lpsolMint as PublicKey;
     const lpusdMint = lptokenConfigData.lpusdMint as PublicKey;
-    const lpfiMint = lptokenConfigData.lpdaoMint as PublicKey;
     // console.log(lpfiMint.toBase58())
+
+    const PDA = await PublicKey.findProgramAddress(
+      [Buffer.from(PREFIX)],
+      program.programId
+  );    
     // Find PDA for `lpsol pool`
-    const poolLpsolKeypair = anchor.web3.Keypair.generate();  
-    const poolLpsolKeyString = `const poolLpsol = new PublicKey("${poolLpsolKeypair.publicKey.toString()}");\n`
+    const poolLpsolKeypair = await getATAPublicKey(lpsolMint, PDA[0]) // anchor.web3.Keypair.generate();  
+    const poolLpsolKeyString = `const poolLpsol = new PublicKey("${poolLpsolKeypair.toString()}");\n`
     pubkeys += poolLpsolKeyString;
 
       // Find PDA for `lpusd pool`
-    const poolLpusdKeypair = anchor.web3.Keypair.generate();  
-    const poolLpusdKeyString = `const poolLpusd = new PublicKey("${poolLpusdKeypair.publicKey.toString()}");\n`
+    const poolLpusdKeypair = await getATAPublicKey(lpusdMint, PDA[0]) // anchor.web3.Keypair.generate();  
+    const poolLpusdKeyString = `const poolLpusd = new PublicKey("${poolLpusdKeypair.toString()}");\n`
     pubkeys += poolLpusdKeyString;
 
-    // Find PDA for `lpfi pool`
-    const poolLpfiKeypair = anchor.web3.Keypair.generate();    
-    const poolLpfiKeyString = `const poolLpfi = new PublicKey("${poolLpfiKeypair.publicKey.toString()}");\n\n`
-    pubkeys += poolLpfiKeyString;
-
-    const PDA = await PublicKey.findProgramAddress(
-        [Buffer.from(PREFIX)],
-        program.programId
-    );    
     const auctionPDAKeyString = `const auctionPDA = new PublicKey("${PDA[0].toString()}");`
     pubkeys += auctionPDAKeyString;
 
@@ -67,16 +65,14 @@ const create_lptoken_ata = async () => {
         config,
         lpsolMint,
         lpusdMint,
-        lpfiMint: lpfiMint,
         auctionPda: PDA[0],
-        poolLpsol: poolLpsolKeypair.publicKey,
-        poolLpusd: poolLpusdKeypair.publicKey,
-        poolLpfi: poolLpfiKeypair.publicKey,
+        poolLpsol: poolLpsolKeypair,
+        poolLpusd: poolLpusdKeypair,
         systemProgram: anchor.web3.SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
-      },
-      signers: [poolLpsolKeypair, poolLpusdKeypair, poolLpfiKeypair]
+      }
     });
 }
 

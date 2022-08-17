@@ -1,12 +1,16 @@
 use anchor_lang::prelude::*;
 // use pyth_client;
-use anchor_spl::token::{ Mint, Token, TokenAccount };
-use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{ Mint, Token, TokenAccount }
+};
+
 
 use cbs_protocol::{self};
 
 use stable_swap::{self, StableswapPool};
 use uniswap::{self, UniswapPool};
+use test_tokens::{self, TokenStateAccount};
 
 // Actually DENOMINATOR should be 100 (%)
 // But to calculate percent in more clearly, we consider DECIMAL 4. For example, 101.0014
@@ -53,115 +57,29 @@ pub struct CreateLpTokenATA<'info> {
 
     pub lpsol_mint: Box<Account<'info, Mint>>,   
     pub lpusd_mint: Box<Account<'info, Mint>>,
-    pub lpfi_mint: Box<Account<'info, Mint>>,
     /// CHECK: This is safe
     #[account(seeds = [PREFIX.as_ref()], bump)]
     pub auction_pda: AccountInfo<'info>,
     // LpSOL POOL
     #[account(
-        init,
-        token::mint = lpsol_mint,
-        token::authority = auction_pda,
+        init_if_needed,
+        associated_token::mint = lpsol_mint,
+        associated_token::authority = auction_pda,
         payer = authority
     )]
     pub pool_lpsol: Box<Account<'info, TokenAccount>>,
 
     // LpUSD POOL
     #[account(
-        init,
-        token::mint = lpusd_mint,
-        token::authority = auction_pda,
+        init_if_needed,
+        associated_token::mint = lpusd_mint,
+        associated_token::authority = auction_pda,
         payer = authority
     )]
     pub pool_lpusd: Box<Account<'info, TokenAccount>>,
-    // LpFi POOL
-    #[account(
-        init,
-        token::mint = lpfi_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_lpfi: Box<Account<'info, TokenAccount>>,    
 
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
-#[derive(Accounts)]
-pub struct CreateTokenATA<'info> {
-    // Token program authority
-    #[account(mut)]
-    pub authority: Signer<'info>,
-
-    // Config Accounts
-    #[account(mut,
-        constraint = config.owner == authority.key()
-    )]
-    pub config: Box<Account<'info, Config>>,
-    
-    // Tokens
-    pub wsol_mint: Box<Account<'info, Mint>>,
-    pub ray_mint: Box<Account<'info, Mint>>,
-    pub msol_mint: Box<Account<'info, Mint>>,
-    pub srm_mint: Box<Account<'info, Mint>>,
-    pub scnsol_mint: Box<Account<'info, Mint>>,
-    pub stsol_mint: Box<Account<'info, Mint>>,
-
-    /// CHECK: This is safe
-    #[account(seeds = [PREFIX.as_ref()], bump)]
-    pub auction_pda: AccountInfo<'info>,
-
-    // wSOL POOL
-    #[account(
-        init,
-        token::mint = wsol_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_wsol: Box<Account<'info, TokenAccount>>,
-    // Ray POOL
-    #[account(
-        init,
-        token::mint = ray_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_ray: Box<Account<'info, TokenAccount>>,
-    // mSOL POOL
-    #[account(
-        init,
-        token::mint = msol_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_msol: Box<Account<'info, TokenAccount>>,
-    // srm POOL
-    #[account(
-        init,
-        token::mint = srm_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_srm: Box<Account<'info, TokenAccount>>,
-    // scnsol POOL
-    #[account(
-        init,
-        token::mint = scnsol_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_scnsol: Box<Account<'info, TokenAccount>>,
-    // stsol POOL
-    #[account(
-        init,
-        token::mint = stsol_mint,
-        token::authority = auction_pda,
-        payer = authority
-    )]
-    pub pool_stsol: Box<Account<'info, TokenAccount>>,    
-
-    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>
 }
@@ -286,9 +204,6 @@ pub struct BurnLpUSDForLiquidate<'info> {
     /// CHECK: This is safe
     #[account(mut, seeds = [PREFIX.as_ref()], bump)]
     pub auction_pda: AccountInfo<'info>,
-    // Auction: user account
-    #[account(mut)]
-    pub user_account: Box<Account<'info, UserAccount>>,
     // CBS: user account
     #[account(mut, 
         constraint = cbs_account.step_num == 0
@@ -335,9 +250,6 @@ pub struct BurnLpUSDForLiquidate<'info> {
     /// CHECK: pyth
     pub pyth_stsol_account: AccountInfo<'info>,
     // LpFi<->USDC pool
-    #[account(
-        constraint = liquidity_pool.token_a == config.lpfi_mint || liquidity_pool.token_b == config.lpfi_mint
-    )]
     pub liquidity_pool: Box<Account<'info, UniswapPool>>,
     /// CHECK: this is safe
     pub lptokens_program: AccountInfo<'info>,
@@ -349,7 +261,7 @@ pub struct BurnLpUSDForLiquidate<'info> {
 }
 
 #[derive(Accounts)]
-pub struct BurnLpSOLForLiquidate<'info> {
+pub struct BurnLpSOLForLiquidate1<'info> {
     /// CHECK: this is safe
     #[account(mut)]
     pub owner: AccountInfo<'info>,
@@ -365,18 +277,87 @@ pub struct BurnLpSOLForLiquidate<'info> {
     )]
     pub auction_pda: AccountInfo<'info>,
     // LpUSD-USDC stableswap pool
+    #[account(mut)]
     pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
     // LpSOL-wSOL stableswap pool
+    #[account(mut)]
     pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
     /// CHECK: cbs is user for swap
     #[account(mut)]
     pub swap_escrow: AccountInfo<'info>,
-    /// CHECK:
     #[account(mut)]
-    pub stable_swap_pool: AccountInfo<'info>,
-    /// CHECK:
+    pub token_state_account: Box<Account<'info, TokenStateAccount>>,
+    
     #[account(mut)]
-    pub token_state_account: AccountInfo<'info>,
+    pub token_wsol: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_usdc: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_lpusd: Box<Account<'info, Mint>>,
+
+    /// CHECK:
+    pub pyth_usdc: AccountInfo<'info>,
+    /// CHECK:
+    pub pyth_wsol: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub auction_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK: this is safe
+    #[account(mut)]
+    pub escrow_ata_lpusd: AccountInfo<'info>,
+    /// CHECK: this is safe
+    #[account(mut)]
+    pub escrow_ata_wsol: AccountInfo<'info>,
+    /// CHECK: this is safe
+    #[account(mut)]
+    pub escrow_ata_usdc: AccountInfo<'info>,
+    /// CHECK: this is safe
+    pub lptokens_program: AccountInfo<'info>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+    /// CHECK:
+    pub testtokens_program: AccountInfo<'info>,    
+    /// CHECK:
+    pub swaprouter_program: AccountInfo<'info>,  
+    /// CHECK: this is safe
+    pub cbs_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct BurnLpSOLForLiquidate2<'info> {
+    /// CHECK: this is safe
+    #[account(mut)]
+    pub owner: AccountInfo<'info>,
+    // CBS: user account
+    #[account(mut, 
+        constraint = cbs_account.step_num == 1
+    )]
+    pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub auction_pda: AccountInfo<'info>,
+    // LpUSD-USDC stableswap pool
+    #[account(mut)]
+    pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,
+    // LpSOL-wSOL stableswap pool
+    #[account(mut)]
+    pub stable_lpsol_pool: Box<Account<'info, StableswapPool>>,
+    /// CHECK: cbs is user for swap
+    #[account(mut)]
+    pub swap_escrow: AccountInfo<'info>,
+    #[account(mut)]
+    pub token_state_account: Box<Account<'info, TokenStateAccount>>,
     
     #[account(mut)]
     pub token_lpsol: Box<Account<'info, Mint>>,
@@ -392,8 +373,9 @@ pub struct BurnLpSOLForLiquidate<'info> {
     /// CHECK:
     pub pyth_wsol: AccountInfo<'info>,
 
+    /// CHECK: this is safe
     #[account(mut)]
-    pub auction_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    pub auction_ata_lpsol: AccountInfo<'info>,
     #[account(mut)]
     pub auction_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
@@ -404,14 +386,18 @@ pub struct BurnLpSOLForLiquidate<'info> {
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK: this is safe
     #[account(mut)]
-    pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
+    pub escrow_ata_lpsol: AccountInfo<'info>,
+    /// CHECK: this is safe
     #[account(mut)]
-    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    pub escrow_ata_lpusd: AccountInfo<'info>,
+    /// CHECK: this is safe
     #[account(mut)]
-    pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
+    pub escrow_ata_wsol: AccountInfo<'info>,
+    /// CHECK: this is safe
     #[account(mut)]
-    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+    pub escrow_ata_usdc: AccountInfo<'info>,
     /// CHECK: this is safe
     pub lptokens_program: AccountInfo<'info>,
     /// CHECK:
@@ -456,27 +442,11 @@ pub struct DistributeRewardFromLiquidate<'info> {
 pub struct Config {
     pub owner: Pubkey,
 
-    pub wsol_mint: Pubkey,
-    pub msol_mint: Pubkey,
-    pub ray_mint: Pubkey,
-    pub srm_mint: Pubkey,
-    pub scnsol_mint: Pubkey,
-    pub stsol_mint: Pubkey,
-
     pub lpsol_mint: Pubkey,
     pub lpusd_mint: Pubkey,
-    pub lpfi_mint: Pubkey,
-
-    pub pool_wsol: Pubkey,      // Auction ATA
-    pub pool_ray: Pubkey,       // Auction ATA
-    pub pool_msol: Pubkey,      // Auction ATA
-    pub pool_srm: Pubkey,       // Auction ATA
-    pub pool_scnsol: Pubkey,    // Auction ATA
-    pub pool_stsol: Pubkey,     // Auction ATA
 
     pub pool_lpsol: Pubkey,     // Auction ATA
     pub pool_lpusd: Pubkey,     // Auction ATA
-    pub pool_lpfi: Pubkey,      // Auction ATA
 
     pub total_deposited_lpusd: u64, // for now, dump
     // Current auction pool's balance of LpUSD including epoch profits
@@ -494,7 +464,7 @@ pub struct Config {
 
 impl Config {
     pub const LEN: usize = DISCRIMINATOR_LENGTH
-        + PUBLIC_KEY_LENGTH * 19 // pubkey
+        + PUBLIC_KEY_LENGTH * 5 // pubkey
         + U64_LENGTH * 4 
         + I64_LENGTH * 2;
 }

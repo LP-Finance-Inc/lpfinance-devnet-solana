@@ -716,6 +716,42 @@ pub mod cbs_protocol {
         Ok(())
     }
 
+    pub fn get_ltv(ctx: Context<GetLTV>) -> Result<u64> {
+        let user_account = &ctx.accounts.user_account;
+
+        let solend_config : &Account<solend::Config>= &ctx.accounts.solend_config;
+        let apricot_config : &Account<apricot::Config>= &ctx.accounts.apricot_config;
+
+        let liquidity_pool: &Account<UniswapPool> = &ctx.accounts.liquidity_pool;
+        let stable_lpusd_pool: &Account<StableswapPool> = &ctx.accounts.stable_lpusd_pool;
+        let stable_lpsol_pool: &Account<StableswapPool> = &ctx.accounts.stable_lpsol_pool;
+
+        let pyth_ray_account: &AccountInfo = &ctx.accounts.pyth_ray_account;
+        let pyth_usdc_account: &AccountInfo = &ctx.accounts.pyth_usdc_account;
+        let pyth_sol_account: &AccountInfo = &ctx.accounts.pyth_sol_account;
+        let pyth_msol_account: &AccountInfo = &ctx.accounts.pyth_msol_account;
+        let pyth_srm_account: &AccountInfo = &ctx.accounts.pyth_srm_account;
+        let pyth_scnsol_account: &AccountInfo = &ctx.accounts.pyth_scnsol_account;
+        let pyth_stsol_account: &AccountInfo = &ctx.accounts.pyth_stsol_account;
+
+        let _ltv: u64 = user_account.get_ltv_view(
+            solend_config,
+            apricot_config,
+            liquidity_pool,
+            stable_lpusd_pool,
+            stable_lpsol_pool,
+            pyth_ray_account,
+            pyth_usdc_account,
+            pyth_sol_account,
+            pyth_msol_account,
+            pyth_srm_account,
+            pyth_scnsol_account,
+            pyth_stsol_account
+        )?;
+
+        Ok(_ltv)
+    }
+
     pub fn withdraw_lending(
         ctx: Context<WithdrawLending>
     ) -> Result<()> {
@@ -778,9 +814,9 @@ pub mod cbs_protocol {
             )?;
     
             // Threshold 90
-            if _ltv < 90 {
-                return Err(ErrorCode::LTVAlreadyExceed.into());
-            }        
+            // if _ltv < 90 {
+            //     return Err(ErrorCode::LTVAlreadyExceed.into());
+            // }        
             
             let mut _solend_higher = false;
             let mut _lending_rate = 0;

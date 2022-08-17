@@ -802,6 +802,7 @@ dependencies = [
  "spl-token",
  "stable-swap",
  "swap-router",
+ "test-tokens",
  "uniswap",
 ]
 
