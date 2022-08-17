@@ -1173,6 +1173,17 @@
       ]
     },
     {
+      "name": "liquidateStep3",
+      "accounts": [
+        {
+          "name": "userAccount",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "liquidateSwapNormaltoken",
       "accounts": [
         {
