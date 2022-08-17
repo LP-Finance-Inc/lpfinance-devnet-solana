@@ -716,7 +716,7 @@ pub mod cbs_protocol {
         Ok(())
     }
 
-    pub fn get_ltv(ctx: Context<GetLTV>) -> Result<u64> {
+    pub fn get_ltv(ctx: Context<GetLTV>) -> Result<Vec<u64>> {
         let user_account = &ctx.accounts.user_account;
 
         let solend_config : &Account<solend::Config>= &ctx.accounts.solend_config;
@@ -734,7 +734,8 @@ pub mod cbs_protocol {
         let pyth_scnsol_account: &AccountInfo = &ctx.accounts.pyth_scnsol_account;
         let pyth_stsol_account: &AccountInfo = &ctx.accounts.pyth_stsol_account;
 
-        let _ltv: u64 = user_account.get_ltv_view(
+
+        let user_ltv: LtvData = user_account.get_ltv_view(
             solend_config,
             apricot_config,
             liquidity_pool,
@@ -748,8 +749,10 @@ pub mod cbs_protocol {
             pyth_scnsol_account,
             pyth_stsol_account
         )?;
+        
+        let r_values: Vec<u64> = vec![user_ltv.ltv, user_ltv.r_total, user_ltv.r_borrow];
 
-        Ok(_ltv)
+        Ok(r_values)
     }
 
     pub fn withdraw_lending(

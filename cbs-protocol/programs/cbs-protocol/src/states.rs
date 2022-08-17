@@ -1496,7 +1496,7 @@ impl UserAccount {
         pyth_srm_account: &AccountInfo,
         pyth_scnsol_account: &AccountInfo,
         pyth_stsol_account: &AccountInfo
-    ) -> Result<u64> {
+    ) -> Result<LtvData> {
         let mut _is_pyth_valid: bool = true;
         _is_pyth_valid = check_pyth_accounts(
             pyth_sol_account,
@@ -1624,7 +1624,16 @@ impl UserAccount {
 
         let ltv = (borrowed_total * 100.0 / total_price) as u64;
 
-        Ok(ltv)
+        let r_total = (total_price / 100000000.0) as u64;
+        let r_borrow = (borrowed_total / 100000000.0) as u64;
+
+        let r_data = LtvData {
+            ltv: ltv,
+            r_total: r_total,
+            r_borrow: r_borrow
+        };
+
+        Ok(r_data)
     }
 
     // Return: LTV, TOTAL_PRICE, Borrowed Total
@@ -1756,6 +1765,13 @@ impl UserAccount {
 
         Ok((ltv, total_price, borrowed_total))
     }
+}
+
+#[zero_copy]
+pub struct LtvData {
+    pub ltv: u64,
+    pub r_total: u64,
+    pub r_borrow: u64,
 }
 
 #[error_code]

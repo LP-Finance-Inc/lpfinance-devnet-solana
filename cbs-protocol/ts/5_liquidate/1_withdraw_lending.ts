@@ -82,7 +82,7 @@ const withdraw_lending_ctokens = async () => {
     for(let j = 0; j < len; j++) {
         const userAccount = accountData[j].publicKey;
         try {
-            const LTV = await program.views.getLtv({
+            const userData = await program.views.getLtv({
                 accounts: {
                     userAccount,
                     stableLpsolPool: StableLpsolPool,
@@ -99,7 +99,11 @@ const withdraw_lending_ctokens = async () => {
                     apricotConfig: ApricotConfig,
                 }
             });
-            console.log("LTV:", Number(LTV));
+            const LTV = userData[0];
+            const R_TOTAL = userData[1];
+            const R_BORROW = userData[2];
+            console.log("LTV:", Number(LTV), Number(R_TOTAL), Number(R_BORROW));
+
             if (Number(LTV) > 90) {
                 for (let i = 0; i < tokenDatas.length; i++) {
                     let tokenData = tokenDatas[i];
