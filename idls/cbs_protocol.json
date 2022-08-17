@@ -764,13 +764,82 @@
       ]
     },
     {
-      "name": "withdrawLending",
+      "name": "getLtv",
       "accounts": [
         {
-          "name": "userAuthority",
-          "isMut": true,
-          "isSigner": true
+          "name": "userAccount",
+          "isMut": false,
+          "isSigner": false
         },
+        {
+          "name": "stableLpusdPool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "stableLpsolPool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythRayAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythUsdcAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythSolAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythMsolAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythSrmAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythScnsolAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pythStsolAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "liquidityPool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solendConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "apricotConfig",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "returns": {
+        "vec": "u64"
+      }
+    },
+    {
+      "name": "withdrawLending",
+      "accounts": [
         {
           "name": "userAccount",
           "isMut": true,
@@ -1831,6 +1900,28 @@
           {
             "name": "escrowLpusdAmount",
             "type": "i64"
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LtvData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ltv",
+            "type": "u64"
+          },
+          {
+            "name": "rTotal",
+            "type": "u64"
+          },
+          {
+            "name": "rBorrow",
+            "type": "u64"
           }
         ]
       }
