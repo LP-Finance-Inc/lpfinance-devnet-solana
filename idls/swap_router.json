@@ -3,6 +3,52 @@
   "name": "swap_router",
   "instructions": [
     {
+      "name": "createTokenAta",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "swapPda",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenSrc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAtaLpusd",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "swapStableswap",
       "accounts": [
         {
@@ -909,7 +955,7 @@
           "isSigner": true
         },
         {
-          "name": "swapEscrow",
+          "name": "swapPda",
           "isMut": true,
           "isSigner": false
         },
@@ -1025,7 +1071,7 @@
           "isSigner": true
         },
         {
-          "name": "swapEscrow",
+          "name": "swapPda",
           "isMut": true,
           "isSigner": false
         },
@@ -1142,7 +1188,7 @@
           "isSigner": true
         },
         {
-          "name": "swapEscrow",
+          "name": "swapPda",
           "isMut": true,
           "isSigner": false
         },
@@ -1258,7 +1304,7 @@
           "isSigner": true
         },
         {
-          "name": "swapEscrow",
+          "name": "swapPda",
           "isMut": true,
           "isSigner": false
         },
