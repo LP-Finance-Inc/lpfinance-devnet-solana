@@ -209,8 +209,7 @@ pub struct UniswapTokens<'info> {
     pub token_dest: Box<Account<'info, Mint>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_src,
         associated_token::authority = user,
     )]    

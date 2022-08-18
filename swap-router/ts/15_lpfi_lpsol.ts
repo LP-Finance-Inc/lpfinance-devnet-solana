@@ -48,13 +48,20 @@ const stable_swap = async () => {
 
   const escrow_pda = await PublicKey.findProgramAddress(
     [
-        Buffer.from("swap-escrow"),
-        authKeypair.publicKey.toBuffer()
+        Buffer.from("swap-escrow")
     ],
     program.programId
   ); 
   console.log("escrow_pda:", escrow_pda[0].toBase58());
   console.log("escrow_pda:", escrow_pda[1]);
+
+  const swap_escrow_pda = await PublicKey.findProgramAddress(
+    [
+        Buffer.from("swap-escrow"),
+        authKeypair.publicKey.toBuffer()
+    ],
+    program.programId
+  ); 
 
   const token_state_account_pda = await PublicKey.findProgramAddress(
     [
@@ -131,7 +138,8 @@ const stable_swap = async () => {
     {
         accounts: {
           user: authKeypair.publicKey,
-          swapEscrow: escrow_pda[0],
+          swapEscrow: swap_escrow_pda[0],
+          swapPda: escrow_pda[0],
           uniswapPool: UniswapLpfiUsdc,
           tokenStateAccount: token_state_account_pda[0],
           tokenLpfi: LpFI,
@@ -159,7 +167,8 @@ const stable_swap = async () => {
       {
           accounts: {
             user: authKeypair.publicKey,
-            swapEscrow: escrow_pda[0],
+            swapEscrow: swap_escrow_pda[0],
+            swapPda: escrow_pda[0],
             stableSwapPool: StableswapLpsolWsol,
             tokenLpsol: LpSOL,
             tokenWsol: WSOL,

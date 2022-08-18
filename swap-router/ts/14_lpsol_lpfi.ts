@@ -48,13 +48,21 @@ const stable_swap = async () => {
 
   const escrow_pda = await PublicKey.findProgramAddress(
     [
-        Buffer.from("swap-escrow"),
-        authKeypair.publicKey.toBuffer()
+        Buffer.from("swap-escrow")
     ],
     program.programId
   ); 
   console.log("escrow_pda:", escrow_pda[0].toBase58());
   console.log("escrow_pda:", escrow_pda[1]);
+
+  const swap_escrow_pda = await PublicKey.findProgramAddress(
+    [
+        Buffer.from("swap-escrow"),
+        authKeypair.publicKey.toBuffer()
+    ],
+    program.programId
+  ); 
+
 
   const token_state_account_pda = await PublicKey.findProgramAddress(
     [
@@ -125,57 +133,57 @@ const stable_swap = async () => {
   console.log('escrow_ata_wsol:', escrow_ata_wsol.toBase58());
 
   const amount_lpsol = 10 * 1e9;
-
-  const result = await program.rpc.swapLpsolToLpfiStep1(
+  const result0 = await program.rpc.swapLpsolToLpfiStep1(
     new anchor.BN(amount_lpsol),
     {
-        accounts: {
-          user: authKeypair.publicKey,
-          swapEscrow: escrow_pda[0],
-          stableSwapPool: StableswapLpsolWsol,
-          tokenStateAccount: token_state_account_pda[0],
-          tokenLpsol: LpSOL,
-          tokenWsol: WSOL,
-          tokenUsdc: USDC,
-          pythUsdc: USDC_PYTH,
-          pythWsol: WSOL_PYTH,
-          userAtaLpsol: user_ata_lpsol,
-          stableswapPoolAtaLpsol: stableswap_pool_lpsol_wsol_ata_lpsol,
-          stableswapPoolAtaWsol: stableswap_pool_lpsol_wsol_ata_wsol,
-          escrowAtaLpsol: escrow_ata_lpsol,
-          escrowAtaWsol: escrow_ata_wsol,
-          escrowAtaUsdc: escrow_ata_usdc,
-          stableswapProgram: stableswap_programID,
-          testtokensProgram: testToken_programID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          rent: SYSVAR_RENT_PUBKEY                              
-        },
-    });
-    console.log("result : ", result);
+      accounts: {
+        user: authKeypair.publicKey,
+        swapPda: escrow_pda[0],
+        swapEscrow: swap_escrow_pda[0],
+        stableSwapPool: StableswapLpsolWsol,
+        tokenStateAccount: token_state_account_pda[0],
+        tokenLpsol: LpSOL,
+        tokenWsol: WSOL,
+        tokenUsdc: USDC,
+        pythUsdc: USDC_PYTH,
+        pythWsol: WSOL_PYTH,
+        userAtaLpsol: user_ata_lpsol,
+        stableswapPoolAtaLpsol: stableswap_pool_lpsol_wsol_ata_lpsol,
+        stableswapPoolAtaWsol: stableswap_pool_lpsol_wsol_ata_wsol,
+        escrowAtaLpsol: escrow_ata_lpsol,
+        escrowAtaWsol: escrow_ata_wsol,
+        escrowAtaUsdc: escrow_ata_usdc,
+        stableswapProgram: stableswap_programID,
+        testtokensProgram: testToken_programID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY                              
+      },
+  });
+  console.log("result : ", result0);
 
-    const result1 = await program.rpc.swapLpsolToLpfiStep2(
-      {
-          accounts: {
-            user: authKeypair.publicKey,
-            swapEscrow: escrow_pda[0],
-            uniswapPool: UniswapLpfiUsdc,
-            tokenLpfi: LpFI,
-            tokenUsdc: USDC,
-            userAtaLpfi: user_ata_lpfi,
-            uniswapPoolAtaLpfi: uniswap_ata_lpfi,
-            uniswapPoolAtaUsdc: uniswap_ata_usdc,
-            escrowAtaLpfi: escrow_ata_lpfi,
-            escrowAtaUsdc: escrow_ata_usdc,
-            uniswapProgram: uniswap_programID,
-            systemProgram: anchor.web3.SystemProgram.programId,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-            rent: SYSVAR_RENT_PUBKEY                              
-          },
-      });
-      console.log("result1 : ", result1);
+  const result1 = await program.rpc.swapLpsolToLpfiStep2({
+    accounts: {
+      user: authKeypair.publicKey,
+      swapPda: escrow_pda[0],
+      swapEscrow: swap_escrow_pda[0],
+      uniswapPool: UniswapLpfiUsdc,
+      tokenLpfi: LpFI,
+      tokenUsdc: USDC,
+      userAtaLpfi: user_ata_lpfi,
+      uniswapPoolAtaLpfi: uniswap_ata_lpfi,
+      uniswapPoolAtaUsdc: uniswap_ata_usdc,
+      escrowAtaLpfi: escrow_ata_lpfi,
+      escrowAtaUsdc: escrow_ata_usdc,
+      uniswapProgram: uniswap_programID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      rent: SYSVAR_RENT_PUBKEY                              
+    },
+  });
+  console.log("result1 : ", result1);
       
 };
 

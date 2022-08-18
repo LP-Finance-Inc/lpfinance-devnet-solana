@@ -309,27 +309,25 @@ pub mod swap_router {
         let cpi_ctx_lpusd = CpiContext::new(cpi_program, cpi_accounts_lpusd);
         token::transfer(cpi_ctx_lpusd, amount_lpusd)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_lpusd_to_usdc = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpusd.to_account_info(),
             token_dest: ctx.accounts.token_usdc.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpusd.to_account_info(),
@@ -350,7 +348,7 @@ pub mod swap_router {
         //---------- Cross-Calling Uniswap Program ----------------
         let cpi_accounts_uniswap_usdc_to_lpfi = UniswapTokens {
             uniswap_pool: ctx.accounts.uniswap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_usdc.to_account_info(),
             token_dest: ctx.accounts.token_lpfi.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_usdc.to_account_info(),
@@ -372,7 +370,7 @@ pub mod swap_router {
         let cpi_accounts_lpfi = Transfer {
             from: ctx.accounts.escrow_ata_lpfi.to_account_info(),
             to: ctx.accounts.user_ata_lpfi.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpfi = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpfi, signer);
@@ -397,27 +395,25 @@ pub mod swap_router {
         let cpi_ctx_lpfi = CpiContext::new(cpi_program, cpi_accounts_lpfi);
         token::transfer(cpi_ctx_lpfi, amount_lpfi)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Uniswap Program ----------------
         let cpi_accounts_uniswap_lpfi_to_usdc = UniswapTokens {
             uniswap_pool: ctx.accounts.uniswap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpfi.to_account_info(),
             token_dest: ctx.accounts.token_usdc.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpfi.to_account_info(),
@@ -438,7 +434,7 @@ pub mod swap_router {
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_usdc_to_lpusd = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_usdc.to_account_info(),
             token_dest: ctx.accounts.token_lpusd.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_usdc.to_account_info(),
@@ -460,7 +456,7 @@ pub mod swap_router {
         let cpi_accounts_lpusd = Transfer {
             from: ctx.accounts.escrow_ata_lpusd.to_account_info(),
             to: ctx.accounts.user_ata_lpusd.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpusd = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpusd, signer);
@@ -476,6 +472,7 @@ pub mod swap_router {
             return Err(ErrorCode::AmountZeroError.into());
         }
         let swap_escrow = &mut ctx.accounts.swap_escrow;
+
         //-------- Transfer Token Lpusd User -> Escrow -----------------------------
         let cpi_accounts_lpusd = Transfer {
             from: ctx.accounts.user_ata_lpusd.to_account_info(),
@@ -486,27 +483,25 @@ pub mod swap_router {
         let cpi_ctx_lpusd = CpiContext::new(cpi_program, cpi_accounts_lpusd);
         token::transfer(cpi_ctx_lpusd, amount_lpusd)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_lpusd_to_usdc = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpusd.to_account_info(),
             token_dest: ctx.accounts.token_usdc.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpusd.to_account_info(),
@@ -520,15 +515,14 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_lpusd_to_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_lpusd_to_usdc, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_lpusd_to_usdc, amount_lpusd)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_lpusd_to_usdc, amount_lpusd)?;
         //--------- Get amount usdc of escrow_ata_usdc ----------------------------
-        let escrow_ata_usdc_info = state::Account::unpack(&ctx.accounts.escrow_ata_usdc.to_account_info().data.borrow())?;
-        let amount_usdc = escrow_ata_usdc_info.amount;
+        let amount_usdc = tx.get();
         //-------- Burn Token USDC From Escrow -----------------------------
         let cpi_accounts_usdc = Burn {
             mint: ctx.accounts.token_usdc.to_account_info(),
             from: ctx.accounts.escrow_ata_usdc.to_account_info(),
-            authority: swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
@@ -545,7 +539,7 @@ pub mod swap_router {
         let amount_wsol = amount_wsol_f as u64;
         //-------- Mint Token Wsol To Escrow -----------------------------
         let cpi_accounts_wsol = MintToken {
-            owner: swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_wsol.to_account_info(),
             token_mint: ctx.accounts.token_wsol.to_account_info(),
@@ -558,39 +552,38 @@ pub mod swap_router {
         let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
         test_tokens::cpi::mint_token(cpi_ctx_wsol, amount_wsol)?;
 
+        swap_escrow.amount_wsol += amount_wsol;
+
         Ok(())
     }
 
     pub fn swap_lpusd_to_lpsol_step2(ctx: Context<SwapLpusdToLpsolStep2>) -> Result<u64> {
         let swap_escrow = &mut ctx.accounts.swap_escrow;
         //--------- Get amount WSOL of escrow_ata_wsol ----------------------------
-        let escrow_ata_wsol_info = state::Account::unpack(&ctx.accounts.escrow_ata_wsol.to_account_info().data.borrow())?;
-        let amount_wsol = escrow_ata_wsol_info.amount;
+        let amount_wsol = swap_escrow.amount_wsol;
         if amount_wsol == 0 {
             return Err(ErrorCode::AmountZeroError.into());
         }
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_wsol_to_lpsol = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_wsol.to_account_info(),
             token_dest: ctx.accounts.token_lpsol.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_wsol.to_account_info(),
@@ -604,19 +597,20 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_wsol_to_lpsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_wsol_to_lpsol, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_wsol_to_lpsol, amount_wsol)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_wsol_to_lpsol, amount_wsol)?;
         //--------- Get amount LPSOL of escrow_ata_lpsol ----------------------------
-        let escrow_ata_lpsol_info = state::Account::unpack(&ctx.accounts.escrow_ata_lpsol.to_account_info().data.borrow())?;
-        let amount_lpsol = escrow_ata_lpsol_info.amount;
+        let amount_lpsol = tx.get();
         //-------- Transfer Token LpSOL Escrow -> User -----------------------------
         let cpi_accounts_lpsol = Transfer {
             from: ctx.accounts.escrow_ata_lpsol.to_account_info(),
             to: ctx.accounts.user_ata_lpsol.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpsol, signer);
         token::transfer(cpi_ctx_lpsol, amount_lpsol)?;
+
+        swap_escrow.amount_wsol = 0;
 
         Ok(amount_lpsol)
     }
@@ -638,27 +632,25 @@ pub mod swap_router {
         let cpi_ctx_lpsol = CpiContext::new(cpi_program, cpi_accounts_lpsol);
         token::transfer(cpi_ctx_lpsol, amount_lpsol)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_lpsol_to_wsol = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpsol.to_account_info(),
             token_dest: ctx.accounts.token_wsol.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpsol.to_account_info(),
@@ -672,15 +664,14 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_lpsol_to_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_lpsol_to_wsol, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_lpsol_to_wsol, amount_lpsol)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_lpsol_to_wsol, amount_lpsol)?;
         //--------- Get amount wsol of escrow_ata_wsol ----------------------------
-        let escrow_ata_wsol_info = state::Account::unpack(&ctx.accounts.escrow_ata_wsol.to_account_info().data.borrow())?;
-        let amount_wsol = escrow_ata_wsol_info.amount;
+        let amount_wsol = tx.get();
         //-------- Burn Token wsol From Escrow -----------------------------
         let cpi_accounts_wsol = Burn {
             mint: ctx.accounts.token_wsol.to_account_info(),
             from: ctx.accounts.escrow_ata_wsol.to_account_info(),
-            authority: swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
@@ -697,7 +688,7 @@ pub mod swap_router {
         let amount_usdc = amount_usdc_f as u64;
         //-------- Mint Token USDC To Escrow -----------------------------
         let cpi_accounts_usdc = MintToken {
-            owner: swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_usdc.to_account_info(),
             token_mint: ctx.accounts.token_usdc.to_account_info(),
@@ -710,39 +701,38 @@ pub mod swap_router {
         let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
         test_tokens::cpi::mint_token(cpi_ctx_usdc, amount_usdc)?;
 
+        swap_escrow.amount_usdc += amount_usdc;
+
         Ok(())
     }
 
     pub fn swap_lpsol_to_lpusd_step2(ctx: Context<SwapLpsolToLpusdStep2>) -> Result<u64> {
         let swap_escrow = &mut ctx.accounts.swap_escrow;
         //--------- Get amount USDC of escrow_ata_usdc ----------------------------
-        let escrow_ata_usdc_info = state::Account::unpack(&ctx.accounts.escrow_ata_usdc.to_account_info().data.borrow())?;
-        let amount_usdc = escrow_ata_usdc_info.amount;
+        let amount_usdc = swap_escrow.amount_usdc;
         if amount_usdc == 0 {
             return Err(ErrorCode::AmountZeroError.into());
         }
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_usdc_to_lpusd = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_usdc.to_account_info(),
             token_dest: ctx.accounts.token_lpusd.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_usdc.to_account_info(),
@@ -764,12 +754,14 @@ pub mod swap_router {
         let cpi_accounts_lpusd = Transfer {
             from: ctx.accounts.escrow_ata_lpusd.to_account_info(),
             to: ctx.accounts.user_ata_lpusd.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpusd = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpusd, signer);
         token::transfer(cpi_ctx_lpusd, amount_lpusd)?;
-    
+        
+        swap_escrow.amount_usdc = 0;
+        
         Ok(amount_lpusd)
     }
     
@@ -1143,28 +1135,26 @@ pub mod swap_router {
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpfi = CpiContext::new(cpi_program, cpi_accounts_lpfi);
         token::transfer(cpi_ctx_lpfi, amount_lpfi)?;
-        //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        //-------- Check PDA --------------------------------        
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Uniswap Program ----------------
         let cpi_accounts_uniswap_lpfi_to_usdc = UniswapTokens {
             uniswap_pool: ctx.accounts.uniswap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpfi.to_account_info(),
             token_dest: ctx.accounts.token_usdc.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpfi.to_account_info(),
@@ -1196,7 +1186,7 @@ pub mod swap_router {
         let cpi_accounts_usdc = Burn {
             mint: ctx.accounts.token_usdc.to_account_info(),
             from: ctx.accounts.escrow_ata_usdc.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
@@ -1245,26 +1235,24 @@ pub mod swap_router {
         let amount_usdc_f = ( token_price_src / token_price_usdc ) * amount_src_f;
         let amount_usdc = amount_usdc_f as u64;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //-------- Mint Token Wsol To Escrow -----------------------------
         let cpi_accounts_usdc = MintToken {
-            owner: ctx.accounts.swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_usdc.to_account_info(),
             token_mint: ctx.accounts.token_usdc.to_account_info(),
@@ -1279,7 +1267,7 @@ pub mod swap_router {
         //---------- Cross-Calling Uniswap Program ----------------
         let cpi_accounts_uniswap_usdc_to_lpfi = UniswapTokens {
             uniswap_pool: ctx.accounts.uniswap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_usdc.to_account_info(),
             token_dest: ctx.accounts.token_lpfi.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_usdc.to_account_info(),
@@ -1301,7 +1289,7 @@ pub mod swap_router {
         let cpi_accounts_lpfi = Transfer {
             from: ctx.accounts.escrow_ata_lpfi.to_account_info(),
             to: ctx.accounts.user_ata_lpfi.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpfi = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpfi, signer);
@@ -1317,6 +1305,7 @@ pub mod swap_router {
             return Err(ErrorCode::AmountZeroError.into());
         }
         let swap_escrow = &mut ctx.accounts.swap_escrow;
+
         //-------- Transfer Token Lpsol User -> Escrow -----------------------------
         let cpi_accounts_lpsol = Transfer {
             from: ctx.accounts.user_ata_lpsol.to_account_info(),
@@ -1327,27 +1316,25 @@ pub mod swap_router {
         let cpi_ctx_lpsol = CpiContext::new(cpi_program, cpi_accounts_lpsol);
         token::transfer(cpi_ctx_lpsol, amount_lpsol)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_lpsol_to_wsol = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpsol.to_account_info(),
             token_dest: ctx.accounts.token_wsol.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpsol.to_account_info(),
@@ -1361,15 +1348,14 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_lpsol_to_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_lpsol_to_wsol, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_lpsol_to_wsol, amount_lpsol)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_lpsol_to_wsol, amount_lpsol)?;
         //--------- Get amount wsol of escrow_ata_wsol ----------------------------
-        let escrow_ata_wsol_info = state::Account::unpack(&ctx.accounts.escrow_ata_wsol.to_account_info().data.borrow())?;
-        let amount_wsol = escrow_ata_wsol_info.amount;
+        let amount_wsol = tx.get();
         //-------- Burn Token wsol From Escrow -----------------------------
         let cpi_accounts_wsol = Burn {
             mint: ctx.accounts.token_wsol.to_account_info(),
             from: ctx.accounts.escrow_ata_wsol.to_account_info(),
-            authority: swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
@@ -1386,7 +1372,7 @@ pub mod swap_router {
         let amount_usdc = amount_usdc_f as u64;
         //-------- Mint Token USDC To Escrow -----------------------------
         let cpi_accounts_usdc = MintToken {
-            owner: swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_usdc.to_account_info(),
             token_mint: ctx.accounts.token_usdc.to_account_info(),
@@ -1399,39 +1385,40 @@ pub mod swap_router {
         let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
         test_tokens::cpi::mint_token(cpi_ctx_usdc, amount_usdc)?;
 
+        swap_escrow.amount_usdc += amount_usdc;
+
         Ok(())
     }
 
     pub fn swap_lpsol_to_lpfi_step2(ctx: Context<SwapLpsolToLpfiStep2>) -> Result<()> {
+        let swap_escrow = &mut ctx.accounts.swap_escrow;
         //--------- Get amount USDC of escrow_ata_dest ----------------------------
-        let escrow_ata_usdc_info = state::Account::unpack(&ctx.accounts.escrow_ata_usdc.to_account_info().data.borrow())?;
-        let amount_usdc = escrow_ata_usdc_info.amount;
+        let amount_usdc = swap_escrow.amount_usdc;
         if amount_usdc == 0 {
             return Err(ErrorCode::AmountZeroError.into());
         }
-        let swap_escrow = &mut ctx.accounts.swap_escrow;
+
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
-        let signer = &[&seeds[..]];
+        let signer = &[&seeds[..]];        
+
         //---------- Cross-Calling Uniswap Program ----------------
         let cpi_accounts_uniswap_usdc_to_lpfi = UniswapTokens {
             uniswap_pool: ctx.accounts.uniswap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_usdc.to_account_info(),
             token_dest: ctx.accounts.token_lpfi.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_usdc.to_account_info(),
@@ -1445,20 +1432,20 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.uniswap_program.to_account_info();
         let cpi_swap_usdc_to_lpfi = CpiContext::new_with_signer(cpi_program, cpi_accounts_uniswap_usdc_to_lpfi, signer);
-        uniswap::cpi::uniswap_tokens(cpi_swap_usdc_to_lpfi, amount_usdc)?;
+        let tx = uniswap::cpi::uniswap_tokens(cpi_swap_usdc_to_lpfi, amount_usdc)?;
         //--------- Get amount LpFI of escrow_ata_lpfi ----------------------------
-        let escrow_ata_lpfi_info = state::Account::unpack(&ctx.accounts.escrow_ata_lpfi.to_account_info().data.borrow())?;
-        let amount_lpfi = escrow_ata_lpfi_info.amount;
+        let amount_lpfi = tx.get();
         //-------- Transfer Token Lpfi Escrow -> User -----------------------------
         let cpi_accounts_lpfi = Transfer {
             from: ctx.accounts.escrow_ata_lpfi.to_account_info(),
             to: ctx.accounts.user_ata_lpfi.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpfi = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpfi, signer);
         token::transfer(cpi_ctx_lpfi, amount_lpfi)?;
-    
+
+        swap_escrow.amount_usdc = 0;
         Ok(())
     }
     
@@ -1469,6 +1456,7 @@ pub mod swap_router {
             return Err(ErrorCode::AmountZeroError.into());
         }
         let swap_escrow = &mut ctx.accounts.swap_escrow;
+        
         //-------- Transfer Token Lpfi User -> Escrow -----------------------------
         let cpi_accounts_lpfi = Transfer {
             from: ctx.accounts.user_ata_lpfi.to_account_info(),
@@ -1479,27 +1467,25 @@ pub mod swap_router {
         let cpi_ctx_lpfi = CpiContext::new(cpi_program, cpi_accounts_lpfi);
         token::transfer(cpi_ctx_lpfi, amount_lpfi)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Uniswap Program ----------------
         let cpi_accounts_uniswap_lpfi_to_usdc = UniswapTokens {
             uniswap_pool: ctx.accounts.uniswap_pool.to_account_info(),
-            user: swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpfi.to_account_info(),
             token_dest: ctx.accounts.token_usdc.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpfi.to_account_info(),
@@ -1513,15 +1499,14 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.uniswap_program.to_account_info();
         let cpi_swap_lpfi_to_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_uniswap_lpfi_to_usdc, signer);
-        uniswap::cpi::uniswap_tokens(cpi_swap_lpfi_to_usdc, amount_lpfi)?;
+        let tx = uniswap::cpi::uniswap_tokens(cpi_swap_lpfi_to_usdc, amount_lpfi)?;
         //--------- Get amount usdc of escrow_ata_usdc ----------------------------
-        let escrow_ata_usdc_info = state::Account::unpack(&ctx.accounts.escrow_ata_usdc.to_account_info().data.borrow())?;
-        let amount_usdc = escrow_ata_usdc_info.amount;
+        let amount_usdc = tx.get();
         //-------- Burn Token USDC From Escrow -----------------------------
         let cpi_accounts_usdc = Burn {
             mint: ctx.accounts.token_usdc.to_account_info(),
             from: ctx.accounts.escrow_ata_usdc.to_account_info(),
-            authority: swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
@@ -1538,7 +1523,7 @@ pub mod swap_router {
         let amount_wsol = amount_wsol_f as u64;
         //-------- Mint Token Wsol To Escrow -----------------------------
         let cpi_accounts_wsol = MintToken {
-            owner: swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_wsol.to_account_info(),
             token_mint: ctx.accounts.token_wsol.to_account_info(),
@@ -1550,40 +1535,39 @@ pub mod swap_router {
         let cpi_program = ctx.accounts.testtokens_program.to_account_info();
         let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
         test_tokens::cpi::mint_token(cpi_ctx_wsol, amount_wsol)?;
-    
+        
+        swap_escrow.amount_wsol += amount_wsol;
+
         Ok(())
     }
     
     pub fn swap_lpfi_to_lpsol_step2(ctx: Context<SwapLpfiToLpsolStep2>) -> Result<()> {
         let swap_escrow = &mut ctx.accounts.swap_escrow;
         //--------- Get amount WSOL of escrow_ata_wsol ----------------------------
-        let escrow_ata_wsol_info = state::Account::unpack(&ctx.accounts.escrow_ata_wsol.to_account_info().data.borrow())?;
-        let amount_wsol = escrow_ata_wsol_info.amount;
+        let amount_wsol = swap_escrow.amount_wsol;
         if amount_wsol == 0 {
             return Err(ErrorCode::AmountZeroError.into());
         }
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_wsol_to_lpsol = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_wsol.to_account_info(),
             token_dest: ctx.accounts.token_lpsol.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_wsol.to_account_info(),
@@ -1605,12 +1589,14 @@ pub mod swap_router {
         let cpi_accounts_lpsol = Transfer {
             from: ctx.accounts.escrow_ata_lpsol.to_account_info(),
             to: ctx.accounts.user_ata_lpsol.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpsol, signer);
         token::transfer(cpi_ctx_lpsol, amount_lpsol)?;
     
+        swap_escrow.amount_wsol = 0;
+
         Ok(())
     }
     

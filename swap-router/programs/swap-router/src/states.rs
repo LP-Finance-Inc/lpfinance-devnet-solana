@@ -224,17 +224,9 @@ pub struct SwapPyth<'info> {
 pub struct SwapLpusdToLpfi<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-    #[account(
-        init_if_needed, 
-        seeds = [
-            PREFIX_ESCROW.as_bytes(),
-            user.key().as_ref()
-        ],
-        bump,
-        space = 8 + size_of::<SwapEscrow>(),
-        payer = user
-    )]
-    pub swap_escrow: Box<Account<'info, SwapEscrow>>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     /// CHECK:
     #[account(mut)]
     pub stable_swap_pool: AccountInfo<'info>,
@@ -250,8 +242,7 @@ pub struct SwapLpusdToLpfi<'info> {
     pub token_usdc: Box<Account<'info, Mint>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpusd,
         associated_token::authority = user,
     )]
@@ -291,24 +282,21 @@ pub struct SwapLpusdToLpfi<'info> {
     pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpusd,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -326,17 +314,9 @@ pub struct SwapLpusdToLpfi<'info> {
 pub struct SwapLpfiToLpusd<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-    #[account(
-        init_if_needed, 
-        seeds = [
-            PREFIX_ESCROW.as_bytes(),
-            user.key().as_ref()
-        ],
-        bump,
-        space = 8 + size_of::<SwapEscrow>(),
-        payer = user
-    )]
-    pub swap_escrow: Box<Account<'info, SwapEscrow>>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     /// CHECK:
     #[account(mut)]
     pub stable_swap_pool: AccountInfo<'info>,
@@ -359,8 +339,7 @@ pub struct SwapLpfiToLpusd<'info> {
     )]
     pub user_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
         associated_token::authority = user,
     )]    
@@ -393,24 +372,21 @@ pub struct SwapLpfiToLpusd<'info> {
     pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpusd,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -429,6 +405,9 @@ pub struct SwapLpfiToLpusd<'info> {
 pub struct SwapLpusdToLpsolStep1<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
         init_if_needed, 
         seeds = [
@@ -460,8 +439,7 @@ pub struct SwapLpusdToLpsolStep1<'info> {
     pub pyth_wsol: AccountInfo<'info>,
     
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpusd,
         associated_token::authority = user,
     )]
@@ -481,24 +459,21 @@ pub struct SwapLpusdToLpsolStep1<'info> {
     pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpusd,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_wsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
     
@@ -516,15 +491,16 @@ pub struct SwapLpusdToLpsolStep1<'info> {
 pub struct SwapLpusdToLpsolStep2<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
-        init_if_needed, 
+        mut, 
         seeds = [
             PREFIX_ESCROW.as_bytes(),
             user.key().as_ref()
         ],
-        bump,
-        space = 8 + size_of::<SwapEscrow>(),
-        payer = user
+        bump
     )]
     pub swap_escrow: Box<Account<'info, SwapEscrow>>,
     /// CHECK:
@@ -558,17 +534,15 @@ pub struct SwapLpusdToLpsolStep2<'info> {
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_wsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
     
@@ -584,6 +558,9 @@ pub struct SwapLpusdToLpsolStep2<'info> {
 pub struct SwapLpsolToLpusdStep1<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
         init_if_needed, 
         seeds = [
@@ -639,21 +616,21 @@ pub struct SwapLpsolToLpusdStep1<'info> {
         init_if_needed,
         payer = user,
         associated_token::mint = token_lpsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(
         init_if_needed,
         payer = user,
         associated_token::mint = token_wsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
     #[account(
         init_if_needed,
         payer = user,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -671,6 +648,9 @@ pub struct SwapLpsolToLpusdStep1<'info> {
 pub struct SwapLpsolToLpusdStep2<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
         init_if_needed, 
         seeds = [
@@ -716,14 +696,14 @@ pub struct SwapLpsolToLpusdStep2<'info> {
         init_if_needed,
         payer = user,
         associated_token::mint = token_lpusd,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(
         init_if_needed,
         payer = user,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -1039,17 +1019,9 @@ pub struct SwapNormalToLpsol<'info> {
 pub struct SwapLpfiToNormal<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-    #[account(
-        init_if_needed, 
-        seeds = [
-            PREFIX_ESCROW.as_bytes(),
-            user.key().as_ref()
-        ],
-        bump,
-        space = 8 + size_of::<SwapEscrow>(),
-        payer = user
-    )]
-    pub swap_escrow: Box<Account<'info, SwapEscrow>>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     /// CHECK:
     #[account(mut)]
     pub uniswap_pool: AccountInfo<'info>,
@@ -1070,8 +1042,7 @@ pub struct SwapLpfiToNormal<'info> {
     pub pyth_dest: AccountInfo<'info>,
     
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
         associated_token::authority = user,
     )]
@@ -1098,17 +1069,15 @@ pub struct SwapLpfiToNormal<'info> {
     pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -1126,17 +1095,9 @@ pub struct SwapLpfiToNormal<'info> {
 pub struct SwapNormalToLpfi<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-    #[account(
-        init_if_needed, 
-        seeds = [
-            PREFIX_ESCROW.as_bytes(),
-            user.key().as_ref()
-        ],
-        bump,
-        space = 8 + size_of::<SwapEscrow>(),
-        payer = user
-    )]
-    pub swap_escrow: Box<Account<'info, SwapEscrow>>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     /// CHECK:
     #[account(mut)]
     pub uniswap_pool: AccountInfo<'info>,
@@ -1157,8 +1118,7 @@ pub struct SwapNormalToLpfi<'info> {
     pub pyth_usdc: AccountInfo<'info>,
     
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_src,
         associated_token::authority = user,
     )]    
@@ -1185,17 +1145,15 @@ pub struct SwapNormalToLpfi<'info> {
     pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -1213,6 +1171,9 @@ pub struct SwapNormalToLpfi<'info> {
 pub struct SwapLpsolToLpfiStep1<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
         init_if_needed, 
         seeds = [
@@ -1244,8 +1205,7 @@ pub struct SwapLpsolToLpfiStep1<'info> {
     pub pyth_wsol: AccountInfo<'info>,
     
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpsol,
         associated_token::authority = user,
     )]
@@ -1265,24 +1225,21 @@ pub struct SwapLpsolToLpfiStep1<'info> {
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_wsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
     
@@ -1300,15 +1257,16 @@ pub struct SwapLpsolToLpfiStep1<'info> {
 pub struct SwapLpsolToLpfiStep2<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
-        init_if_needed, 
+        mut, 
         seeds = [
             PREFIX_ESCROW.as_bytes(),
             user.key().as_ref()
         ],
-        bump,
-        space = 8 + size_of::<SwapEscrow>(),
-        payer = user
+        bump
     )]
     pub swap_escrow: Box<Account<'info, SwapEscrow>>,
     /// CHECK:
@@ -1342,17 +1300,15 @@ pub struct SwapLpsolToLpfiStep2<'info> {
     pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     
@@ -1368,6 +1324,9 @@ pub struct SwapLpsolToLpfiStep2<'info> {
 pub struct SwapLpfiToLpsolStep1<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
         init_if_needed, 
         seeds = [
@@ -1399,8 +1358,7 @@ pub struct SwapLpfiToLpsolStep1<'info> {
     pub pyth_wsol: AccountInfo<'info>,
     
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
         associated_token::authority = user,
     )]
@@ -1420,24 +1378,21 @@ pub struct SwapLpfiToLpsolStep1<'info> {
     pub uniswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpfi,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_usdc,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_wsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
     
@@ -1455,6 +1410,9 @@ pub struct SwapLpfiToLpsolStep1<'info> {
 pub struct SwapLpfiToLpsolStep2<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+    /// CHECK: This is safe
+    #[account(mut,seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     #[account(
         init_if_needed, 
         seeds = [
@@ -1497,17 +1455,15 @@ pub struct SwapLpfiToLpsolStep2<'info> {
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_lpsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(
-        init_if_needed,
-        payer = user,
+        mut,
         associated_token::mint = token_wsol,
-        associated_token::authority = swap_escrow,
+        associated_token::authority = swap_pda,
     )]    
     pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
     
