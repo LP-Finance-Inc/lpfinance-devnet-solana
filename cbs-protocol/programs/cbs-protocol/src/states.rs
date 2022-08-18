@@ -805,9 +805,6 @@ pub struct LiquidateLpFITokenSwap<'info> {
         bump
     )]
     pub cbs_pda: AccountInfo<'info>,
-    /// CHECK: cbs is user for swap
-    #[account(mut)]
-    pub swap_escrow: AccountInfo<'info>,
     /// CHECK: LpUSD <-> USDC
     #[account(mut)]
     pub stable_swap_pool: AccountInfo<'info>,

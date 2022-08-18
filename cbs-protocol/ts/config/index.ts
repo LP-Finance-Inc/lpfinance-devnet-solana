@@ -1,6 +1,4 @@
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import * as fs from "fs";
 
 export { default as SolendIDL } from "../../../solend/target/idl/solend.json"
 export { default as  ApricotIDL } from "../../../apricot/target/idl/apricot.json"
@@ -9,6 +7,7 @@ export { default as SwapRouterIDL } from "../../../swap-router/target/idl/swap_r
 export { default as StableSwapIDL } from "../../../stable-swap/target/idl/stable_swap.json"
 export { default as AuctionIDL } from "../../../lpusd-auction/target/idl/lpusd_auction.json"
 export { default as TestTokenIDL } from "../../../test-tokens/target/idl/test_tokens.json";
+export { default as UniswapIDL } from "../../../uniswap/target/idl/uniswap.json";
 
 export const NETWORK = "https://api.devnet.solana.com";
 

@@ -119,7 +119,6 @@ const swap_normal_to_lpusd = async () => {
         } catch (e) {
             console.log("Failed", tokenData.destMint.toBase58(), tokenData.cbsPool.toBase58(), e);
         }
-        return;
     }
     const userData = await program.account.userAccount.fetch(userAccount);
     print_user_data(userData)

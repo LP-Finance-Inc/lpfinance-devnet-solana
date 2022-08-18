@@ -1420,7 +1420,6 @@ pub mod cbs_protocol {
     ) -> Result<()> {
         let user_account = &mut ctx.accounts.user_account;
         let cbs_pda = &mut ctx.accounts.cbs_pda;
-        let swap_escrow = &mut ctx.accounts.swap_escrow;
         let stable_swap_pool = &mut ctx.accounts.stable_swap_pool;
 
         let uniswap_pool = &mut ctx.accounts.uniswap_pool;
@@ -1469,7 +1468,7 @@ pub mod cbs_protocol {
             //---------- Cross-Calling Uniswap Program ----------------
             let cpi_accounts_uniswap_lpfi_to_usdc = UniswapTokens {
                 uniswap_pool: uniswap_pool.to_account_info(),
-                user: swap_escrow.to_account_info(),
+                user: cbs_pda.to_account_info(),
                 token_src: token_lpfi.to_account_info(),
                 token_dest: token_usdc.to_account_info(),
                 user_ata_src: cbs_ata_lpfi.to_account_info(),
