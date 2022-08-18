@@ -14,7 +14,19 @@ import {
   ApricotConfig,
   ApricotIDL,
   solendPool,
-  apricotPool
+  apricotPool,
+  solendSTSOLPool,
+  apricotSTSOLPool,
+  solendRAYPool,
+  apricotRAYPool,
+  solendwSOLPool,
+  apricotwSOLPool,
+  solendSRMPool,
+  apricotSRMPool,
+  solendMSOLPool,
+  apricotMSOLPool,
+  solendSCNSOLPool,
+  apricotSCNSOLPool
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
@@ -33,10 +45,28 @@ const deposit = async () => {
   // Config
   const config = getPublicKey('cbs_config');  
   const cbsConfigData = await program.account.config.fetch(config);
-  const collateralMint= cbsConfigData.rayMint as PublicKey;
-  const collateralPool= cbsConfigData.poolRay as PublicKey;
+  // const collateralMint= cbsConfigData.stsolMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolStsol as PublicKey;
+  // const collateralMint= cbsConfigData.rayMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolRay as PublicKey;
+  // const collateralMint= cbsConfigData.scnsolMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolScnsol as PublicKey;
+  // const collateralMint= cbsConfigData.msolMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolMsol as PublicKey;
+  // const collateralMint= cbsConfigData.srmMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolSrm as PublicKey;
+  // const collateralMint= cbsConfigData.wsolMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolWsol as PublicKey;
   // const collateralMint= cbsConfigData.lpsolMint as PublicKey;
   // const collateralPool= cbsConfigData.poolLpsol as PublicKey;
+
+  // const collateralMint= cbsConfigData.lpusdMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolLpusd as PublicKey;
+  // const collateralMint= cbsConfigData.lpsolMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolLpsol as PublicKey;
+  const collateralMint= cbsConfigData.lpfiMint as PublicKey;
+  const collateralPool= cbsConfigData.poolLpfi as PublicKey;
+
   const userCollateral = await getATAPublicKey(collateralMint, creatorKeypair.publicKey);
   const solendAccount = getPublicKey('cbs_solend_account')
   const apricotAccount = getPublicKey('cbs_apricot_account')
@@ -76,10 +106,10 @@ const deposit = async () => {
       userAccount,
       solendConfig: SolendConfig,
       solendAccount,
-      solendPool,
+      solendPool: solendSCNSOLPool, // solendMSOLPool, // solendSRMPool, // solendwSOLPool, // solendRAYPool, // solendSTSOLPool,
       apricotConfig: ApricotConfig,
       apricotAccount,
-      apricotPool,
+      apricotPool: apricotSCNSOLPool, // apricotMSOLPool, // apricotSRMPool, // apricotwSOLPool, // apricotRAYPool, // apricotSTSOLPool,
       solendProgram: solendProgramId,
       apricotProgram: apricotProgramId,
       systemProgram: anchor.web3.SystemProgram.programId,

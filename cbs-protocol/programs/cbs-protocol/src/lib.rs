@@ -564,6 +564,20 @@ pub mod cbs_protocol {
             return Err(ErrorCode::LTVAlreadyExceed.into());
         }                  
 
+        
+
+
+        let key_lending_amount = user_account.get_key_lending_amount(dest_mint.key(), config)?;
+        let key_amount = user_account.get_key_amount(dest_mint.key(), config)?;
+        let key_total_deposited_amount = config.get_key_deposited_amount(dest_mint.key())?;
+
+        let withdrawable_amount: f64 = (_total_price - _borrowed_total * DOMINATOR / LTV) / _dest_price as f64;
+        msg!("Borrowable {}", withdrawable_amount);
+
+        if amount > withdrawable_amount as u64{
+            return Err(ErrorCode::InsufficientAmount.into());
+        }
+
         let mut _solend_higher = false;
         let mut _lending_rate = 0;
         let mut _solend_rate = 0;
@@ -576,18 +590,6 @@ pub mod cbs_protocol {
             apricot_config
         );
 
-
-        let key_lending_amount = user_account.get_key_lending_amount(dest_mint.key(), config)?;
-        let key_amount = user_account.get_key_amount(dest_mint.key(), config)?;
-        let key_total_deposited_amount = config.get_key_deposited_amount(dest_mint.key())?;
-
-        let withdrawable_amount: f64 = (_total_price - _borrowed_total * DOMINATOR / LTV) / _dest_price as f64;
-        msg!("Borrowable {} {}", withdrawable_amount, _solend_higher);
-
-        if amount > withdrawable_amount as u64{
-            return Err(ErrorCode::InsufficientAmount.into());
-        }
-        
         let mut _solend_withdraw_amount: u64 = 0;
         let mut _apricot_withdraw_amount: u64 = 0;
 
@@ -654,6 +656,8 @@ pub mod cbs_protocol {
 
         user_account.update_lending_amount(key_lending_amount - _user_lending_amount_for, dest_mint.key(), config)?;
         user_account.update_deposited_amount(owned_amount, dest_mint.key(), config)?;  
+        user_account.update_lp_deposited_amount(owned_amount, dest_mint.key(), config)?;
+
         config.update_total_deposited_amount(total_deposited_amount , dest_mint.key())?;
 
         let (program_authority, program_authority_bump) = 
@@ -669,7 +673,7 @@ pub mod cbs_protocol {
         ];
         let signer = &[&seeds[..]];
             
-        if _solend_higher {
+        if _solend_withdraw_amount > 0 {
             msg!("Withdraw from solend {}", _solend_withdraw_amount);
 
             let cpi_program = ctx.accounts.solend_program.to_account_info();

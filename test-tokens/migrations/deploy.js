@@ -40,10 +40,10 @@ module.exports = async function (provider) {
   // Signer
   const authority = provider.wallet.publicKey;
   // const authority = new PublicKey("BkizVR9yhAkc3SYiNyewjQqf9Utd7pgnnqcwcEzhZZSB");
-  const tokenMint = new PublicKey("6hPAQy93EbDzwHyU843zcWKATy8NrJ1ZsKCRi2JkuXcT"); // wSOL mint:
+  // const tokenMint = new PublicKey("6hPAQy93EbDzwHyU843zcWKATy8NrJ1ZsKCRi2JkuXcT"); // wSOL mint:
   // const tokenMint = new PublicKey("AzRQUJPKxv8L9xfHPeGgKcsXXrjbYekW5mVvbMdw11Mp"); // MSOL Mint:
   // const tokenMint = new PublicKey("3gb5MH7VF6o6mWbuBX7V8d1KtWX1pCSYMAwFa296rPuP"); // stsol-Mint:
-  // const tokenMint = new PublicKey("8eijEjgBCSk8vJcjwV1geZQp8tzvXTXgc7Xgg8qthKyJ"); // scnSOL Mint:
+  const tokenMint = new PublicKey("8eijEjgBCSk8vJcjwV1geZQp8tzvXTXgc7Xgg8qthKyJ"); // scnSOL Mint:
   // const tokenMint = new PublicKey("6ybV587PY2z6DX4Pf1tTh8oEhnuR6wwXLE8LHinKQKYV"); // USDC Mint:
   // const tokenMint = new PublicKey("4NAbav42C1BZdKASxuiKbzTFQKSqcZXG7ZZLDwfiZCGe"); // Btc-Mint:
   // const tokenMint = new PublicKey("49ZEVDFHe18DDcyAe4fuRrhuf3DQpTDAAUodkaDsCcco"); // ETH mint:

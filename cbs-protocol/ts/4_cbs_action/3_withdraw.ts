@@ -47,9 +47,11 @@ const withdraw = async () => {
   const config = getPublicKey('cbs_config');  
   const cbsConfigData = await program.account.config.fetch(config);
 
-  const destMint= cbsConfigData.rayMint as PublicKey;
+  // const destMint= cbsConfigData.rayMint as PublicKey;
+  const destMint= cbsConfigData.lpusdMint as PublicKey;
   const userDest = await getATAPublicKey(destMint, creatorKeypair.publicKey);
-  const destPool = cbsConfigData.poolRay as PublicKey;
+  // const destPool = cbsConfigData.poolRay as PublicKey;
+  const destPool = cbsConfigData.poolLpusd as PublicKey;
 
   const [userAccount, bump] = await PublicKey.findProgramAddress(
     [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
