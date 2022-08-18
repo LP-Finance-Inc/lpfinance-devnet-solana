@@ -16,6 +16,13 @@ export const writePublicKey = (publicKey: PublicKey, name: string) => {
   );
 };
 
+export const writePublicKeys = (publicKeys: string, name: string) => {
+  fs.writeFileSync(
+    `../keys/${name}_pubs.js`,
+    publicKeys
+  );
+};
+
 export const getPublicKey = (name: string) =>
   new PublicKey(
     JSON.parse(fs.readFileSync(`../keys/${name}_pub.json`) as unknown as string)

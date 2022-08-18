@@ -11,6 +11,9 @@ use std::f64;
 mod states;
 pub use states::*;
 
+mod oracle;
+pub use oracle::*;
+
 use stable_swap::cpi::accounts::StableswapTokens;
 use uniswap::cpi::accounts::UniswapTokens;
 use test_tokens::cpi::accounts::MintToken;
@@ -22,6 +25,12 @@ pub mod swap_router {
     use anchor_lang::solana_program::program_pack::Pack;
 
     use super::*;
+
+    pub fn create_token_ata(
+        _ctx: Context<CreateTokenATA>
+    ) -> Result<()> {
+        Ok(())
+    }
 
     pub fn swap_stableswap(ctx: Context<SwapStableswap>, amount_src: u64) -> Result<u64> {
         msg!("SWAP stableswap");
@@ -211,15 +220,11 @@ pub mod swap_router {
         let associated_token_program = &ctx.accounts.associated_token_program;
         let ret = &ctx.accounts.rent;
 
-        let pyth_price_info_src = &ctx.accounts.pyth_src;
-        let pyth_price_data_src = &pyth_price_info_src.try_borrow_data()?;
-        let pyth_price_src = pyth_client::cast::<pyth_client::Price>(pyth_price_data_src);
-        let token_price_src = pyth_price_src.agg.price as f64;
+        let pyth_price_info_src = &ctx.accounts.pyth_src;        
+        let token_price_src = get_price(pyth_price_info_src)? as f64;
 
         let pyth_price_info_dest = &ctx.accounts.pyth_dest;
-        let pyth_price_data_dest = &pyth_price_info_dest.try_borrow_data()?;
-        let pyth_price_dest = pyth_client::cast::<pyth_client::Price>(pyth_price_data_dest);
-        let token_price_dest = pyth_price_dest.agg.price as f64;
+        let token_price_dest = get_price(pyth_price_info_dest)? as f64;
 
         let amount_src_f = amount_src as f64;
         let amount_dest_f = ( token_price_src / token_price_dest ) * amount_src_f;
@@ -530,14 +535,10 @@ pub mod swap_router {
         token::burn(cpi_ctx_usdc, amount_usdc)?;
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let pyth_price_info_wsol = &ctx.accounts.pyth_wsol;
-        let pyth_price_data_wsol = &pyth_price_info_wsol.try_borrow_data()?;
-        let pyth_price_wsol = pyth_client::cast::<pyth_client::Price>(pyth_price_data_wsol);
-        let token_price_wsol = pyth_price_wsol.agg.price as f64;
+        let token_price_wsol = get_price(pyth_price_info_wsol)? as f64;
 
         let amount_usdc_f = amount_usdc as f64;
         let amount_wsol_f = ( token_price_usdc / token_price_wsol ) * amount_usdc_f;
@@ -686,14 +687,10 @@ pub mod swap_router {
         token::burn(cpi_ctx_wsol, amount_wsol)?;
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let pyth_price_info_wsol = &ctx.accounts.pyth_wsol;
-        let pyth_price_data_wsol = &pyth_price_info_wsol.try_borrow_data()?;
-        let pyth_price_wsol = pyth_client::cast::<pyth_client::Price>(pyth_price_data_wsol);
-        let token_price_wsol = pyth_price_wsol.agg.price as f64;
+        let token_price_wsol = get_price(pyth_price_info_wsol)? as f64;
 
         let amount_wsol_f = amount_wsol as f64;
         let amount_usdc_f = ( token_price_wsol / token_price_usdc ) * amount_wsol_f;
@@ -792,27 +789,25 @@ pub mod swap_router {
         let cpi_ctx_lpusd = CpiContext::new(cpi_program, cpi_accounts_lpusd);
         token::transfer(cpi_ctx_lpusd, amount_lpusd)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_lpusd_to_usdc = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpusd.to_account_info(),
             token_dest: ctx.accounts.token_usdc.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpusd.to_account_info(),
@@ -826,20 +821,16 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_lpusd_to_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_lpusd_to_usdc, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_lpusd_to_usdc, amount_lpusd)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_lpusd_to_usdc, amount_lpusd)?;
         //--------- Get amount USDC of escrow_ata_dest ----------------------------
-        let escrow_ata_usdc_info = state::Account::unpack(&ctx.accounts.escrow_ata_usdc.to_account_info().data.borrow())?;
-        let amount_usdc = escrow_ata_usdc_info.amount;
+        let amount_usdc = tx.get();
+
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let pyth_price_info_dest = &ctx.accounts.pyth_dest;
-        let pyth_price_data_dest = &pyth_price_info_dest.try_borrow_data()?;
-        let pyth_price_dest = pyth_client::cast::<pyth_client::Price>(pyth_price_data_dest);
-        let token_price_dest = pyth_price_dest.agg.price as f64;
+        let token_price_dest = get_price(pyth_price_info_dest)? as f64;
 
         let amount_usdc_f = amount_usdc as f64;
         let amount_dest_f = ( token_price_usdc / token_price_dest ) * amount_usdc_f;
@@ -848,11 +839,12 @@ pub mod swap_router {
         let cpi_accounts_usdc = Burn {
             mint: ctx.accounts.token_usdc.to_account_info(),
             from: ctx.accounts.escrow_ata_usdc.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
         token::burn(cpi_ctx_usdc, amount_usdc)?;
+
         //-------- Mint Token Dest To User -----------------------------
         let cpi_accounts_dest = MintToken {
             owner: ctx.accounts.user.to_account_info(),
@@ -887,40 +879,34 @@ pub mod swap_router {
         let cpi_ctx_src = CpiContext::new(cpi_program, cpi_accounts_src);
         token::burn(cpi_ctx_src, amount_src)?;
         //--------- Pyth Price -----------------------------------------
-        let pyth_price_info_src = &ctx.accounts.pyth_src;
-        let pyth_price_data_src = &pyth_price_info_src.try_borrow_data()?;
-        let pyth_price_src = pyth_client::cast::<pyth_client::Price>(pyth_price_data_src);
-        let token_price_src = pyth_price_src.agg.price as f64;
+        let pyth_price_info_src = &ctx.accounts.pyth_src;        
+        let token_price_src = get_price(pyth_price_info_src)? as f64;
 
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let amount_src_f = amount_src as f64;
         let amount_usdc_f = ( token_price_src / token_price_usdc ) * amount_src_f;
         let amount_usdc = amount_usdc_f as u64;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //-------- Mint Token Usdc To Escrow -----------------------------
         let cpi_accounts_usdc = MintToken {
-            owner: ctx.accounts.swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_usdc.to_account_info(),
             token_mint: ctx.accounts.token_usdc.to_account_info(),
@@ -935,7 +921,7 @@ pub mod swap_router {
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_usdc_to_lpusd = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_usdc.to_account_info(),
             token_dest: ctx.accounts.token_lpusd.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_usdc.to_account_info(),
@@ -949,15 +935,14 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_usdc_to_lpusd = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_usdc_to_lpusd, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_usdc_to_lpusd, amount_usdc)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_usdc_to_lpusd, amount_usdc)?;
         //--------- Get amount USDC of escrow_ata_dest ----------------------------
-        let escrow_ata_lpusd_info = state::Account::unpack(&ctx.accounts.escrow_ata_lpusd.to_account_info().data.borrow())?;
-        let amount_lpusd = escrow_ata_lpusd_info.amount;
+        let amount_lpusd = tx.get();
         //-------- Transfer Token lpusd Escrow -> User -----------------------------
         let cpi_accounts_lpusd = Transfer {
             from: ctx.accounts.escrow_ata_lpusd.to_account_info(),
             to: ctx.accounts.user_ata_lpusd.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpusd = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpusd, signer);
@@ -982,27 +967,25 @@ pub mod swap_router {
         let cpi_ctx_lpsol = CpiContext::new(cpi_program, cpi_accounts_lpsol);
         token::transfer(cpi_ctx_lpsol, amount_lpsol)?;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_lpsol_to_wsol = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_lpsol.to_account_info(),
             token_dest: ctx.accounts.token_wsol.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_lpsol.to_account_info(),
@@ -1016,20 +999,15 @@ pub mod swap_router {
         };
         let cpi_program = ctx.accounts.stableswap_program.to_account_info();
         let cpi_swap_lpsol_to_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_swap_lpsol_to_wsol, signer);
-        stable_swap::cpi::stableswap_tokens(cpi_swap_lpsol_to_wsol, amount_lpsol)?;
+        let tx = stable_swap::cpi::stableswap_tokens(cpi_swap_lpsol_to_wsol, amount_lpsol)?;
         //--------- Get amount WSOL of escrow_ata_wsol ----------------------------
-        let escrow_ata_wsol_info = state::Account::unpack(&ctx.accounts.escrow_ata_wsol.to_account_info().data.borrow())?;
-        let amount_wsol = escrow_ata_wsol_info.amount;
+        let amount_wsol = tx.get();
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_wsol = &ctx.accounts.pyth_wsol;
-        let pyth_price_data_wsol = &pyth_price_info_wsol.try_borrow_data()?;
-        let pyth_price_wsol = pyth_client::cast::<pyth_client::Price>(pyth_price_data_wsol);
-        let token_price_wsol = pyth_price_wsol.agg.price as f64;
+        let token_price_wsol = get_price(pyth_price_info_wsol)? as f64;
 
         let pyth_price_info_dest = &ctx.accounts.pyth_dest;
-        let pyth_price_data_dest = &pyth_price_info_dest.try_borrow_data()?;
-        let pyth_price_dest = pyth_client::cast::<pyth_client::Price>(pyth_price_data_dest);
-        let token_price_dest = pyth_price_dest.agg.price as f64;
+        let token_price_dest = get_price(pyth_price_info_dest)? as f64;
 
         let amount_wsol_f = amount_wsol as f64;
         let amount_dest_f = ( token_price_wsol / token_price_dest ) * amount_wsol_f;
@@ -1038,7 +1016,7 @@ pub mod swap_router {
         let cpi_accounts_wsol = Burn {
             mint: ctx.accounts.token_wsol.to_account_info(),
             from: ctx.accounts.escrow_ata_wsol.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
@@ -1077,40 +1055,34 @@ pub mod swap_router {
         let cpi_ctx_src = CpiContext::new(cpi_program, cpi_accounts_src);
         token::burn(cpi_ctx_src, amount_src)?;
         //--------- Pyth Price -----------------------------------------
-        let pyth_price_info_src = &ctx.accounts.pyth_src;
-        let pyth_price_data_src = &pyth_price_info_src.try_borrow_data()?;
-        let pyth_price_src = pyth_client::cast::<pyth_client::Price>(pyth_price_data_src);
-        let token_price_src = pyth_price_src.agg.price as f64;
+        let pyth_price_info_src = &ctx.accounts.pyth_src;        
+        let token_price_src = get_price(pyth_price_info_src)? as f64;
 
         let pyth_price_info_wsol = &ctx.accounts.pyth_wsol;
-        let pyth_price_data_wsol = &pyth_price_info_wsol.try_borrow_data()?;
-        let pyth_price_wsol = pyth_client::cast::<pyth_client::Price>(pyth_price_data_wsol);
-        let token_price_wsol = pyth_price_wsol.agg.price as f64;
+        let token_price_wsol = get_price(pyth_price_info_wsol)? as f64;
 
         let amount_src_f = amount_src as f64;
         let amount_wsol_f = ( token_price_src / token_price_wsol ) * amount_src_f;
         let amount_wsol = amount_wsol_f as u64;
         //-------- Check PDA --------------------------------
-        let (swap_escrow_pda, swap_escrow_bump) = Pubkey::find_program_address(
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
             &[
-                PREFIX_ESCROW.as_bytes(),
-                ctx.accounts.user.key.as_ref()
+                PREFIX_ESCROW.as_bytes()
             ],
             ctx.program_id
         );
-        if swap_escrow_pda != ctx.accounts.swap_escrow.key() {
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
             return Err(ErrorCode::SwapEscrowPDAError.into());
         }
         //-------- Generate Signer ---------------------------
         let seeds = &[
             PREFIX_ESCROW.as_bytes(),
-            ctx.accounts.user.key.as_ref(),
-            &[swap_escrow_bump]
+            &[swap_pda_bump]
         ];
         let signer = &[&seeds[..]];
         //-------- Mint Token Wsol To Escrow -----------------------------
         let cpi_accounts_wsol = MintToken {
-            owner: ctx.accounts.swap_escrow.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: ctx.accounts.token_state_account.to_account_info(),
             user_token: ctx.accounts.escrow_ata_wsol.to_account_info(),
             token_mint: ctx.accounts.token_wsol.to_account_info(),
@@ -1125,7 +1097,7 @@ pub mod swap_router {
         //---------- Cross-Calling Stable Swap Program ----------------
         let cpi_accounts_swap_wsol_to_lpsol = StableswapTokens{
             stable_swap_pool: ctx.accounts.stable_swap_pool.to_account_info(),
-            user: ctx.accounts.swap_escrow.to_account_info(),
+            user: ctx.accounts.swap_pda.to_account_info(),
             token_src: ctx.accounts.token_wsol.to_account_info(),
             token_dest: ctx.accounts.token_lpsol.to_account_info(),
             user_ata_src: ctx.accounts.escrow_ata_wsol.to_account_info(),
@@ -1147,7 +1119,7 @@ pub mod swap_router {
         let cpi_accounts_lpsol = Transfer {
             from: ctx.accounts.escrow_ata_lpsol.to_account_info(),
             to: ctx.accounts.user_ata_lpsol.to_account_info(),
-            authority: ctx.accounts.swap_escrow.to_account_info()
+            authority: ctx.accounts.swap_pda.to_account_info()
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx_lpsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_lpsol, signer);
@@ -1212,14 +1184,10 @@ pub mod swap_router {
         let amount_usdc = escrow_ata_usdc_info.amount;
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let pyth_price_info_dest = &ctx.accounts.pyth_dest;
-        let pyth_price_data_dest = &pyth_price_info_dest.try_borrow_data()?;
-        let pyth_price_dest = pyth_client::cast::<pyth_client::Price>(pyth_price_data_dest);
-        let token_price_dest = pyth_price_dest.agg.price as f64;
+        let token_price_dest = get_price(pyth_price_info_dest)? as f64;
 
         let amount_usdc_f = amount_usdc as f64;
         let amount_dest_f = ( token_price_usdc / token_price_dest ) * amount_usdc_f;
@@ -1267,15 +1235,11 @@ pub mod swap_router {
         let cpi_ctx_src = CpiContext::new(cpi_program, cpi_accounts_src);
         token::burn(cpi_ctx_src, amount_src)?;
         //--------- Pyth Price -----------------------------------------
-        let pyth_price_info_src = &ctx.accounts.pyth_src;
-        let pyth_price_data_src = &pyth_price_info_src.try_borrow_data()?;
-        let pyth_price_src = pyth_client::cast::<pyth_client::Price>(pyth_price_data_src);
-        let token_price_src = pyth_price_src.agg.price as f64;
+        let pyth_price_info_src = &ctx.accounts.pyth_src;        
+        let token_price_src = get_price(pyth_price_info_src)? as f64;
 
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let amount_src_f = amount_src as f64;
         let amount_usdc_f = ( token_price_src / token_price_usdc ) * amount_src_f;
@@ -1412,14 +1376,10 @@ pub mod swap_router {
         token::burn(cpi_ctx_wsol, amount_wsol)?;
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
 
         let pyth_price_info_wsol = &ctx.accounts.pyth_wsol;
-        let pyth_price_data_wsol = &pyth_price_info_wsol.try_borrow_data()?;
-        let pyth_price_wsol = pyth_client::cast::<pyth_client::Price>(pyth_price_data_wsol);
-        let token_price_wsol = pyth_price_wsol.agg.price as f64;
+        let token_price_wsol = get_price(pyth_price_info_wsol)? as f64;
 
         let amount_wsol_f = amount_wsol as f64;
         let amount_usdc_f = ( token_price_wsol / token_price_usdc ) * amount_wsol_f;
@@ -1568,14 +1528,10 @@ pub mod swap_router {
         token::burn(cpi_ctx_usdc, amount_usdc)?;
         //--------- Pyth Price -----------------------------------------
         let pyth_price_info_usdc = &ctx.accounts.pyth_usdc;
-        let pyth_price_data_usdc = &pyth_price_info_usdc.try_borrow_data()?;
-        let pyth_price_usdc = pyth_client::cast::<pyth_client::Price>(pyth_price_data_usdc);
-        let token_price_usdc = pyth_price_usdc.agg.price as f64;
+        let token_price_usdc = get_price(pyth_price_info_usdc)? as f64;
     
         let pyth_price_info_wsol = &ctx.accounts.pyth_wsol;
-        let pyth_price_data_wsol = &pyth_price_info_wsol.try_borrow_data()?;
-        let pyth_price_wsol = pyth_client::cast::<pyth_client::Price>(pyth_price_data_wsol);
-        let token_price_wsol = pyth_price_wsol.agg.price as f64;
+        let token_price_wsol = get_price(pyth_price_info_wsol)? as f64;
     
         let amount_usdc_f = amount_usdc as f64;
         let amount_wsol_f = ( token_price_usdc / token_price_wsol ) * amount_usdc_f;
