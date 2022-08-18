@@ -436,9 +436,7 @@ pub struct DistributeRewardFromLiquidate<'info> {
     )]
     pub auction_pda: AccountInfo<'info>,
     // CBS: user account
-    #[account(mut, 
-        constraint = cbs_account.step_num == 6
-    )]
+    #[account(mut)]
     pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
     /// CHECK: this is safe
     pub cbs_program: AccountInfo<'info>,

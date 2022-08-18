@@ -1346,7 +1346,7 @@
       "args": []
     },
     {
-      "name": "liquidateSwapLpsoltoken",
+      "name": "liquidateSwapLpsoltoken1",
       "accounts": [
         {
           "name": "userAccount",
@@ -1389,11 +1389,6 @@
           "isSigner": false
         },
         {
-          "name": "tokenLpusd",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "pythUsdc",
           "isMut": false,
           "isSigner": false
@@ -1404,22 +1399,12 @@
           "isSigner": false
         },
         {
-          "name": "auctionLpusd",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "cbsAtaLpsol",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "cbsAtaWsol",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "cbsAtaLpusd",
           "isMut": true,
           "isSigner": false
         },
@@ -1434,17 +1419,7 @@
           "isSigner": false
         },
         {
-          "name": "stableswapPoolAtaLpusd",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "stableswapPoolAtaWsol",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "stableswapPoolAtaUsdc",
           "isMut": true,
           "isSigner": false
         },
@@ -1455,6 +1430,87 @@
         },
         {
           "name": "testtokensProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "liquidateSwapLpsoltoken2",
+      "accounts": [
+        {
+          "name": "userAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "cbsPda",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stableSwapPool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenUsdc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenLpusd",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auctionLpusd",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "cbsAtaLpusd",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "cbsAtaUsdc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stableswapPoolAtaLpusd",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stableswapPoolAtaUsdc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stableswapProgram",
           "isMut": false,
           "isSigner": false
         },

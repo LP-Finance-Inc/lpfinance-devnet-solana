@@ -64,7 +64,7 @@ const swap_lpsol_to_lpusd = async () => {
     console.log("UserAccount:", userAccount.toBase58())    
 
     try {
-        const tx = await program.rpc.liquidateSwapLpsoltoken({
+        const tx = await program.rpc.liquidateSwapLpsoltoken1({
             accounts: {
                 userAccount: userAccount,
                 cbsPda: PDA[0],
@@ -78,19 +78,13 @@ const swap_lpsol_to_lpusd = async () => {
                 tokenWsol: cbsConfigData.wsolMint,
                 tokenLpsol: cbsConfigData.lpsolMint,
                 tokenUsdc: USDCMint,
-                tokenLpusd: cbsConfigData.lpusdMint,
 
                 cbsAtaWsol: cbsConfigData.poolWsol,
                 cbsAtaUsdc: EscrowUSDC,
-                cbsAtaLpusd: cbsConfigData.poolLpusd, 
                 cbsAtaLpsol: cbsConfigData.poolLpsol,
-
-                auctionLpusd: auctionLpusd,
 
                 stableswapPoolAtaLpsol,
                 stableswapPoolAtaWsol,
-                stableswapPoolAtaLpusd,
-                stableswapPoolAtaUsdc,
 
                 stableswapProgram: StableSwapProgramId,
                 testtokensProgram: TestTokenProgramId,
@@ -100,7 +94,33 @@ const swap_lpsol_to_lpusd = async () => {
                 rent: SYSVAR_RENT_PUBKEY,
             },
         });
-        console.log("Liquidate lpsol->lpusd successfully", tx)
+        console.log("Liquidate lpsol->wsol->usdc successfully", tx)
+
+        const tx2 = await program.rpc.liquidateSwapLpsoltoken2({
+          accounts: {
+              userAccount: userAccount,
+              cbsPda: PDA[0],
+              stableSwapPool: StableLpusdPool,
+
+              tokenUsdc: USDCMint,
+              tokenLpusd: cbsConfigData.lpusdMint,
+
+              cbsAtaUsdc: EscrowUSDC,
+              cbsAtaLpusd: cbsConfigData.poolLpusd, 
+
+              auctionLpusd: auctionLpusd,
+
+              stableswapPoolAtaLpusd,
+              stableswapPoolAtaUsdc,
+
+              stableswapProgram: StableSwapProgramId,
+              systemProgram: anchor.web3.SystemProgram.programId,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              rent: SYSVAR_RENT_PUBKEY,
+          },
+      });
+      console.log("Liquidate lpsol->lpusd successfully", tx2)
     } catch (e) {
         console.log("Failed", e);
     }

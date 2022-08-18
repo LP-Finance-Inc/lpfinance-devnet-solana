@@ -677,6 +677,7 @@ pub struct UpdateUserAccount<'info> {
     pub user_account: Box<Account<'info, UserAccount>>
 }
 
+// STEP: 4
 #[derive(Accounts)]
 pub struct LiquidateNormalSwap<'info> {
     #[account(mut)]
@@ -732,8 +733,9 @@ pub struct LiquidateNormalSwap<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
+// STEP 5
 #[derive(Accounts)]
-pub struct LiquidateLpSOLTokenSwap<'info> {
+pub struct LiquidateLpSOLTokenSwap1<'info> {
     #[account(mut)]
     pub user_account: Box<Account<'info, UserAccount>>,
     #[account(mut)]
@@ -744,7 +746,7 @@ pub struct LiquidateLpSOLTokenSwap<'info> {
         bump
     )]
     pub cbs_pda: AccountInfo<'info>,
-    /// CHECK:
+    /// CHECK: LpUSD <-> USDC POOL
     #[account(mut)]
     pub stable_swap_pool: AccountInfo<'info>,
     /// CHECK:
@@ -757,8 +759,6 @@ pub struct LiquidateLpSOLTokenSwap<'info> {
     pub token_wsol: Box<Account<'info, Mint>>,
     #[account(mut)]
     pub token_usdc: Box<Account<'info, Mint>>,
-    #[account(mut)]
-    pub token_lpusd: Box<Account<'info, Mint>>,
 
     /// CHECK:
     pub pyth_usdc: AccountInfo<'info>,
@@ -766,23 +766,15 @@ pub struct LiquidateLpSOLTokenSwap<'info> {
     pub pyth_wsol: AccountInfo<'info>,
 
     #[account(mut)]
-    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
     pub cbs_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub cbs_ata_wsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub cbs_ata_usdc: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
     /// CHECK:
@@ -795,6 +787,45 @@ pub struct LiquidateLpSOLTokenSwap<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
+// STEP 6
+#[derive(Accounts)]
+pub struct LiquidateLpSOLTokenSwap2<'info> {
+    #[account(mut)]
+    pub user_account: Box<Account<'info, UserAccount>>,
+    /// CHECK: this is safe
+    #[account(mut,
+        seeds = [PREFIX.as_bytes()],
+        bump
+    )]
+    pub cbs_pda: AccountInfo<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub stable_swap_pool: AccountInfo<'info>,
+    
+    #[account(mut)]
+    pub token_usdc: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub token_lpusd: Box<Account<'info, Mint>>,
+
+    #[account(mut)]
+    pub auction_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK:
+    pub stableswap_program: AccountInfo<'info>,
+
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
 #[derive(Accounts)]
 pub struct LiquidateLpFITokenSwap<'info> {
     #[account(mut)]

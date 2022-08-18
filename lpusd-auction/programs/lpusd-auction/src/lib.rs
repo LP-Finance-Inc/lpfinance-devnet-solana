@@ -240,6 +240,9 @@ pub mod lpusd_auction {
         let stable_lpsol_pool: &Account<StableswapPool> = &ctx.accounts.stable_lpsol_pool;
         // let config = &mut ctx.accounts.config;
 
+        if cbs_account.step_num != 0 {
+            return Err(ErrorCode::InvalidLiquidateNum.into());
+        }
         
         let is_liquidatable = cbs_account.check_liquidatable()?;
 
@@ -572,7 +575,7 @@ pub mod lpusd_auction {
             return Err(ErrorCode::InsufficientPoolAmount.into());
         }
 
-        if cbs_account.step_num != 6 {
+        if cbs_account.step_num != 7 {
             return Err(ErrorCode::InvalidLiquidateNum.into());
         }
 
