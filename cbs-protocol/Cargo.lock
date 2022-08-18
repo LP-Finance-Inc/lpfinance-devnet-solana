@@ -421,7 +421,6 @@ dependencies = [
  "spl-associated-token-account",
  "spl-token",
  "stable-swap",
- "swap-router",
  "test-tokens",
  "uniswap",
 ]
@@ -1349,23 +1348,6 @@ name = "subtle"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
-
-[[package]]
-name = "swap-router"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "nom",
- "num-derive",
- "num-traits",
- "pyth-client",
- "spl-associated-token-account",
- "spl-token",
- "stable-swap",
- "test-tokens",
- "uniswap",
-]
 
 [[package]]
 name = "syn"

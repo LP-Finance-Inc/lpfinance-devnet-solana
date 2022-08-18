@@ -792,7 +792,7 @@
             "type": "u64"
           },
           {
-            "name": "mintedWsolAmount",
+            "name": "escrowWsolAmount",
             "type": "u64"
           }
         ]

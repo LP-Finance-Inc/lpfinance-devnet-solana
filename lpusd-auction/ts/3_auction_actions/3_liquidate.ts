@@ -85,35 +85,35 @@ const liquidate = async () => {
   );
   
   // STEP: 1
-  // await program.rpc.burnLpusdLiquidate({
-  //   accounts: {
-  //     userAuthority: creatorKeypair.publicKey,
-  //     owner: creatorKeypair.publicKey,
-  //     userAccount,
-  //     auctionPda: PDA[0],
-  //     config: config,
-  //     cbsAccount,
-  //     lpusdMint,
-  //     lpusdAta,
-  //     lpsolMint,
-  //     lpsolAta,
-  //     stableLpsolPool: StableLpsolPool,
-  //     stableLpusdPool: StableLpusdPool,
-  //     pythUsdcAccount,
-  //     pythRayAccount,
-  //     pythSolAccount,
-  //     pythMsolAccount,
-  //     pythSrmAccount,
-  //     pythScnsolAccount,
-  //     pythStsolAccount,
-  //     liquidityPool: LiquidityPool,
-  //     cbsProgram: cbsProgramId,
-  //     lptokensProgram: lptokenProgramId,
-  //     systemProgram: anchor.web3.SystemProgram.programId,
-  //     tokenProgram: TOKEN_PROGRAM_ID,
-  //     rent: SYSVAR_RENT_PUBKEY
-  //   },
-  // });
+  await program.rpc.burnLpusdLiquidate({
+    accounts: {
+      userAuthority: creatorKeypair.publicKey,
+      owner: creatorKeypair.publicKey,
+      userAccount,
+      auctionPda: PDA[0],
+      config: config,
+      cbsAccount,
+      lpusdMint,
+      lpusdAta,
+      lpsolMint,
+      lpsolAta,
+      stableLpsolPool: StableLpsolPool,
+      stableLpusdPool: StableLpusdPool,
+      pythUsdcAccount,
+      pythRayAccount,
+      pythSolAccount,
+      pythMsolAccount,
+      pythSrmAccount,
+      pythScnsolAccount,
+      pythStsolAccount,
+      liquidityPool: LiquidityPool,
+      cbsProgram: cbsProgramId,
+      lptokensProgram: lptokenProgramId,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      rent: SYSVAR_RENT_PUBKEY
+    },
+  });
 
   const stableswapPoolAtaLpsol = await getATAPublicKey(lpsolMint, StableLpsolPool);
   const stableswapPoolAtaLpusd = await getATAPublicKey(lpusdMint, StableLpusdPool);
@@ -124,36 +124,36 @@ const liquidate = async () => {
   
   console.log("UserAccount:", userAccount.toBase58())
   // STEP: 2
-  // const tx2 = await program.rpc.burnLpsolLiquidate1({
-  //   accounts: {
-  //     owner: creatorKeypair.publicKey,
-  //     userAccount,
-  //     cbsAccount,
-  //     auctionPda: PDA[0],
-  //     stableLpsolPool: StableLpsolPool,
-  //     stableLpusdPool: StableLpusdPool,
-  //     tokenStateAccount,
-  //     tokenLpusd: lpusdMint,
-  //     tokenUsdc: usdcMint,
-  //     tokenWsol: wsolMint,
-  //     pythUsdc: pythUsdcAccount,
-  //     pythWsol: pythSolAccount,
-  //     auctionAtaLpusd: lpusdAta,
-  //     auctionAtaUsdc: usdcAta,
-  //     auctionAtaWsol: wsolAta,
-  //     stableswapPoolAtaLpusd: stableswapPoolAtaLpusd,
-  //     stableswapPoolAtaUsdc: stableswapPoolAtaUsdc,
-  //     testtokensProgram: testTokenProgramId,
-  //     stableswapProgram: stableswapProgramId,
-  //     cbsProgram: cbsProgramId,
-  //     systemProgram: anchor.web3.SystemProgram.programId,
-  //     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-  //     tokenProgram: TOKEN_PROGRAM_ID,
-  //     rent: SYSVAR_RENT_PUBKEY
-  //   },
-  // });
+  const tx2 = await program.rpc.burnLpsolLiquidate1({
+    accounts: {
+      owner: creatorKeypair.publicKey,
+      userAccount,
+      cbsAccount,
+      auctionPda: PDA[0],
+      stableLpsolPool: StableLpsolPool,
+      stableLpusdPool: StableLpusdPool,
+      tokenStateAccount,
+      tokenLpusd: lpusdMint,
+      tokenUsdc: usdcMint,
+      tokenWsol: wsolMint,
+      pythUsdc: pythUsdcAccount,
+      pythWsol: pythSolAccount,
+      auctionAtaLpusd: lpusdAta,
+      auctionAtaUsdc: usdcAta,
+      auctionAtaWsol: wsolAta,
+      stableswapPoolAtaLpusd: stableswapPoolAtaLpusd,
+      stableswapPoolAtaUsdc: stableswapPoolAtaUsdc,
+      testtokensProgram: testTokenProgramId,
+      stableswapProgram: stableswapProgramId,
+      cbsProgram: cbsProgramId,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      rent: SYSVAR_RENT_PUBKEY
+    },
+  });
 
-  // console.log("Burn usdc to wSOL", tx2)
+  console.log("Burn usdc to wSOL", tx2)
 
 
   // STEP: 3

@@ -30,7 +30,6 @@ spl-associated-token-account = {version = "1.0.3", features = ["no-entrypoint"]}
 
 stable-swap = { path = "../../../stable-swap/programs/stable-swap", features=["cpi"] }
 uniswap = { path = "../../../uniswap/programs/uniswap", features=["cpi"]}
-swap-router = { path = "../../../swap-router/programs/swap-router", features=["cpi"]}
 lpfinance-tokens = { path = "../../../lpfinance-tokens/programs/lpfinance-tokens", features=["cpi"]}
 test-tokens = { path="../../../test-tokens/programs/test-tokens", features = ["cpi"]}
 
