@@ -9,7 +9,7 @@ use anchor_spl::{
 
 mod oracle;
 pub use oracle::*;
-
+use std::mem::size_of;
 use stable_swap::{self, StableswapPool};
 use uniswap::{self, UniswapPool};
 
@@ -34,10 +34,10 @@ pub const PRICE_DENOMINATOR: u128 = 100000000; // 10 ^ 8
 pub const LENDING_DENOMINATOR: u128 = 10000000; // 100,00000
 
 const DISCRIMINATOR_LENGTH: usize = 8;
-const PUBLIC_KEY_LENGTH: usize = 32;
-const U64_LENGTH: usize = 8;
-const U8_LENGTH: usize = 1;
-const BOOL_LENGTH: usize =1;
+// const PUBLIC_KEY_LENGTH: usize = 32;
+// const U64_LENGTH: usize = 8;
+// const U8_LENGTH: usize = 1;
+// const BOOL_LENGTH: usize =1;
 // const TITLE_LENGTH: usize = 4*2;
 
 #[derive(Accounts)]
@@ -49,7 +49,7 @@ pub struct Initialize<'info> {
     // Config Accounts
     #[account(init,
         payer = authority,
-        space = Config::LEN
+        space = size_of::<Config>() + DISCRIMINATOR_LENGTH
     )]
     pub config: Box<Account<'info, Config>>, 
     pub system_program: Program<'info, System>,
@@ -277,7 +277,7 @@ pub struct InitUserAccount<'info> {
         init,
         seeds = [PREFIX.as_bytes(), user_authority.key().as_ref()],
         bump,
-        space = UserAccount::LEN,
+        space = size_of::<UserAccount>() + DISCRIMINATOR_LENGTH,
         payer = user_authority
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
@@ -891,10 +891,10 @@ pub struct Config {
 }
 
 impl Config {
-    pub const LEN:usize = DISCRIMINATOR_LENGTH
-        + PUBLIC_KEY_LENGTH * 19
-        + U64_LENGTH * 11
-        + BOOL_LENGTH;
+    // pub const LEN:usize = DISCRIMINATOR_LENGTH
+    //     + PUBLIC_KEY_LENGTH * 19
+    //     + U64_LENGTH * 11
+    //     + BOOL_LENGTH;
 
     pub fn is_normal_token (&self, dest_mint: Pubkey) -> Result<bool> {
         if dest_mint == self.wsol_mint || 
@@ -1028,26 +1028,6 @@ impl Config {
 
 #[account]
 #[derive(Default)]
-pub struct OracleConfig {
-    pub owner: Pubkey,
-
-    pub pyth_ray_account: Pubkey,
-    pub pyth_usdc_account: Pubkey,
-    pub pyth_sol_account: Pubkey,
-
-    pub pyth_msol_account: Pubkey,
-    pub pyth_srm_account: Pubkey,
-    pub pyth_scnsol_account: Pubkey,
-    pub pyth_stsol_account: Pubkey
-}
-
-impl OracleConfig {
-    pub const LEN:usize = DISCRIMINATOR_LENGTH
-        + PUBLIC_KEY_LENGTH * 8;
-}
-
-#[account]
-#[derive(Default)]
 pub struct UserAccount {
     pub owner: Pubkey,
     // Number to present the current Liquidate process
@@ -1082,15 +1062,12 @@ pub struct UserAccount {
     pub lending_stsol_amount: u64,
 
     // Escrow LpUSD amount after Liquidate
-    pub escrow_lpusd_amount: i64
+    pub escrow_lpusd_amount: i64,
+    // Escrow for LpSOL liquidation
+    pub escrow_usdc_amount: u64
 }
 
 impl UserAccount {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH
-        + U64_LENGTH * 28 
-        + PUBLIC_KEY_LENGTH // owner pubkey
-        + U8_LENGTH;        // Liquidate process
-
     pub fn update_current_step(&mut self, step_num: u8) -> Result<bool> {
         self.step_num = step_num;
         Ok(true)

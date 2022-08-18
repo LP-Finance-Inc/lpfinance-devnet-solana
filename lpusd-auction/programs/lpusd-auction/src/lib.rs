@@ -452,7 +452,7 @@ pub mod lpusd_auction {
         }
 
         // Save Info
-        user_account.minted_wsol_amount = mint_wsol_amount;
+        user_account.escrow_wsol_amount = mint_wsol_amount;
 
         let cpi_program = ctx.accounts.cbs_program.to_account_info();
         let cpi_accounts = UpdateUserAccount {
@@ -487,7 +487,7 @@ pub mod lpusd_auction {
             return Err(ErrorCode::InvalidLiquidateNum.into());
         }
         
-        let swap_amount = user_account.minted_wsol_amount;
+        let swap_amount = user_account.escrow_wsol_amount;
 
         // Get signer
         let (program_authority, program_authority_bump) = 
@@ -558,7 +558,8 @@ pub mod lpusd_auction {
         Ok(())
     }
 
-    
+    // Final step for liquidation
+    // Step 7
     pub fn distribute_reward_from_liquidate(        
         ctx: Context<DistributeRewardFromLiquidate>
     ) -> Result<()> {
@@ -566,8 +567,13 @@ pub mod lpusd_auction {
         let cbs_account  = &mut ctx.accounts.cbs_account;
         let reward_amount: i64 = cbs_account.escrow_lpusd_amount;
         let total_lpusd_added: i64 = config.total_lpusd as i64 + reward_amount;
+        
         if total_lpusd_added < 0 {
             return Err(ErrorCode::InsufficientPoolAmount.into());
+        }
+
+        if cbs_account.step_num != 6 {
+            return Err(ErrorCode::InvalidLiquidateNum.into());
         }
 
         let auction_percent = config.total_percent as f64 * total_lpusd_added as f64 / config.total_lpusd as f64;

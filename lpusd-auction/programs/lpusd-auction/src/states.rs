@@ -437,7 +437,7 @@ pub struct DistributeRewardFromLiquidate<'info> {
     pub auction_pda: AccountInfo<'info>,
     // CBS: user account
     #[account(mut, 
-        constraint = cbs_account.step_num == 5
+        constraint = cbs_account.step_num == 6
     )]
     pub cbs_account: Box<Account<'info, cbs_protocol::UserAccount>>,
     /// CHECK: this is safe
@@ -483,6 +483,7 @@ pub struct UserAccount {
     // NOTE: only lpusd is able to be deposited
     pub lpusd_amount: u64,
     // LpUSD -> USDC -> Wsol -> LpSOL
-    pub minted_wsol_amount: u64
+    // escrow
+    pub escrow_wsol_amount: u64
 }
 
