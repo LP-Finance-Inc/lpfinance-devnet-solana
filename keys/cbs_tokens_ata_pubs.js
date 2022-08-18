@@ -4,3 +4,4 @@ const poolMsol = new PublicKey("DS9DmesrxZJwUKhFsipN6BtcC3pYtGAR4ibTEHc32bx2");
 const poolSrm = new PublicKey("D41WK2A3eQ4AARmCuCZfJ8ksKf1u4JuQGxDcH85s9wPJ");
 const poolScnsol = new PublicKey("4xKCz5duBQvkKMA4yuxtUrcV2rYXuabF1nQjdwEL59LP");
 const poolStsol = new PublicKey("Fkpa7LabS5c5ZhNymbzWhWQRoU1oP61QJRYbDTKTESPG");
+const poolUsdc = new PublicKey("FEi2zV2D4z9gcmvJAep76uTsujiCF5dg9Emo5wvid2zp");

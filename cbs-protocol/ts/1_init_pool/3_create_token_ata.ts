@@ -32,15 +32,16 @@ const create_token_ata = async () => {
     const config = getPublicKey('cbs_config');
 
     let pubkeys = "";
-    const lptokenProgram = new anchor.Program(TestTokenIDL as anchor.Idl, TestTokenIDL.metadata.address);
-    const lptokenConfigData = await lptokenProgram.account.config.fetch(TestTokenConfig);
+    const testTokenProgram = new anchor.Program(TestTokenIDL as anchor.Idl, TestTokenIDL.metadata.address);
+    const testTokenConfigData = await testTokenProgram.account.config.fetch(TestTokenConfig);
 
-    const wsolMint = lptokenConfigData.wsolMint as PublicKey;
-    const rayMint = lptokenConfigData.rayMint as PublicKey;
-    const msolMint = lptokenConfigData.msolMint as PublicKey;
-    const srmMint = lptokenConfigData.srmMint as PublicKey;
-    const scnsolMint = lptokenConfigData.scnsolMint as PublicKey;
-    const stsolMint = lptokenConfigData.stsolMint as PublicKey;
+    const wsolMint = testTokenConfigData.wsolMint as PublicKey;
+    const rayMint = testTokenConfigData.rayMint as PublicKey;
+    const msolMint = testTokenConfigData.msolMint as PublicKey;
+    const srmMint = testTokenConfigData.srmMint as PublicKey;
+    const scnsolMint = testTokenConfigData.scnsolMint as PublicKey;
+    const stsolMint = testTokenConfigData.stsolMint as PublicKey;
+    const usdcMint = testTokenConfigData.usdcMint as PublicKey;
     
     const PDA = await PublicKey.findProgramAddress(
       [Buffer.from(PREFIX)],
@@ -77,10 +78,31 @@ const create_token_ata = async () => {
     const poolStsolKeyString = `const poolStsol = new PublicKey("${poolStsolKeypair.toString()}");\n`
     pubkeys += poolStsolKeyString;
 
+    // Find PDA for `Usdc pool`
+    const poolUsdcKeypair = await getATAPublicKey(usdcMint, PDA[0]); // anchor.web3.Keypair.generate();  
+    const poolUsdcKeyString = `const poolUsdc = new PublicKey("${poolUsdcKeypair.toString()}");\n`
+    pubkeys += poolUsdcKeyString;
+
+
     
     writePublicKeys(pubkeys, "cbs_tokens_ata");
 
-    // initialize
+    // create Escrow for Liquidate
+    await program.rpc.createUsdcEscrow({
+      accounts: {
+        authority: creatorKeypair.publicKey,
+        usdcMint,
+        cbsPda: PDA[0],
+        poolUsdc: poolUsdcKeypair,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+      },      
+    });
+    return;
+    
+    // create ATA
     await program.rpc.createTokenAta1({
       accounts: {
         authority: creatorKeypair.publicKey,

@@ -124,27 +124,54 @@ const liquidate = async () => {
   
   console.log("UserAccount:", userAccount.toBase58())
   // STEP: 2
-  const tx2 = await program.rpc.burnLpsolLiquidate1({
+  // const tx2 = await program.rpc.burnLpsolLiquidate1({
+  //   accounts: {
+  //     owner: creatorKeypair.publicKey,
+  //     userAccount,
+  //     cbsAccount,
+  //     auctionPda: PDA[0],
+  //     stableLpsolPool: StableLpsolPool,
+  //     stableLpusdPool: StableLpusdPool,
+  //     tokenStateAccount,
+  //     tokenLpusd: lpusdMint,
+  //     tokenUsdc: usdcMint,
+  //     tokenWsol: wsolMint,
+  //     pythUsdc: pythUsdcAccount,
+  //     pythWsol: pythSolAccount,
+  //     auctionAtaLpusd: lpusdAta,
+  //     auctionAtaUsdc: usdcAta,
+  //     auctionAtaWsol: wsolAta,
+  //     stableswapPoolAtaLpusd: stableswapPoolAtaLpusd,
+  //     stableswapPoolAtaUsdc: stableswapPoolAtaUsdc,
+  //     testtokensProgram: testTokenProgramId,
+  //     stableswapProgram: stableswapProgramId,
+  //     cbsProgram: cbsProgramId,
+  //     systemProgram: anchor.web3.SystemProgram.programId,
+  //     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+  //     tokenProgram: TOKEN_PROGRAM_ID,
+  //     rent: SYSVAR_RENT_PUBKEY
+  //   },
+  // });
+
+  // console.log("Burn usdc to wSOL", tx2)
+
+
+  // STEP: 3
+  const tx3 = await program.rpc.burnLpsolLiquidate2({
     accounts: {
       owner: creatorKeypair.publicKey,
       userAccount,
       cbsAccount,
       auctionPda: PDA[0],
       stableLpsolPool: StableLpsolPool,
-      stableLpusdPool: StableLpusdPool,
-      tokenStateAccount,
-      tokenLpusd: lpusdMint,
-      tokenUsdc: usdcMint,
+      tokenLpsol: lpsolMint,
       tokenWsol: wsolMint,
-      pythUsdc: pythUsdcAccount,
-      pythWsol: pythSolAccount,
-      auctionAtaLpusd: lpusdAta,
-      auctionAtaUsdc: usdcAta,
+      auctionAtaLpsol: lpsolAta,
       auctionAtaWsol: wsolAta,
-      stableswapPoolAtaLpusd: stableswapPoolAtaLpusd,
-      stableswapPoolAtaUsdc: stableswapPoolAtaUsdc,
-      testtokensProgram: testTokenProgramId,
+      stableswapPoolAtaLpsol: stableswapPoolAtaLpsol,
+      stableswapPoolAtaWsol: stableswapPoolAtaWsol,
       stableswapProgram: stableswapProgramId,
+      lptokensProgram: lptokenProgramId,
       cbsProgram: cbsProgramId,
       systemProgram: anchor.web3.SystemProgram.programId,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -153,7 +180,7 @@ const liquidate = async () => {
     },
   });
 
-  console.log("Burn LpSOL and LpUSD successfully", tx2)
+  console.log("Burn LpSOL successfully", tx3)
 
   const auctionConfigDataAfterDeposit = await program.account.config.fetch(config);
   print_config_data(auctionConfigDataAfterDeposit)

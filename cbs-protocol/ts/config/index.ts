@@ -7,6 +7,8 @@ export { default as  ApricotIDL } from "../../../apricot/target/idl/apricot.json
 export { default as  LpfinanceTokenIDL } from "../../../lpfinance-tokens/target/idl/lpfinance_tokens.json";
 export { default as SwapRouterIDL } from "../../../swap-router/target/idl/swap_router.json"
 export { default as StableSwapIDL } from "../../../stable-swap/target/idl/stable_swap.json"
+export { default as AuctionIDL } from "../../../lpusd-auction/target/idl/lpusd_auction.json"
+export { default as TestTokenIDL } from "../../../test-tokens/target/idl/test_tokens.json";
 
 export const NETWORK = "https://api.devnet.solana.com";
 
@@ -31,7 +33,7 @@ export const apricotPool = new PublicKey("3iHXjSSpVwg8rtUFDt6LNQRu8ttdYvBLnAj6cm
 
 // TOKEN
 export const USDCMint = new PublicKey("6ybV587PY2z6DX4Pf1tTh8oEhnuR6wwXLE8LHinKQKYV");
-
+export const EscrowUSDC = new PublicKey("FEi2zV2D4z9gcmvJAep76uTsujiCF5dg9Emo5wvid2zp");
 // SOLEND token account
 export const solendRAYPool = new PublicKey("AjU3jz8zc7vksB42VhvH3D1Rx5M5s2Bfh94WbJdYS79Y")
 export const solendwSOLPool = new PublicKey("BuTudvKNcgdUQ6r8zsiUVjviupbvP4X1obxFwzE797yK")

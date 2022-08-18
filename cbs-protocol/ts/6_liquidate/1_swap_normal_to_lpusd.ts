@@ -16,22 +16,16 @@ import {
   pythSrmAccount,
   pythScnsolAccount,
   pythStsolAccount,
-  SolendIDL,
-  SolendConfig,
-  ApricotConfig,
-  ApricotIDL,
-  solendPool,
-  apricotPool,
-  StableLpsolPool,
   StableLpusdPool,
-  LiquidityPool,
-  SolendStateAccount,
-  ApricotStateAccount,
   tokenStateAccount,
-  USDCMint
+  USDCMint,
+  AuctionIDL,
+  StableSwapIDL,
+  TestTokenIDL,
+  EscrowUSDC
 } from "../config";
 
-import { getCreatorKeypair, getPublicKey } from "../utils";
+import { getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const { Wallet } = anchor;
@@ -44,10 +38,15 @@ const swap_normal_to_lpusd = async () => {
     anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
     const program = anchor.workspace.CbsProtocol as Program<CbsProtocol>;
 
+    const AuctionConfig = getPublicKey("auction_config")
+    const auctionProgram = new anchor.Program( AuctionIDL as anchor.Idl, AuctionIDL.metadata.address);
+    const auctionConfigData = await auctionProgram.account.config.fetch(AuctionConfig);
+    const auctionLpusd = auctionConfigData.poolLpusd as PublicKey;
+
     // Config
     const config = getPublicKey('cbs_config');  
     const cbsConfigData = await program.account.config.fetch(config);
-
+    
     const PDA = await PublicKey.findProgramAddress(
         [Buffer.from(PREFIX)],
         program.programId
@@ -72,20 +71,29 @@ const swap_normal_to_lpusd = async () => {
     tokenDatas.push({
         destMint: cbsConfigData.stsolMint,    cbsPool: cbsConfigData.poolStsol, pythSrc: pythStsolAccount,
     })
-
     
     const [userAccount, bump] = await PublicKey.findProgramAddress(
         [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
         program.programId
     );
 
-    try {
-        for (let i = 0; i < tokenDatas.length; i++) {
-            let tokenData = tokenDatas[i];
+    const StableSwapProgramId = new PublicKey(StableSwapIDL.metadata.address);
+    const TestTokenProgramId = new PublicKey(TestTokenIDL.metadata.address);
+
+    const stableswapPoolAtaLpusd = await getATAPublicKey(cbsConfigData.lpusdMint, StableLpusdPool);
+    const stableswapPoolAtaUsdc = await getATAPublicKey(USDCMint, StableLpusdPool);
+
+    console.log("UserAccount:", userAccount.toBase58())
+    
+    for (let i = 0; i < tokenDatas.length; i++) {
+        let tokenData = tokenDatas[i];
+
+        try {
             const tx = await program.rpc.liquidateSwapNormaltoken({
                 accounts: {
-                    userAccount,
+                    userAccount: userAccount,
                     cbsPda: PDA[0],
+                    config,
                     stableSwapPool: StableLpusdPool,
                     tokenStateAccount,
                     pythSrc: tokenData.pythSrc,
@@ -94,13 +102,13 @@ const swap_normal_to_lpusd = async () => {
                     tokenUsdc: USDCMint,
                     tokenLpusd: cbsConfigData.lpusdMint,
                     cbsAtaSrc: tokenData.cbsPool,
-                    cbsAtaUsdc: cbsConfigData.poolUsdc,
-                    cbsAtaLpusd: cbsConfigData.poolLpusd,
-                    auctionAtaLpusd: ,
+                    cbsAtaUsdc: EscrowUSDC,
+                    cbsAtaLpusd: cbsConfigData.poolLpusd, 
+                    auctionAtaLpusd: auctionLpusd,
                     stableswapPoolAtaLpusd,
                     stableswapPoolAtaUsdc,
-                    stableswapProgram,
-                    testtokensProgram,
+                    stableswapProgram: StableSwapProgramId,
+                    testtokensProgram: TestTokenProgramId,
                     systemProgram: anchor.web3.SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -108,13 +116,13 @@ const swap_normal_to_lpusd = async () => {
                 },
             });
             console.log("Deposit successfully", tx)
+        } catch (e) {
+            console.log("Failed", tokenData.destMint.toBase58(), tokenData.cbsPool.toBase58(), e);
         }
-        const userData = await program.account.userAccount.fetch(userAccount);
-        print_user_data(userData)
-    } catch (e) {
-        console.log("Failed", e)
+        return;
     }
-
+    const userData = await program.account.userAccount.fetch(userAccount);
+    print_user_data(userData)
     const cbsConfigDataAfterDeposit = await program.account.config.fetch(config);
     print_config_data(cbsConfigDataAfterDeposit)
 }
@@ -162,5 +170,6 @@ const print_user_data = (userData) => {
     { "Property": "lending_srm_amount", "Value" : userData.lendingSrmAmount.toString()},
     { "Property": "lending_scnsol_amount", "Value" : userData.lendingScnsolAmount.toString()},
     { "Property": "lending_stsol_amount", "Value" : userData.lendingStsolAmount.toString()},
+    { "Property": "step num", "Value" : userData.stepNum.toString()},
   ]);
 }

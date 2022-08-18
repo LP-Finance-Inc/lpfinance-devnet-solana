@@ -279,7 +279,7 @@ pub mod uniswap {
 
     pub fn uniswap_tokens(ctx: Context<UniswapTokens>,
         amount_src: u64,
-    ) -> Result<()> {
+    ) -> Result<u64> {
         if amount_src == 0 {
             return Err(ErrorCode::AmountZeroError.into());
         }
@@ -355,7 +355,7 @@ pub mod uniswap {
         let cpi_ctx_dest = CpiContext::new_with_signer(cpi_program, cpi_accounts_dest, signer);
         token::transfer(cpi_ctx_dest, amount_return)?;
 
-        Ok(())
+        Ok(amount_return)
     }
 
 }

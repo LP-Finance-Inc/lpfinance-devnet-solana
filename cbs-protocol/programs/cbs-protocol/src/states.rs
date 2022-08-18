@@ -158,6 +158,29 @@ pub struct CreateTokenATA1<'info> {
 }
 
 #[derive(Accounts)]
+pub struct CreateEscrowUSDC<'info> {
+    // Token program authority
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// CHECK: This is safe
+    #[account(seeds = [PREFIX.as_ref()], bump)]
+    pub cbs_pda: AccountInfo<'info>,
+    // USDC POOL
+    #[account(
+        init_if_needed,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = cbs_pda,
+        payer = authority
+    )]
+    pub pool_usdc: Box<Account<'info, TokenAccount>>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+
+}
+#[derive(Accounts)]
 pub struct CreateTokenATA2<'info> {
     // Token program authority
     #[account(mut)]
@@ -665,6 +688,8 @@ pub struct LiquidateNormalSwap<'info> {
     )]
     pub cbs_pda: AccountInfo<'info>,
     #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut)]
     pub stable_swap_pool: Box<Account<'info, StableswapPool>>,
     #[account(mut)]
     pub token_state_account: Box<Account<'info, test_tokens::TokenStateAccount>>,
@@ -711,15 +736,14 @@ pub struct LiquidateNormalSwap<'info> {
 pub struct LiquidateLpSOLTokenSwap<'info> {
     #[account(mut)]
     pub user_account: Box<Account<'info, UserAccount>>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
     /// CHECK: this is safe
     #[account(mut,
         seeds = [PREFIX.as_bytes()],
         bump
     )]
     pub cbs_pda: AccountInfo<'info>,
-    /// CHECK: cbs is user for swap
-    #[account(mut)]
-    pub swap_escrow: AccountInfo<'info>,
     /// CHECK:
     #[account(mut)]
     pub stable_swap_pool: AccountInfo<'info>,
@@ -746,7 +770,11 @@ pub struct LiquidateLpSOLTokenSwap<'info> {
     #[account(mut)]
     pub cbs_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
+    pub cbs_ata_wsol: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
     pub cbs_ata_lpusd: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub cbs_ata_usdc: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_lpsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
@@ -755,20 +783,10 @@ pub struct LiquidateLpSOLTokenSwap<'info> {
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_lpsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_wsol: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
     /// CHECK:
     pub testtokens_program: AccountInfo<'info>,    
-    /// CHECK:
-    pub swaprouter_program: AccountInfo<'info>,  
 
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
@@ -790,7 +808,7 @@ pub struct LiquidateLpFITokenSwap<'info> {
     /// CHECK: cbs is user for swap
     #[account(mut)]
     pub swap_escrow: AccountInfo<'info>,
-    /// CHECK:
+    /// CHECK: LpUSD <-> USDC
     #[account(mut)]
     pub stable_swap_pool: AccountInfo<'info>,
     /// CHECK:
@@ -819,18 +837,12 @@ pub struct LiquidateLpFITokenSwap<'info> {
     #[account(mut)]
     pub stableswap_pool_ata_usdc: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub escrow_ata_lpfi: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub escrow_ata_lpusd: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
     pub escrow_ata_usdc: Box<Account<'info, TokenAccount>>,
+
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
     /// CHECK:
     pub uniswap_program: AccountInfo<'info>,    
-    /// CHECK:
-    pub swaprouter_program: AccountInfo<'info>,  
-
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,

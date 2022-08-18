@@ -513,12 +513,12 @@ pub mod lpusd_auction {
             let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
                 user: ctx.accounts.auction_pda.to_account_info(),
                 stable_swap_pool: stable_lpsol_pool.to_account_info(),
-                token_src: token_lpsol.to_account_info(),
-                token_dest: token_wsol.to_account_info(),
-                user_ata_src: auction_ata_lpsol.to_account_info(),
-                user_ata_dest: auction_ata_wsol.to_account_info(),
-                pool_ata_src: stableswap_pool_ata_lpsol.to_account_info(),
-                pool_ata_dest: stableswap_pool_ata_wsol.to_account_info(),                
+                token_src: token_wsol.to_account_info(),
+                token_dest: token_lpsol.to_account_info(),
+                user_ata_src: auction_ata_wsol.to_account_info(),
+                user_ata_dest: auction_ata_lpsol.to_account_info(),
+                pool_ata_src: stableswap_pool_ata_wsol.to_account_info(),
+                pool_ata_dest: stableswap_pool_ata_lpsol.to_account_info(),                
                 system_program: system_program.to_account_info(),
                 token_program: token_program.to_account_info(),
                 associated_token_program: associated_token_program.to_account_info(),
@@ -532,6 +532,7 @@ pub mod lpusd_auction {
 
         {
             // Burn LpSOL
+            msg!("Burn LpSOL {}", _lpsol);
             let cpi_program = ctx.accounts.lptokens_program.to_account_info();
             let cpi_accounts = BurnLpToken {
                 owner: ctx.accounts.auction_pda.to_account_info(),
