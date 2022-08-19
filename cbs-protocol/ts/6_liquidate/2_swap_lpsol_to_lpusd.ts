@@ -64,12 +64,24 @@ const swap_lpsol_to_lpusd = async () => {
     console.log("UserAccount:", userAccount.toBase58())    
 
     try {
+      const userAccountData = await program.account.userAccount.fetch(userAccount);
+      if (userAccountData.stepNum == 4) {
+        if (userAccountData.rayAmount.toString() != "0" ||
+          userAccountData.wsolAmount.toString() != "0" ||
+          userAccountData.msolAmount.toString() != "0" ||
+          userAccountData.scnsolAmount.toString() != "0" ||
+          userAccountData.srmAmount.toString() != "0" ||
+          userAccountData.stsolAmount.toString() != "0"
+        ) {
+          console.log("You need to liquidate the normal tokens first");
+        }
+
         const tx = await program.rpc.liquidateSwapLpsoltoken1({
             accounts: {
                 userAccount: userAccount,
                 cbsPda: PDA[0],
                 config,
-                stableSwapPool: StableLpusdPool,
+                stableSwapPool: StableLpsolPool,
                 tokenStateAccount,
 
                 pythWsol: pythSolAccount,
@@ -95,7 +107,8 @@ const swap_lpsol_to_lpusd = async () => {
             },
         });
         console.log("Liquidate lpsol->wsol->usdc successfully", tx)
-
+      }
+      if (userAccountData.stepNum == 5) {
         const tx2 = await program.rpc.liquidateSwapLpsoltoken2({
           accounts: {
               userAccount: userAccount,
@@ -119,8 +132,9 @@ const swap_lpsol_to_lpusd = async () => {
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
               rent: SYSVAR_RENT_PUBKEY,
           },
-      });
-      console.log("Liquidate lpsol->lpusd successfully", tx2)
+        });
+        console.log("Liquidate lpsol->lpusd successfully", tx2)
+      }
     } catch (e) {
         console.log("Failed", e);
     }
@@ -156,6 +170,7 @@ const print_user_data = (userData) => {
 
   console.table([
     { "Property": "owner", "Value": userData.owner.toBase58()},
+    { "Property": "step num", "Value" : userData.stepNum.toString()},
     { "Property": "borrowed_lpusd", "Value" : userData.borrowedLpusd.toString()},
     { "Property": "borrowed_lpsol", "Value": userData.borrowedLpsol.toString()},
     { "Property": "ray_amount", "Value" : userData.rayAmount.toString()},

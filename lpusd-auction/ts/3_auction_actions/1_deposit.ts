@@ -41,7 +41,7 @@ const deposit = async () => {
     program.programId
   );    
 
-  const deposit_wei = convert_to_wei("100");
+  const deposit_wei = convert_to_wei("1000000");
   const deposit_amount = new anchor.BN(deposit_wei);
   
   await program.rpc.depositLpusd(deposit_amount, {

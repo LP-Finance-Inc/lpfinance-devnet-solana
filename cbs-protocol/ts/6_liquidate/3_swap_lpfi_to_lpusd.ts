@@ -73,39 +73,44 @@ const swap_lpfi_to_lpusd = async () => {
         UniswapPool
     );
        
-
+    const userAccountData = await program.account.userAccount.fetch(userAccount);
     try {
+      if (userAccountData.stepNum == 6) {
         const tx = await program.rpc.liquidateSwapLpfitoken({
-            accounts: {
-                userAccount: userAccount,
-                cbsPda: PDA[0],
-                stableSwapPool: StableLpusdPool,
-                uniswapPool: LiquidityPool,
+          accounts: {
+              userAccount: userAccount,
+              cbsPda: PDA[0],
+              stableSwapPool: StableLpusdPool,
+              uniswapPool: LiquidityPool,
 
-                tokenLpfi: cbsConfigData.lpfiMint,
-                tokenUsdc: USDCMint,
-                tokenLpusd: cbsConfigData.lpusdMint,
+              tokenLpfi: cbsConfigData.lpfiMint,
+              tokenUsdc: USDCMint,
+              tokenLpusd: cbsConfigData.lpusdMint,
 
-                escrowAtaUsdc: EscrowUSDC,
-                cbsAtaLpusd: cbsConfigData.poolLpusd, 
-                cbsAtaLpfi: cbsConfigData.poolLpfi,
+              escrowAtaUsdc: EscrowUSDC,
+              cbsAtaLpusd: cbsConfigData.poolLpusd, 
+              cbsAtaLpfi: cbsConfigData.poolLpfi,
 
-                auctionLpusd: auctionLpusd,
+              auctionLpusd: auctionLpusd,
 
-                uniswapPoolAtaLpfi,
-                uniswapPoolAtaUsdc,
-                stableswapPoolAtaLpusd,
-                stableswapPoolAtaUsdc,
+              uniswapPoolAtaLpfi,
+              uniswapPoolAtaUsdc,
+              stableswapPoolAtaLpusd,
+              stableswapPoolAtaUsdc,
 
-                stableswapProgram: StableSwapProgramId,
-                uniswapProgram: UniswapProgramId,
-                systemProgram: anchor.web3.SystemProgram.programId,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                rent: SYSVAR_RENT_PUBKEY,
-            },
+              stableswapProgram: StableSwapProgramId,
+              uniswapProgram: UniswapProgramId,
+              systemProgram: anchor.web3.SystemProgram.programId,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              rent: SYSVAR_RENT_PUBKEY,
+          },
         });
-        console.log("Liquidate lpsol->lpusd successfully", tx)
+        console.log("Liquidate lpfi->lpusd successfully", tx)
+      } else {
+        console.log("You already passed LpFI liquidation step");
+      }
+        
     } catch (e) {
         console.log("Failed", e);
     }

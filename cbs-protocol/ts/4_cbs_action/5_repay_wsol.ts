@@ -64,9 +64,6 @@ const repay_wsol = async () => {
         swapRouterProgramId
     ); 
 
-    const escrowAtaSrc = await getATAPublicKey(tokenSrc, swap_escrow_pool_pda[0]);
-    const escrowAtaDest = await getATAPublicKey(tokenDest, swap_escrow_pool_pda[0]);
-
     const repay_wei = convert_to_wei("0.1");
     const repay_amount = new anchor.BN(repay_wei);
 

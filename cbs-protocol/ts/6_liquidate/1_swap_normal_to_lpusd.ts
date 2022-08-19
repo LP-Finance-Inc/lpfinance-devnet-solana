@@ -85,40 +85,70 @@ const swap_normal_to_lpusd = async () => {
 
     console.log("UserAccount:", userAccount.toBase58())
     
-    for (let i = 0; i < tokenDatas.length; i++) {
-        let tokenData = tokenDatas[i];
+    const userAccountData = await program.account.userAccount.fetch(userAccount);
+    if (userAccountData.stepNum == 3 || userAccountData.stepNum == 4) {
 
-        try {
-            const tx = await program.rpc.liquidateSwapNormaltoken({
-                accounts: {
-                    userAccount: userAccount,
-                    cbsPda: PDA[0],
-                    config,
-                    stableSwapPool: StableLpusdPool,
-                    tokenStateAccount,
-                    pythSrc: tokenData.pythSrc,
-                    pythUsdc: pythUsdcAccount,
-                    tokenSrc: tokenData.destMint,
-                    tokenUsdc: USDCMint,
-                    tokenLpusd: cbsConfigData.lpusdMint,
-                    cbsAtaSrc: tokenData.cbsPool,
-                    cbsAtaUsdc: EscrowUSDC,
-                    cbsAtaLpusd: cbsConfigData.poolLpusd, 
-                    auctionAtaLpusd: auctionLpusd,
-                    stableswapPoolAtaLpusd,
-                    stableswapPoolAtaUsdc,
-                    stableswapProgram: StableSwapProgramId,
-                    testtokensProgram: TestTokenProgramId,
-                    systemProgram: anchor.web3.SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                    rent: SYSVAR_RENT_PUBKEY,
-                },
-            });
-            console.log("Deposit successfully", tx)
-        } catch (e) {
-            console.log("Failed", tokenData.destMint.toBase58(), tokenData.cbsPool.toBase58(), e);
+        for (let i = 0; i < tokenDatas.length; i++) {
+            let tokenData = tokenDatas[i];
+            if (tokenData.destMint == cbsConfigData.rayMint && userAccountData.rayAmount.toString() == "0") {
+                console.log("ray Liquidated already");
+                continue;
+            }
+            if (tokenData.destMint == cbsConfigData.wsolMint && userAccountData.wsolAmount.toString() == "0") {
+                console.log("wsol Liquidated already");
+                continue;
+            }
+            if (tokenData.destMint == cbsConfigData.msolMint && userAccountData.msolAmount.toString() == "0") {
+                console.log("msol Liquidated already");
+                continue;
+            }
+            if (tokenData.destMint == cbsConfigData.srmMint && userAccountData.srmAmount.toString() == "0") {
+                console.log("srm Liquidated already");
+                continue;
+            }
+            if (tokenData.destMint == cbsConfigData.scnsolMint && userAccountData.scnsolAmount.toString() == "0") {
+                console.log("scnsol Liquidated already");
+                continue;
+            }
+            if (tokenData.destMint == cbsConfigData.stsolMint && userAccountData.stsolAmount.toString() == "0") {
+                console.log("stsol Liquidated already");
+                continue;
+            }
+
+            try {
+                const tx = await program.rpc.liquidateSwapNormaltoken({
+                    accounts: {
+                        userAccount: userAccount,
+                        cbsPda: PDA[0],
+                        config,
+                        stableSwapPool: StableLpusdPool,
+                        tokenStateAccount,
+                        pythSrc: tokenData.pythSrc,
+                        pythUsdc: pythUsdcAccount,
+                        tokenSrc: tokenData.destMint,
+                        tokenUsdc: USDCMint,
+                        tokenLpusd: cbsConfigData.lpusdMint,
+                        cbsAtaSrc: tokenData.cbsPool,
+                        cbsAtaUsdc: EscrowUSDC,
+                        cbsAtaLpusd: cbsConfigData.poolLpusd, 
+                        auctionAtaLpusd: auctionLpusd,
+                        stableswapPoolAtaLpusd,
+                        stableswapPoolAtaUsdc,
+                        stableswapProgram: StableSwapProgramId,
+                        testtokensProgram: TestTokenProgramId,
+                        systemProgram: anchor.web3.SystemProgram.programId,
+                        tokenProgram: TOKEN_PROGRAM_ID,
+                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                        rent: SYSVAR_RENT_PUBKEY,
+                    },
+                });
+                console.log("Deposit successfully", tx)
+            } catch (e) {
+                console.log("Failed", tokenData.destMint.toBase58(), tokenData.cbsPool.toBase58(), e);
+            }
         }
+    } else {
+        console.log("You already passed this liquidation step");
     }
     const userData = await program.account.userAccount.fetch(userAccount);
     print_user_data(userData)
@@ -152,6 +182,7 @@ const print_user_data = (userData) => {
 
   console.table([
     { "Property": "owner", "Value": userData.owner.toBase58()},
+    { "Property": "step num", "Value" : userData.stepNum.toString()},
     { "Property": "borrowed_lpusd", "Value" : userData.borrowedLpusd.toString()},
     { "Property": "borrowed_lpsol", "Value": userData.borrowedLpsol.toString()},
     { "Property": "ray_amount", "Value" : userData.rayAmount.toString()},

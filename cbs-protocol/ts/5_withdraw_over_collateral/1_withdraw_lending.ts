@@ -115,7 +115,7 @@ const withdraw_lending_ctokens = async () => {
             const R_TOTAL = userData[1];
             const R_BORROW = userData[2];
             console.log("LTV:", Number(LTV), Number(R_TOTAL), Number(R_BORROW));
-
+            
             if (Number(LTV) > 90) {
                 for (let i = 0; i < tokenDatas.length; i++) {
                     let tokenData = tokenDatas[i];

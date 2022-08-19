@@ -27,7 +27,7 @@ const repay_token = async () => {
     const config = getPublicKey('cbs_config');  
     const cbsConfigData = await program.account.config.fetch(config);
 
-    const tokenSrc= cbsConfigData.lpsolMint as PublicKey;
+    const tokenSrc= cbsConfigData.lpusdMint as PublicKey;
     const userAtaSrc = await getATAPublicKey(tokenSrc, creatorKeypair.publicKey);
 
     const [userAccount, bump] = await PublicKey.findProgramAddress(
@@ -35,7 +35,7 @@ const repay_token = async () => {
         program.programId
     );
 
-    const repay_wei = convert_to_wei("0.5");
+    const repay_wei = convert_to_wei("5");
     const repay_amount = new anchor.BN(repay_wei);
     
     if (tokenSrc == cbsConfigData.lpusdMint || tokenSrc == cbsConfigData.lpsolMint) {

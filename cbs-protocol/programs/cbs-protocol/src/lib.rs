@@ -288,7 +288,7 @@ pub mod cbs_protocol {
 
         // Need to check if the current user is in Liquidating.
         // If user account is in liquidating, user cannot make deposit tx
-        if user_account.step_num > 0 && user_account.step_num < 6 {
+        if user_account.step_num > 0 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
@@ -410,7 +410,7 @@ pub mod cbs_protocol {
         }
         let user_account = &mut ctx.accounts.user_account;
 
-        if user_account.step_num > 0 && user_account.step_num < 6 {
+        if user_account.step_num > 0 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
@@ -511,7 +511,7 @@ pub mod cbs_protocol {
 
         let user_account = &mut ctx.accounts.user_account;
 
-        if user_account.step_num > 0 && user_account.step_num < 6 {
+        if user_account.step_num > 0 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
@@ -578,88 +578,7 @@ pub mod cbs_protocol {
             return Err(ErrorCode::InsufficientAmount.into());
         }
 
-        let mut _solend_higher = false;
-        let mut _lending_rate = 0;
-        let mut _solend_rate = 0;
-        let mut _apricot_rate = 0;
-
-        (_solend_higher, _lending_rate, _solend_rate, _apricot_rate) = get_lending_protocol_info(
-            dest_mint, 
-            config, 
-            solend_config, 
-            apricot_config
-        );
-
-        let mut _solend_withdraw_amount: u64 = 0;
-        let mut _apricot_withdraw_amount: u64 = 0;
-
-        let mut _user_lending_amount_for = 0;
-
-        if amount > key_amount {
-            let withdraw_amount_from_lending: u64 = amount - key_amount;
-
-            let solend_rate_f: f64 = _solend_rate as f64;
-            let apricot_rate_f: f64 = _apricot_rate as f64;
-            // let key_lending_amount_f: f64 = withdraw_amount_from_lending as f64;
-            let denominator_f: f64 = LENDING_DENOMINATOR as f64;
-
-            let solend_key_amount: u64 = ctx.accounts.solend_account.get_key_amount(dest_mint.key(), solend_config)?;
-            let apricot_key_amount: u64 = ctx.accounts.apricot_account.get_key_amount(dest_mint.key(), apricot_config)?;
-
-            let solend_total_amount: u64 =  (solend_rate_f * solend_key_amount as f64 / denominator_f) as u64;
-            let apricot_total_amount: u64 =  (apricot_rate_f * apricot_key_amount as f64 / denominator_f) as u64;
-
-
-            if _solend_higher {
-
-                if withdraw_amount_from_lending<= solend_total_amount {
-                    _solend_withdraw_amount = withdraw_amount_from_lending;
-
-                    _user_lending_amount_for = (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
-                } else {
-                    _solend_withdraw_amount = solend_total_amount;
-                    _apricot_withdraw_amount = withdraw_amount_from_lending- solend_total_amount;
-                    
-                    if _apricot_withdraw_amount > apricot_total_amount {
-                        return Err(ErrorCode::InsufficientAmount.into());
-                    }
-
-                    _user_lending_amount_for = solend_key_amount;
-                    _user_lending_amount_for += (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
-                }
-
-            } else {
-                if withdraw_amount_from_lending<= apricot_total_amount {
-                    _apricot_withdraw_amount = withdraw_amount_from_lending;
-
-                    _user_lending_amount_for = (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
-                } else {
-                    _apricot_withdraw_amount = apricot_total_amount;
-
-                    _solend_withdraw_amount = withdraw_amount_from_lending- apricot_total_amount;
-                    if _solend_withdraw_amount > solend_total_amount {
-                        return Err(ErrorCode::InsufficientAmount.into());
-                    }
-
-                    _user_lending_amount_for = apricot_key_amount;
-                    _user_lending_amount_for += (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
-                }
-            }
-            msg!("Lending: {} {}", _solend_withdraw_amount, _apricot_withdraw_amount );
-        }
-        
-
-        let owned_amount: u64 = if amount > key_amount { 0} else { key_amount - amount };
-        let total_deposited_amount = key_total_deposited_amount - amount;
-
-        msg!("Lending: {} {}", key_lending_amount - _user_lending_amount_for, owned_amount );
-
-        user_account.update_lending_amount(key_lending_amount - _user_lending_amount_for, dest_mint.key(), config)?;
-        user_account.update_deposited_amount(owned_amount, dest_mint.key(), config)?;  
-        user_account.update_lp_deposited_amount(owned_amount, dest_mint.key(), config)?;
-
-        config.update_total_deposited_amount(total_deposited_amount , dest_mint.key())?;
-
+        //-------- PDA signer
         let (program_authority, program_authority_bump) = 
             Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
         
@@ -672,47 +591,128 @@ pub mod cbs_protocol {
             &[program_authority_bump]
         ];
         let signer = &[&seeds[..]];
-            
-        if _solend_withdraw_amount > 0 {
-            msg!("Withdraw from solend {}", _solend_withdraw_amount);
+        // 
 
-            let cpi_program = ctx.accounts.solend_program.to_account_info();
-            let cpi_accounts = solend::cpi::accounts::WithdrawToken {
-                authority: ctx.accounts.cbs_pda.to_account_info(),
-                user_token: ctx.accounts.dest_pool.to_account_info(),
-                token_mint: ctx.accounts.dest_mint.to_account_info(),
-                pool_token: ctx.accounts.solend_pool.to_account_info(),
-                config: ctx.accounts.solend_config.to_account_info(),
-                user_account: ctx.accounts.solend_account.to_account_info(),
-                state_account: ctx.accounts.solend_state_account.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info()
-            };
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-
-            solend::cpi::withdraw_token(cpi_ctx, _solend_withdraw_amount)?;
-        } 
-
-        if _apricot_withdraw_amount > 0 {
-            msg!("Withdraw from apricot {}", _apricot_withdraw_amount);
-            let cpi_program = ctx.accounts.apricot_program.to_account_info();
-            let cpi_accounts = apricot::cpi::accounts::WithdrawToken {
-                authority: ctx.accounts.cbs_pda.to_account_info(),
-                user_token: ctx.accounts.dest_pool.to_account_info(),
-                token_mint: ctx.accounts.dest_mint.to_account_info(),
-                pool_token: ctx.accounts.apricot_pool.to_account_info(),
-                state_account: ctx.accounts.apricot_state_account.to_account_info(),
-                config: ctx.accounts.apricot_config.to_account_info(),
-                user_account: ctx.accounts.apricot_account.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info()
-            };
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-
-            apricot::cpi::withdraw_token(cpi_ctx, _apricot_withdraw_amount)?;
+        if config.is_normal_token(dest_mint.key())? == true {
+            let mut _solend_higher = false;
+            let mut _lending_rate = 0;
+            let mut _solend_rate = 0;
+            let mut _apricot_rate = 0;
+    
+            (_solend_higher, _lending_rate, _solend_rate, _apricot_rate) = get_lending_protocol_info(
+                dest_mint, 
+                config, 
+                solend_config, 
+                apricot_config
+            );
+    
+            let mut _solend_withdraw_amount: u64 = 0;
+            let mut _apricot_withdraw_amount: u64 = 0;
+    
+            let mut _user_lending_amount_for = 0;
+    
+            if amount > key_amount {
+                let withdraw_amount_from_lending: u64 = amount - key_amount;
+    
+                let solend_rate_f: f64 = _solend_rate as f64;
+                let apricot_rate_f: f64 = _apricot_rate as f64;
+                // let key_lending_amount_f: f64 = withdraw_amount_from_lending as f64;
+                let denominator_f: f64 = LENDING_DENOMINATOR as f64;
+    
+                let solend_key_amount: u64 = ctx.accounts.solend_account.get_key_amount(dest_mint.key(), solend_config)?;
+                let apricot_key_amount: u64 = ctx.accounts.apricot_account.get_key_amount(dest_mint.key(), apricot_config)?;
+    
+                let solend_total_amount: u64 =  (solend_rate_f * solend_key_amount as f64 / denominator_f) as u64;
+                let apricot_total_amount: u64 =  (apricot_rate_f * apricot_key_amount as f64 / denominator_f) as u64;
+    
+    
+                if _solend_higher {
+    
+                    if withdraw_amount_from_lending<= solend_total_amount {
+                        _solend_withdraw_amount = withdraw_amount_from_lending;
+    
+                        _user_lending_amount_for = (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
+                    } else {
+                        _solend_withdraw_amount = solend_total_amount;
+                        _apricot_withdraw_amount = withdraw_amount_from_lending- solend_total_amount;
+                        
+                        if _apricot_withdraw_amount > apricot_total_amount {
+                            return Err(ErrorCode::InsufficientAmount.into());
+                        }
+    
+                        _user_lending_amount_for = solend_key_amount;
+                        _user_lending_amount_for += (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
+                    }
+    
+                } else {
+                    if withdraw_amount_from_lending<= apricot_total_amount {
+                        _apricot_withdraw_amount = withdraw_amount_from_lending;
+    
+                        _user_lending_amount_for = (_apricot_withdraw_amount as f64 * denominator_f / apricot_rate_f) as u64;
+                    } else {
+                        _apricot_withdraw_amount = apricot_total_amount;
+    
+                        _solend_withdraw_amount = withdraw_amount_from_lending- apricot_total_amount;
+                        if _solend_withdraw_amount > solend_total_amount {
+                            return Err(ErrorCode::InsufficientAmount.into());
+                        }
+    
+                        _user_lending_amount_for = apricot_key_amount;
+                        _user_lending_amount_for += (_solend_withdraw_amount as f64 * denominator_f / solend_rate_f) as u64;
+                    }
+                }
+                msg!("Lending: {} {}", _solend_withdraw_amount, _apricot_withdraw_amount );
+                if _solend_withdraw_amount > 0 {
+                    msg!("Withdraw from solend {}", _solend_withdraw_amount);
+    
+                    let cpi_program = ctx.accounts.solend_program.to_account_info();
+                    let cpi_accounts = solend::cpi::accounts::WithdrawToken {
+                        authority: ctx.accounts.cbs_pda.to_account_info(),
+                        user_token: ctx.accounts.dest_pool.to_account_info(),
+                        token_mint: dest_mint.to_account_info(),
+                        pool_token: ctx.accounts.solend_pool.to_account_info(),
+                        config: ctx.accounts.solend_config.to_account_info(),
+                        user_account: ctx.accounts.solend_account.to_account_info(),
+                        state_account: ctx.accounts.solend_state_account.to_account_info(),
+                        system_program: ctx.accounts.system_program.to_account_info(),
+                        token_program: ctx.accounts.token_program.to_account_info(),
+                        rent: ctx.accounts.rent.to_account_info()
+                    };
+                    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+    
+                    solend::cpi::withdraw_token(cpi_ctx, _solend_withdraw_amount)?;
+                } 
+    
+                if _apricot_withdraw_amount > 0 {
+                    msg!("Withdraw from apricot {}", _apricot_withdraw_amount);
+                    let cpi_program = ctx.accounts.apricot_program.to_account_info();
+                    let cpi_accounts = apricot::cpi::accounts::WithdrawToken {
+                        authority: ctx.accounts.cbs_pda.to_account_info(),
+                        user_token: ctx.accounts.dest_pool.to_account_info(),
+                        token_mint: dest_mint.to_account_info(),
+                        pool_token: ctx.accounts.apricot_pool.to_account_info(),
+                        state_account: ctx.accounts.apricot_state_account.to_account_info(),
+                        config: ctx.accounts.apricot_config.to_account_info(),
+                        user_account: ctx.accounts.apricot_account.to_account_info(),
+                        system_program: ctx.accounts.system_program.to_account_info(),
+                        token_program: ctx.accounts.token_program.to_account_info(),
+                        rent: ctx.accounts.rent.to_account_info()
+                    };
+                    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+    
+                    apricot::cpi::withdraw_token(cpi_ctx, _apricot_withdraw_amount)?;
+                }
+            }    
+            user_account.update_lending_amount(key_lending_amount - _user_lending_amount_for, dest_mint.key(), config)?;            
         }
+        
+
+        let owned_amount: u64 = if amount > key_amount { 0} else { key_amount - amount };
+        let total_deposited_amount = key_total_deposited_amount - amount;
+
+        user_account.update_deposited_amount(owned_amount, dest_mint.key(), config)?;  
+        user_account.update_lp_deposited_amount(owned_amount, dest_mint.key(), config)?;
+        config.update_total_deposited_amount(total_deposited_amount , dest_mint.key())?;           
 
 
         msg!("Witndraw from cbs");
@@ -775,7 +775,7 @@ pub mod cbs_protocol {
 
         let user_account = &mut ctx.accounts.user_account;
 
-        if user_account.step_num > 0 && user_account.step_num < 6 {
+        if user_account.step_num > 0 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
@@ -969,7 +969,7 @@ pub mod cbs_protocol {
         let user_account =&mut ctx.accounts.user_account;
         let config = &mut ctx.accounts.config;
 
-        if user_account.step_num > 0 && user_account.step_num < 6 {
+        if user_account.step_num > 0 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
@@ -1028,7 +1028,7 @@ pub mod cbs_protocol {
         let user_account =&mut ctx.accounts.user_account;
         let config = &mut ctx.accounts.config;
 
-        if user_account.step_num > 0 && user_account.step_num < 6 {
+        if user_account.step_num > 0 {
             return Err(ErrorCode::ProgressInLiquidate.into());
         }
 
@@ -1165,97 +1165,99 @@ pub mod cbs_protocol {
         }
 
         let amount_src: u64 = user_account.get_key_amount(token_src.key(), config)?;
-
-        let (program_authority, program_authority_bump) = 
-        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+        if amount_src > 0 {
+            let (program_authority, program_authority_bump) = 
+            Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+        
+            if program_authority != cbs_pda.key() {
+                return Err(ErrorCode::InvalidOwner.into());
+            }
     
-        if program_authority != cbs_pda.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        let seeds = &[
-            PREFIX.as_bytes(),
-            &[program_authority_bump]
-        ];
-        let signer = &[&seeds[..]];
-
-        let src_price = get_price(pyth_src)?;
-        let usdc_price = get_price(pyth_usdc)?;
-        let usdc_amount = (src_price as f64 * amount_src as f64 / usdc_price as f64) as u64;
-
-        {
-            msg!("Burn src token {}", amount_src);
+            let seeds = &[
+                PREFIX.as_bytes(),
+                &[program_authority_bump]
+            ];
+            let signer = &[&seeds[..]];
     
-            let cpi_accounts_usdc = Burn {
-                mint: token_src.to_account_info(),
-                from: cbs_ata_src.to_account_info(),
-                authority: cbs_pda.to_account_info()
-            };
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
-            token::burn(cpi_ctx_usdc, amount_src)?;
-
-        }
-
-        {
-            msg!("Mint usdc {}", usdc_amount);
+            let src_price = get_price(pyth_src)?;
+            let usdc_price = get_price(pyth_usdc)?;
+            let usdc_amount = (src_price as f64 * amount_src as f64 / usdc_price as f64) as u64;
     
-            let cpi_accounts_usdc = test_tokens::cpi::accounts::MintToken {
-                owner: cbs_pda.to_account_info(),
-                state_account: token_state_account.to_account_info(),
-                user_token: cbs_ata_usdc.to_account_info(),
-                token_mint: token_usdc.to_account_info(),
+            {
+                msg!("Burn src token {}", amount_src);
+        
+                let cpi_accounts_usdc = Burn {
+                    mint: token_src.to_account_info(),
+                    from: cbs_ata_src.to_account_info(),
+                    authority: cbs_pda.to_account_info()
+                };
+                let cpi_program = ctx.accounts.token_program.to_account_info();
+                let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
+                token::burn(cpi_ctx_usdc, amount_src)?;
+    
+            }
+    
+            {
+                msg!("Mint usdc {}", usdc_amount);
+        
+                let cpi_accounts_usdc = test_tokens::cpi::accounts::MintToken {
+                    owner: cbs_pda.to_account_info(),
+                    state_account: token_state_account.to_account_info(),
+                    user_token: cbs_ata_usdc.to_account_info(),
+                    token_mint: token_usdc.to_account_info(),
+                    system_program: system_program.to_account_info(),
+                    token_program: token_program.to_account_info(),
+                    associated_token_program: associated_token_program.to_account_info(),
+                    rent: rent.to_account_info()
+                };
+                let cpi_program = testtokens_program.to_account_info();
+                let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
+                test_tokens::cpi::mint_token(cpi_ctx_usdc, usdc_amount)?;
+    
+            }
+    
+            let cpi_program = stableswap_program.to_account_info();
+            let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
+                user: cbs_pda.to_account_info(),
+                stable_swap_pool: stable_swap_pool.to_account_info(),
+                token_src: token_usdc.to_account_info(),
+                token_dest: token_lpusd.to_account_info(),
+                user_ata_src: cbs_ata_usdc.to_account_info(),
+                user_ata_dest: cbs_ata_lpusd.to_account_info(),
+                pool_ata_src: stableswap_pool_ata_usdc.to_account_info(),
+                pool_ata_dest: stableswap_pool_ata_lpusd.to_account_info(),                
                 system_program: system_program.to_account_info(),
                 token_program: token_program.to_account_info(),
                 associated_token_program: associated_token_program.to_account_info(),
-                rent: rent.to_account_info()
+                rent: rent.to_account_info(),
             };
-            let cpi_program = testtokens_program.to_account_info();
-            let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
-            test_tokens::cpi::mint_token(cpi_ctx_usdc, usdc_amount)?;
-
-        }
-
-        let cpi_program = stableswap_program.to_account_info();
-        let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
-            user: cbs_pda.to_account_info(),
-            stable_swap_pool: stable_swap_pool.to_account_info(),
-            token_src: token_usdc.to_account_info(),
-            token_dest: token_lpusd.to_account_info(),
-            user_ata_src: cbs_ata_usdc.to_account_info(),
-            user_ata_dest: cbs_ata_lpusd.to_account_info(),
-            pool_ata_src: stableswap_pool_ata_usdc.to_account_info(),
-            pool_ata_dest: stableswap_pool_ata_lpusd.to_account_info(),                
-            system_program: system_program.to_account_info(),
-            token_program: token_program.to_account_info(),
-            associated_token_program: associated_token_program.to_account_info(),
-            rent: rent.to_account_info(),
-        };
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-
-        let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, usdc_amount)?;
-        let lpusd_amount = tx.get();
-
-        if lpusd_amount > 0 {
-            msg!("Liquidate LpUSD {}", lpusd_amount);
-            let cpi_accounts = Transfer {
-                from: cbs_ata_lpusd.to_account_info(),
-                to: auction_ata_lpusd.to_account_info(),
-                authority: cbs_pda.to_account_info()
-            };
-    
-            let cpi_program = ctx.accounts.token_program.to_account_info();
             let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, lpusd_amount)?;
-
-            user_account.escrow_lpusd_amount += lpusd_amount as i64;
+    
+            let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, usdc_amount)?;
+            let lpusd_amount = tx.get();
+    
+            if lpusd_amount > 0 {
+                msg!("Liquidate LpUSD {}", lpusd_amount);
+                let cpi_accounts = Transfer {
+                    from: cbs_ata_lpusd.to_account_info(),
+                    to: auction_ata_lpusd.to_account_info(),
+                    authority: cbs_pda.to_account_info()
+                };
+        
+                let cpi_program = ctx.accounts.token_program.to_account_info();
+                let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+                token::transfer(cpi_ctx, lpusd_amount)?;
+    
+                user_account.escrow_lpusd_amount += lpusd_amount as i64;
+            }
+    
+            user_account.update_deposited_amount(0, token_src.key(), config)?;            
         }
-
-        user_account.update_current_step(4)?;
+        user_account.update_current_step(4)?;        
         Ok(())
     }
 
-    // Liquidate LpSOL -> LpUSD tokens
+    // Liquidate LpSOL -> LpUSD tokens, LpUSD -> LpUSD
     // STEP: 5
     pub fn liquidate_swap_lpsoltoken1(
         ctx: Context<LiquidateLpSOLTokenSwap1>
@@ -1310,69 +1312,73 @@ pub mod cbs_protocol {
         let signer = &[&seeds[..]];
 
         let amount_src: u64 = user_account.get_key_amount(token_lpsol.key(), config)?;
-        let mut _wsol: u64 = 0;
-        {
-            msg!("LpSOL -> SOL {}", amount_src);
-            let cpi_program = stableswap_program.to_account_info();
-            let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
-                user: ctx.accounts.cbs_pda.to_account_info(),
-                stable_swap_pool: stable_swap_pool.to_account_info(),
-                token_src: token_lpsol.to_account_info(),
-                token_dest: token_wsol.to_account_info(),
-                user_ata_src: cbs_ata_lpsol.to_account_info(),
-                user_ata_dest: cbs_ata_wsol.to_account_info(),
-                pool_ata_src: stableswap_pool_ata_lpsol.to_account_info(),
-                pool_ata_dest: stableswap_pool_ata_wsol.to_account_info(),                
-                system_program: system_program.to_account_info(),
-                token_program: token_program.to_account_info(),
-                associated_token_program: associated_token_program.to_account_info(),
-                rent: rent.to_account_info(),
-            };
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
-            let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, amount_src)?;
-            _wsol = tx.get();
-        }
 
-        let mut _usdc_swap_amount = 0;
-        {
-            // Pyth swap
-            let usdc_price = get_price(pyth_usdc)?;
-            let wsol_price = get_price(pyth_wsol)?;
-            if usdc_price <= 0 || wsol_price <= 0 {
-                return Err(ErrorCode::InvalidPythPrice.into());
+        if amount_src > 0 {
+            let mut _wsol: u64 = 0;
+            {
+                msg!("LpSOL -> SOL {}", amount_src);
+                let cpi_program = stableswap_program.to_account_info();
+                let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
+                    user: ctx.accounts.cbs_pda.to_account_info(),
+                    stable_swap_pool: stable_swap_pool.to_account_info(),
+                    token_src: token_lpsol.to_account_info(),
+                    token_dest: token_wsol.to_account_info(),
+                    user_ata_src: cbs_ata_lpsol.to_account_info(),
+                    user_ata_dest: cbs_ata_wsol.to_account_info(),
+                    pool_ata_src: stableswap_pool_ata_lpsol.to_account_info(),
+                    pool_ata_dest: stableswap_pool_ata_wsol.to_account_info(),                
+                    system_program: system_program.to_account_info(),
+                    token_program: token_program.to_account_info(),
+                    associated_token_program: associated_token_program.to_account_info(),
+                    rent: rent.to_account_info(),
+                };
+                let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
+                let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, amount_src)?;
+                _wsol = tx.get();
             }
+    
+            let mut _usdc_swap_amount = 0;
+            {
+                // Pyth swap
+                let usdc_price = get_price(pyth_usdc)?;
+                let wsol_price = get_price(pyth_wsol)?;
+                if usdc_price <= 0 || wsol_price <= 0 {
+                    return Err(ErrorCode::InvalidPythPrice.into());
+                }
+    
+                // Burn wSOL
+                msg!("Burn wSOL {}", _wsol);
+    
+                let cpi_accounts_wsol = Burn {
+                    mint: token_wsol.to_account_info(),
+                    from: cbs_ata_wsol.to_account_info(),
+                    authority: ctx.accounts.cbs_pda.to_account_info()
+                };
+                let cpi_program = ctx.accounts.token_program.to_account_info();
+                let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
+                token::burn(cpi_ctx_wsol, _wsol)?;
+    
+                _usdc_swap_amount = (wsol_price as f64 * _wsol as f64 /  usdc_price as f64) as u64;
+    
+                msg!("Mint USDC {}", _usdc_swap_amount);
+                let cpi_accounts_usdc = test_tokens::cpi::accounts::MintToken {
+                    owner: ctx.accounts.cbs_pda.to_account_info(),
+                    state_account: token_state_account.to_account_info(),
+                    user_token: cbs_ata_usdc.to_account_info(),
+                    token_mint: token_usdc.to_account_info(),
+                    system_program: system_program.to_account_info(),
+                    token_program: token_program.to_account_info(),
+                    associated_token_program: associated_token_program.to_account_info(),
+                    rent: rent.to_account_info()
+                };
+                let cpi_program = testtokens_program.to_account_info();
+                let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
+                test_tokens::cpi::mint_token(cpi_ctx_usdc, _usdc_swap_amount)?;
+            }
+            user_account.escrow_usdc_amount += _usdc_swap_amount;    
+        }        
 
-            // Burn wSOL
-            msg!("Burn wSOL {}", _wsol);
-
-            let cpi_accounts_wsol = Burn {
-                mint: token_wsol.to_account_info(),
-                from: cbs_ata_wsol.to_account_info(),
-                authority: ctx.accounts.cbs_pda.to_account_info()
-            };
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx_wsol = CpiContext::new_with_signer(cpi_program, cpi_accounts_wsol, signer);
-            token::burn(cpi_ctx_wsol, _wsol)?;
-
-            _usdc_swap_amount = (wsol_price as f64 * _wsol as f64 /  usdc_price as f64) as u64;
-
-            msg!("Mint USDC {}", _usdc_swap_amount);
-            let cpi_accounts_usdc = test_tokens::cpi::accounts::MintToken {
-                owner: ctx.accounts.cbs_pda.to_account_info(),
-                state_account: token_state_account.to_account_info(),
-                user_token: cbs_ata_usdc.to_account_info(),
-                token_mint: token_usdc.to_account_info(),
-                system_program: system_program.to_account_info(),
-                token_program: token_program.to_account_info(),
-                associated_token_program: associated_token_program.to_account_info(),
-                rent: rent.to_account_info()
-            };
-            let cpi_program = testtokens_program.to_account_info();
-            let cpi_ctx_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_usdc, signer);
-            test_tokens::cpi::mint_token(cpi_ctx_usdc, _usdc_swap_amount)?;
-        }
-
-        user_account.escrow_usdc_amount += _usdc_swap_amount;        
+        user_account.lpsol_amount = 0;    
         user_account.update_current_step(5)?;
 
         Ok(())
@@ -1414,30 +1420,35 @@ pub mod cbs_protocol {
         ];
         let signer = &[&seeds[..]];
 
+        let mut _lpusd_amount = 0;
         let usdc_swap_amount = user_account.escrow_usdc_amount;
         msg!("USDC -> LpUSD {}", usdc_swap_amount);
 
-        let cpi_program = stableswap_program.to_account_info();
-        let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
-            user: ctx.accounts.cbs_pda.to_account_info(),
-            stable_swap_pool: stable_swap_pool.to_account_info(),
-            token_src: token_usdc.to_account_info(),
-            token_dest: token_lpusd.to_account_info(),
-            user_ata_src: cbs_ata_usdc.to_account_info(),
-            user_ata_dest: cbs_ata_lpusd.to_account_info(),
-            pool_ata_src: stableswap_pool_ata_usdc.to_account_info(),
-            pool_ata_dest: stableswap_pool_ata_lpusd.to_account_info(),                
-            system_program: system_program.to_account_info(),
-            token_program: token_program.to_account_info(),
-            associated_token_program: associated_token_program.to_account_info(),
-            rent: rent.to_account_info(),
-        };
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
-        let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, usdc_swap_amount)?;
-        let lpusd_amount = tx.get();
+        if usdc_swap_amount > 0 {
+            let cpi_program = stableswap_program.to_account_info();
+            let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
+                user: ctx.accounts.cbs_pda.to_account_info(),
+                stable_swap_pool: stable_swap_pool.to_account_info(),
+                token_src: token_usdc.to_account_info(),
+                token_dest: token_lpusd.to_account_info(),
+                user_ata_src: cbs_ata_usdc.to_account_info(),
+                user_ata_dest: cbs_ata_lpusd.to_account_info(),
+                pool_ata_src: stableswap_pool_ata_usdc.to_account_info(),
+                pool_ata_dest: stableswap_pool_ata_lpusd.to_account_info(),                
+                system_program: system_program.to_account_info(),
+                token_program: token_program.to_account_info(),
+                associated_token_program: associated_token_program.to_account_info(),
+                rent: rent.to_account_info(),
+            };
+            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
+            let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, usdc_swap_amount)?;
+            _lpusd_amount = tx.get();
+        }        
 
-        if lpusd_amount > 0 {
-            msg!("Transfer LpUSD to auction {}", lpusd_amount);
+        _lpusd_amount += user_account.lpusd_amount;
+
+        if _lpusd_amount > 0 {
+            msg!("Transfer LpUSD to auction {}", _lpusd_amount);
             let cpi_accounts = Transfer {
                 from: ctx.accounts.cbs_ata_lpusd.to_account_info(),
                 to: ctx.accounts.auction_lpusd.to_account_info(),
@@ -1446,11 +1457,12 @@ pub mod cbs_protocol {
     
             let cpi_program = ctx.accounts.token_program.to_account_info();
             let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, lpusd_amount)?;
+            token::transfer(cpi_ctx, _lpusd_amount)?;
 
-            user_account.escrow_lpusd_amount += lpusd_amount as i64;
+            user_account.escrow_lpusd_amount += _lpusd_amount as i64;
         }    
         
+        user_account.lpusd_amount = 0;
         user_account.escrow_usdc_amount = 0;
         user_account.update_current_step(6)?;
         Ok(())
@@ -1492,82 +1504,86 @@ pub mod cbs_protocol {
         }
 
         let amount_lpfi: u64 = user_account.lpfi_amount;
-        let (program_authority, program_authority_bump) = 
-        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
-    
-        if program_authority != cbs_pda.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
 
-        let seeds = &[
-            PREFIX.as_bytes(),
-            &[program_authority_bump]
-        ];
-        let signer = &[&seeds[..]];
-
-        let mut _usdc_swap_amount: u64 = 0;
-        {
-            msg!("LpFI -> USDC {}", amount_lpfi);
-            //---------- Cross-Calling Uniswap Program ----------------
-            let cpi_accounts_uniswap_lpfi_to_usdc = UniswapTokens {
-                uniswap_pool: uniswap_pool.to_account_info(),
-                user: cbs_pda.to_account_info(),
-                token_src: token_lpfi.to_account_info(),
-                token_dest: token_usdc.to_account_info(),
-                user_ata_src: cbs_ata_lpfi.to_account_info(),
-                user_ata_dest: escrow_ata_usdc.to_account_info(),
-                pool_ata_src: uniswap_pool_ata_lpfi.to_account_info(),
-                pool_ata_dest: uniswap_pool_ata_usdc.to_account_info(),
-                system_program: system_program.to_account_info(),
-                token_program: token_program.to_account_info(),
-                associated_token_program: associated_token_program.to_account_info(),
-                rent: rent.to_account_info()
-            };
-            let cpi_program = uniswap_program.to_account_info();
-            let cpi_swap_lpfi_to_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_uniswap_lpfi_to_usdc, signer);
-            let tx = uniswap::cpi::uniswap_tokens(cpi_swap_lpfi_to_usdc, amount_lpfi)?;
-            _usdc_swap_amount = tx.get();
-        }
-
-        {
-            msg!("USDC -> LpUSD {}", _usdc_swap_amount);
-
-            let cpi_program = stableswap_program.to_account_info();
-            let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
-                user: ctx.accounts.cbs_pda.to_account_info(),
-                stable_swap_pool: stable_swap_pool.to_account_info(),
-                token_src: token_usdc.to_account_info(),
-                token_dest: token_lpusd.to_account_info(),
-                user_ata_src: escrow_ata_usdc.to_account_info(),
-                user_ata_dest: cbs_ata_lpusd.to_account_info(),
-                pool_ata_src: stableswap_pool_ata_usdc.to_account_info(),
-                pool_ata_dest: stableswap_pool_ata_lpusd.to_account_info(),                
-                system_program: system_program.to_account_info(),
-                token_program: token_program.to_account_info(),
-                associated_token_program: associated_token_program.to_account_info(),
-                rent: rent.to_account_info(),
-            };
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
-            let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, _usdc_swap_amount)?;
-            let lpusd_amount = tx.get();
-
-
-            if lpusd_amount > 0 {
-                msg!("Transfer LpUSD to auction {}", lpusd_amount);
-                let cpi_accounts = Transfer {
-                    from: ctx.accounts.cbs_ata_lpusd.to_account_info(),
-                    to: ctx.accounts.auction_lpusd.to_account_info(),
-                    authority: ctx.accounts.cbs_pda.to_account_info()
-                };
+        if amount_lpfi > 0 {
+            let (program_authority, program_authority_bump) = 
+            Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
         
-                let cpi_program = ctx.accounts.token_program.to_account_info();
-                let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-                token::transfer(cpi_ctx, lpusd_amount)?;
-
-                user_account.escrow_lpusd_amount += lpusd_amount as i64;
-            }    
-        }        
-
+            if program_authority != cbs_pda.key() {
+                return Err(ErrorCode::InvalidOwner.into());
+            }
+    
+            let seeds = &[
+                PREFIX.as_bytes(),
+                &[program_authority_bump]
+            ];
+            let signer = &[&seeds[..]];
+    
+            let mut _usdc_swap_amount: u64 = 0;
+            {
+                msg!("LpFI -> USDC {}", amount_lpfi);
+                //---------- Cross-Calling Uniswap Program ----------------
+                let cpi_accounts_uniswap_lpfi_to_usdc = UniswapTokens {
+                    uniswap_pool: uniswap_pool.to_account_info(),
+                    user: cbs_pda.to_account_info(),
+                    token_src: token_lpfi.to_account_info(),
+                    token_dest: token_usdc.to_account_info(),
+                    user_ata_src: cbs_ata_lpfi.to_account_info(),
+                    user_ata_dest: escrow_ata_usdc.to_account_info(),
+                    pool_ata_src: uniswap_pool_ata_lpfi.to_account_info(),
+                    pool_ata_dest: uniswap_pool_ata_usdc.to_account_info(),
+                    system_program: system_program.to_account_info(),
+                    token_program: token_program.to_account_info(),
+                    associated_token_program: associated_token_program.to_account_info(),
+                    rent: rent.to_account_info()
+                };
+                let cpi_program = uniswap_program.to_account_info();
+                let cpi_swap_lpfi_to_usdc = CpiContext::new_with_signer(cpi_program, cpi_accounts_uniswap_lpfi_to_usdc, signer);
+                let tx = uniswap::cpi::uniswap_tokens(cpi_swap_lpfi_to_usdc, amount_lpfi)?;
+                _usdc_swap_amount = tx.get();
+            }
+    
+            {
+                msg!("USDC -> LpUSD {}", _usdc_swap_amount);
+    
+                let cpi_program = stableswap_program.to_account_info();
+                let cpi_accounts = stable_swap::cpi::accounts::StableswapTokens {
+                    user: ctx.accounts.cbs_pda.to_account_info(),
+                    stable_swap_pool: stable_swap_pool.to_account_info(),
+                    token_src: token_usdc.to_account_info(),
+                    token_dest: token_lpusd.to_account_info(),
+                    user_ata_src: escrow_ata_usdc.to_account_info(),
+                    user_ata_dest: cbs_ata_lpusd.to_account_info(),
+                    pool_ata_src: stableswap_pool_ata_usdc.to_account_info(),
+                    pool_ata_dest: stableswap_pool_ata_lpusd.to_account_info(),                
+                    system_program: system_program.to_account_info(),
+                    token_program: token_program.to_account_info(),
+                    associated_token_program: associated_token_program.to_account_info(),
+                    rent: rent.to_account_info(),
+                };
+                let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);    
+                let tx = stable_swap::cpi::stableswap_tokens(cpi_ctx, _usdc_swap_amount)?;
+                let lpusd_amount = tx.get();
+    
+    
+                if lpusd_amount > 0 {
+                    msg!("Transfer LpUSD to auction {}", lpusd_amount);
+                    let cpi_accounts = Transfer {
+                        from: ctx.accounts.cbs_ata_lpusd.to_account_info(),
+                        to: ctx.accounts.auction_lpusd.to_account_info(),
+                        authority: ctx.accounts.cbs_pda.to_account_info()
+                    };
+            
+                    let cpi_program = ctx.accounts.token_program.to_account_info();
+                    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+                    token::transfer(cpi_ctx, lpusd_amount)?;
+    
+                    user_account.escrow_lpusd_amount += lpusd_amount as i64;
+                }    
+            }        
+        }
+        
+        user_account.lpfi_amount = 0;
         user_account.update_current_step(7)?;
         Ok(())
     }
@@ -1577,7 +1593,7 @@ pub mod cbs_protocol {
         ctx: Context<UpdateUserAccount>
     ) -> Result<()> {
         let user_account = &mut ctx.accounts.user_account;
-        if user_account.step_num != 6 {
+        if user_account.step_num != 7 {
             return Err(ErrorCode::InvalidLiquidateNum.into());
         }
 

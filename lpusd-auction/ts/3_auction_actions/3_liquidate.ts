@@ -26,7 +26,9 @@ import {
     StableSwapIDL,
     TestTokenIDL,
     wSOLMint,
-    USDCMint
+    USDCMint,
+    SolendConfig,
+    ApricotConfig
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey, print_config_data, print_user_data } from "../utils";
@@ -79,41 +81,81 @@ const liquidate = async () => {
   );
 
   const cbsProgramId = new PublicKey(CBSProtocolIDL.metadata.address);
+  const cbsProgram = new anchor.Program(CBSProtocolIDL as anchor.Idl, CBSProtocolIDL.metadata.address);
+
   const [cbsAccount, cbsBump] = await PublicKey.findProgramAddress(
     [Buffer.from(CBS_PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
     cbsProgramId
   );
   
-  // STEP: 1
-  await program.rpc.burnLpusdLiquidate({
-    accounts: {
-      userAuthority: creatorKeypair.publicKey,
-      owner: creatorKeypair.publicKey,
-      userAccount,
-      auctionPda: PDA[0],
-      config: config,
-      cbsAccount,
-      lpusdMint,
-      lpusdAta,
-      lpsolMint,
-      lpsolAta,
-      stableLpsolPool: StableLpsolPool,
-      stableLpusdPool: StableLpusdPool,
-      pythUsdcAccount,
-      pythRayAccount,
-      pythSolAccount,
-      pythMsolAccount,
-      pythSrmAccount,
-      pythScnsolAccount,
-      pythStsolAccount,
-      liquidityPool: LiquidityPool,
-      cbsProgram: cbsProgramId,
-      lptokensProgram: lptokenProgramId,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: SYSVAR_RENT_PUBKEY
-    },
-  });
+  const cbsAccountData = await cbsProgram.account.userAccount.fetch(cbsAccount);
+  if (cbsAccountData.stepNum == 0) {
+
+    if (cbsAccountData.lendingRayAmount.toString() != "0" ||
+      cbsAccountData.lendingWsolAmount.toString() != "0" ||
+      cbsAccountData.lendingMsolAmount.toString() != "0" ||
+      cbsAccountData.lendingSrmAmount.toString() != "0" ||
+      cbsAccountData.lendingScnsolAmount.toString() != "0" ||
+      cbsAccountData.lendingStsolAmount.toString() != "0"
+    ) {
+      console.log("You should withdraw Lending amount to avoid overflow collaterals");
+      return;
+    }
+
+    const userData = await cbsProgram.views.getLtv({
+      accounts: {
+        userAccount,
+        stableLpsolPool: StableLpsolPool,
+        stableLpusdPool: StableLpusdPool,
+        pythUsdcAccount,
+        pythRayAccount,
+        pythSolAccount,
+        pythMsolAccount,
+        pythSrmAccount,
+        pythScnsolAccount,
+        pythStsolAccount,
+        liquidityPool: LiquidityPool,
+        solendConfig: SolendConfig,
+        apricotConfig: ApricotConfig,
+      }
+    });
+    const LTV = userData[0];
+    if (Number(LTV) < 94) {
+      console.log("You cannot Liquidate");
+      return;
+    }
+
+    // STEP: 1
+    await program.rpc.burnLpusdLiquidate({
+      accounts: {
+        userAuthority: creatorKeypair.publicKey,
+        owner: creatorKeypair.publicKey,
+        userAccount,
+        auctionPda: PDA[0],
+        config: config,
+        cbsAccount,
+        lpusdMint,
+        lpusdAta,
+        lpsolMint,
+        lpsolAta,
+        stableLpsolPool: StableLpsolPool,
+        stableLpusdPool: StableLpusdPool,
+        pythUsdcAccount,
+        pythRayAccount,
+        pythSolAccount,
+        pythMsolAccount,
+        pythSrmAccount,
+        pythScnsolAccount,
+        pythStsolAccount,
+        liquidityPool: LiquidityPool,
+        cbsProgram: cbsProgramId,
+        lptokensProgram: lptokenProgramId,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY
+      },
+    });
+  }
 
   const stableswapPoolAtaLpsol = await getATAPublicKey(lpsolMint, StableLpsolPool);
   const stableswapPoolAtaLpusd = await getATAPublicKey(lpusdMint, StableLpusdPool);
@@ -123,64 +165,68 @@ const liquidate = async () => {
   const tokenStateAccount = new PublicKey("FEL9EygF1C3d5cwD2ZXkpmaQMBtdxKd1mvYRrD81KNVY");
   
   console.log("UserAccount:", userAccount.toBase58())
+
   // STEP: 2
-  const tx2 = await program.rpc.burnLpsolLiquidate1({
-    accounts: {
-      owner: creatorKeypair.publicKey,
-      userAccount,
-      cbsAccount,
-      auctionPda: PDA[0],
-      stableLpsolPool: StableLpsolPool,
-      stableLpusdPool: StableLpusdPool,
-      tokenStateAccount,
-      tokenLpusd: lpusdMint,
-      tokenUsdc: usdcMint,
-      tokenWsol: wsolMint,
-      pythUsdc: pythUsdcAccount,
-      pythWsol: pythSolAccount,
-      auctionAtaLpusd: lpusdAta,
-      auctionAtaUsdc: usdcAta,
-      auctionAtaWsol: wsolAta,
-      stableswapPoolAtaLpusd: stableswapPoolAtaLpusd,
-      stableswapPoolAtaUsdc: stableswapPoolAtaUsdc,
-      testtokensProgram: testTokenProgramId,
-      stableswapProgram: stableswapProgramId,
-      cbsProgram: cbsProgramId,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: SYSVAR_RENT_PUBKEY
-    },
-  });
+  if (cbsAccountData.stepNum == 1) {
+    const tx2 = await program.rpc.burnLpsolLiquidate1({
+      accounts: {
+        owner: creatorKeypair.publicKey,
+        userAccount,
+        cbsAccount,
+        auctionPda: PDA[0],
+        stableLpsolPool: StableLpsolPool,
+        stableLpusdPool: StableLpusdPool,
+        tokenStateAccount,
+        tokenLpusd: lpusdMint,
+        tokenUsdc: usdcMint,
+        tokenWsol: wsolMint,
+        pythUsdc: pythUsdcAccount,
+        pythWsol: pythSolAccount,
+        auctionAtaLpusd: lpusdAta,
+        auctionAtaUsdc: usdcAta,
+        auctionAtaWsol: wsolAta,
+        stableswapPoolAtaLpusd: stableswapPoolAtaLpusd,
+        stableswapPoolAtaUsdc: stableswapPoolAtaUsdc,
+        testtokensProgram: testTokenProgramId,
+        stableswapProgram: stableswapProgramId,
+        cbsProgram: cbsProgramId,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY
+      },
+    });
 
-  console.log("Burn usdc to wSOL", tx2)
-
+    console.log("Burn usdc to wSOL", tx2)
+  }
 
   // STEP: 3
-  const tx3 = await program.rpc.burnLpsolLiquidate2({
-    accounts: {
-      owner: creatorKeypair.publicKey,
-      userAccount,
-      cbsAccount,
-      auctionPda: PDA[0],
-      stableLpsolPool: StableLpsolPool,
-      tokenLpsol: lpsolMint,
-      tokenWsol: wsolMint,
-      auctionAtaLpsol: lpsolAta,
-      auctionAtaWsol: wsolAta,
-      stableswapPoolAtaLpsol: stableswapPoolAtaLpsol,
-      stableswapPoolAtaWsol: stableswapPoolAtaWsol,
-      stableswapProgram: stableswapProgramId,
-      lptokensProgram: lptokenProgramId,
-      cbsProgram: cbsProgramId,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: SYSVAR_RENT_PUBKEY
-    },
-  });
+  if (cbsAccountData.stepNum == 2) {
+    const tx3 = await program.rpc.burnLpsolLiquidate2({
+      accounts: {
+        owner: creatorKeypair.publicKey,
+        userAccount,
+        cbsAccount,
+        auctionPda: PDA[0],
+        stableLpsolPool: StableLpsolPool,
+        tokenLpsol: lpsolMint,
+        tokenWsol: wsolMint,
+        auctionAtaLpsol: lpsolAta,
+        auctionAtaWsol: wsolAta,
+        stableswapPoolAtaLpsol: stableswapPoolAtaLpsol,
+        stableswapPoolAtaWsol: stableswapPoolAtaWsol,
+        stableswapProgram: stableswapProgramId,
+        lptokensProgram: lptokenProgramId,
+        cbsProgram: cbsProgramId,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY
+      },
+    });
 
-  console.log("Burn LpSOL successfully", tx3)
+    console.log("Burn LpSOL successfully", tx3)
+  }
 
   const auctionConfigDataAfterDeposit = await program.account.config.fetch(config);
   print_config_data(auctionConfigDataAfterDeposit)
