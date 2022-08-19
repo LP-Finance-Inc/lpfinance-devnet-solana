@@ -32,4 +32,3 @@ uniswap = { path = "../../../uniswap/programs/uniswap", features=["cpi"]}
 test-tokens = { path="../../../test-tokens/programs/test-tokens", features = ["cpi"]}
 
 cbs-protocol = { path = "../../../cbs-protocol/programs/cbs-protocol", features=["cpi"]}
-lpfinance-tokens = { path = "../../../lpfinance-tokens/programs/lpfinance-tokens", features=["cpi"]}

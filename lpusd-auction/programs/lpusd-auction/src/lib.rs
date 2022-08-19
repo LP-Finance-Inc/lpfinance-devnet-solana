@@ -14,9 +14,6 @@ use cbs_protocol::{self};
 use stable_swap::{self, StableswapPool};
 use uniswap::{self, UniswapPool};
 
-use lpfinance_tokens::cpi::accounts::{BurnLpToken};
-use lpfinance_tokens::{self};
-
 declare_id!("DbQju5NRVunuGz5aKdaqAaUfWSMRsy6hdZQ2zFDkGL9y");
 
 
@@ -305,18 +302,18 @@ pub mod lpusd_auction {
 
         // Burn
         if borrowed_lpusd > 0 {
-            let cpi_program = ctx.accounts.lptokens_program.to_account_info();
-            let cpi_accounts = BurnLpToken {
-                owner: ctx.accounts.auction_pda.to_account_info(),
-                token_mint: ctx.accounts.lpusd_mint.to_account_info(),
-                user_token: ctx.accounts.lpusd_ata.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info()
-            };
+
+            msg!("Burn LpUSD {}", borrowed_lpusd);
+            let cpi_ctx = CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Burn {
+                    mint: ctx.accounts.lpusd_mint.to_account_info(),
+                    from: ctx.accounts.lpusd_ata.to_account_info(),
+                    authority: ctx.accounts.auction_pda.to_account_info()
+                }
+            );
     
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            lpfinance_tokens::cpi::burn_lptoken(cpi_ctx, borrowed_lpusd)?;
+            token::burn(cpi_ctx, borrowed_lpusd)?;
         }
 
         
@@ -536,19 +533,16 @@ pub mod lpusd_auction {
         {
             // Burn LpSOL
             msg!("Burn LpSOL {}", _lpsol);
-            let cpi_program = ctx.accounts.lptokens_program.to_account_info();
-            let cpi_accounts = BurnLpToken {
-                owner: ctx.accounts.auction_pda.to_account_info(),
-                token_mint: ctx.accounts.token_lpsol.to_account_info(),
-                user_token: ctx.accounts.auction_ata_lpsol.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info()
-            };
-
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            lpfinance_tokens::cpi::burn_lptoken(cpi_ctx, _lpsol)?;    
-                
+            let cpi_ctx = CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Burn {
+                    mint: ctx.accounts.token_lpsol.to_account_info(),
+                    from: ctx.accounts.auction_ata_lpsol.to_account_info(),
+                    authority: ctx.accounts.auction_pda.to_account_info()
+                }
+            );
+    
+            token::burn(cpi_ctx, _lpsol)?;                
         }
             
         let cpi_program = ctx.accounts.cbs_program.to_account_info();

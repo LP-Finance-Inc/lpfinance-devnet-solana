@@ -22,16 +22,13 @@ import {
     pythStsolAccount,
     LiquidityPool,
     LpfinanceTokenIDL,
-    SwapRouterIDL,
     StableSwapIDL,
     TestTokenIDL,
-    wSOLMint,
-    USDCMint,
     SolendConfig,
     ApricotConfig
 } from "../config";
 
-import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey, print_config_data, print_user_data } from "../utils";
+import { getATAPublicKey, getCreatorKeypair, getPublicKey, print_config_data, print_user_data } from "../utils";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const { Wallet } = anchor;
@@ -47,7 +44,6 @@ const liquidate = async () => {
   const config = getPublicKey('auction_config');  
   const auctionConfigData = await program.account.config.fetch(config);
 
-  const lptokenProgramId = new PublicKey(LpfinanceTokenIDL.metadata.address);
   const stableswapProgramId = new PublicKey(StableSwapIDL.metadata.address);
   const testTokenProgramId = new PublicKey(TestTokenIDL.metadata.address);
   
@@ -149,7 +145,6 @@ const liquidate = async () => {
         pythStsolAccount,
         liquidityPool: LiquidityPool,
         cbsProgram: cbsProgramId,
-        lptokensProgram: lptokenProgramId,
         systemProgram: anchor.web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY
@@ -216,7 +211,6 @@ const liquidate = async () => {
         stableswapPoolAtaLpsol: stableswapPoolAtaLpsol,
         stableswapPoolAtaWsol: stableswapPoolAtaWsol,
         stableswapProgram: stableswapProgramId,
-        lptokensProgram: lptokenProgramId,
         cbsProgram: cbsProgramId,
         systemProgram: anchor.web3.SystemProgram.programId,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,

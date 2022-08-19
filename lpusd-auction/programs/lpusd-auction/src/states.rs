@@ -305,8 +305,6 @@ pub struct BurnLpUSDForLiquidate<'info> {
     // LpFi<->USDC pool
     pub liquidity_pool: Box<Account<'info, UniswapPool>>,
     /// CHECK: this is safe
-    pub lptokens_program: AccountInfo<'info>,
-    /// CHECK: this is safe
     pub cbs_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -413,8 +411,6 @@ pub struct BurnLpSOLForLiquidate2<'info> {
     pub stableswap_pool_ata_wsol: Box<Account<'info, TokenAccount>>,
     /// CHECK:
     pub stableswap_program: AccountInfo<'info>,
-    /// CHECK:
-    pub lptokens_program: AccountInfo<'info>,
     /// CHECK: this is safe
     pub cbs_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
