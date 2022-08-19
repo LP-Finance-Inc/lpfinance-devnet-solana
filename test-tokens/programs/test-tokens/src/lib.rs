@@ -1,19 +1,32 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint, MintTo, Burn, Token, TokenAccount }
+    token::{self, Mint, MintTo, Token, TokenAccount }
 };
+use std::mem::size_of;
+use std::str::FromStr;
 
-declare_id!("3QTW9aZp4U2xoj9UfvTF6PEL3UZzfEHi8UtNruhw7GHL");
+declare_id!("GdKm4s951GZDBSkfkJhFTbrjZGqNLFB55uhNgK82hK8U");
 
 const PREFIX: &str = "test-tokens";
 const TOKEN_DECIMALS: u8 = 9;
+
+const MAX_USDC_FAUCET_LIMIT: u64 = 1000;
+
+// PROTOCOL
+pub const CBS_PDA: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const AUCTION_PDA: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+// SWAP
+pub const SWAP_PDA1: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const SWAP_PDA2: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const SWAP_PDA3: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+
 
 #[program]
 pub mod test_tokens {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn create_token1(ctx: Context<CreateToken1>) -> Result<()> {
         msg!("INITIALIZE TOKEN PROGRAM");
 
         let state_account = &mut ctx.accounts.state_account;
@@ -26,51 +39,98 @@ pub mod test_tokens {
         config.stsol_mint = ctx.accounts.stsol_mint.key();
         config.scnsol_mint = ctx.accounts.scnsol_mint.key();
         config.usdc_mint = ctx.accounts.usdc_mint.key();
-        config.btc_mint = ctx.accounts.btc_mint.key();
-        config.eth_mint = ctx.accounts.eth_mint.key();
-        config.ray_mint = ctx.accounts.ray_mint.key();
-        config.srm_mint = ctx.accounts.srm_mint.key();
-        config.avax_mint = ctx.accounts.avax_mint.key();
-        config.fida_mint = ctx.accounts.fida_mint.key();
-        config.ftt_mint = ctx.accounts.ftt_mint.key();
-        config.ftm_mint = ctx.accounts.ftm_mint.key();
-        config.gmt_mint = ctx.accounts.gmt_mint.key();
-        config.luna_mint = ctx.accounts.luna_mint.key();
-        config.matic_mint = ctx.accounts.matic_mint.key();
-        config.usdt_mint = ctx.accounts.usdt_mint.key();
 
         config.state_account = ctx.accounts.state_account.key();
 
         Ok(())
     }
 
-    pub fn burn_token(
-        ctx: Context<BurnToken>,
-        amount: u64
-    ) -> Result<()> {
-        if amount == 0 {
-            return Err(ErrorCode::InvalidAmount.into());
-        }
+    pub fn create_token2(ctx: Context<CreateToken2>) -> Result<()> {
+        msg!("CREATE TOKENs 2");
 
-        let cpi_accounts = Burn {
-            mint: ctx.accounts.token_mint.to_account_info(),
-            from: ctx.accounts.user_token.to_account_info(),
-            authority: ctx.accounts.owner.to_account_info(),
-        };
+        let config = &mut ctx.accounts.config;
 
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        config.btc_mint = ctx.accounts.btc_mint.key();
+        config.eth_mint = ctx.accounts.eth_mint.key();
+        config.ray_mint = ctx.accounts.ray_mint.key();
+        config.srm_mint = ctx.accounts.srm_mint.key();
+        config.avax_mint = ctx.accounts.avax_mint.key();
+        config.fida_mint = ctx.accounts.fida_mint.key();
 
-        token::burn(cpi_ctx, amount)?;
+        config.state_account = ctx.accounts.state_account.key();
+
         Ok(())
     }
+    pub fn create_token3(ctx: Context<CreateToken3>) -> Result<()> {
+        msg!("CREATE TOKENs 3");
+        let config = &mut ctx.accounts.config;
 
-    // Faucet MINT
+        config.ftt_mint = ctx.accounts.ftt_mint.key();
+        config.ftm_mint = ctx.accounts.ftm_mint.key();
+        config.gmt_mint = ctx.accounts.gmt_mint.key();
+        config.luna_mint = ctx.accounts.luna_mint.key();
+        config.matic_mint = ctx.accounts.matic_mint.key();
+        config.usdt_mint = ctx.accounts.usdt_mint.key();
+        Ok(())
+    }
+    // PROXY MINT
     pub fn mint_token(
         ctx: Context<MintToken>,
         amount: u64
     ) -> Result<()> {
         if amount == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+        let cbs_pubkey = Pubkey::from_str(CBS_PDA).unwrap();
+        let auction_pubkey = Pubkey::from_str(AUCTION_PDA).unwrap();
+        let swap1_pubkey = Pubkey::from_str(SWAP_PDA1).unwrap();
+        let swap2_pubkey = Pubkey::from_str(SWAP_PDA2).unwrap();
+        let swap3_pubkey = Pubkey::from_str(SWAP_PDA3).unwrap();
+
+        let owner: Pubkey = ctx.accounts.owner.key();
+        if cbs_pubkey != owner &&
+            auction_pubkey != owner &&
+            swap1_pubkey != owner &&
+            swap2_pubkey != owner &&
+            swap3_pubkey != owner
+        {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        let (mint_token_authority, mint_token_authority_bump) = 
+        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+    
+        if mint_token_authority != ctx.accounts.state_account.key() {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        // Mint
+        let seeds = &[
+            PREFIX.as_bytes(),
+            &[mint_token_authority_bump]
+        ];
+        let signer = &[&seeds[..]];
+
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.token_mint.to_account_info(),
+            to: ctx.accounts.user_token.to_account_info(),
+            authority: ctx.accounts.state_account.to_account_info(),
+        };
+
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+
+        token::mint_to(cpi_ctx, amount)?;
+
+        Ok(())
+    }
+
+    // Faucet MINT
+    pub fn faucet_usdc(
+        ctx: Context<FaucetUSDC>,
+        amount: u64
+    ) -> Result<()> {
+        if amount == 0 || amount > MAX_USDC_FAUCET_LIMIT * 1000000000 {
             return Err(ErrorCode::InvalidAmount.into());
         }
 
@@ -102,6 +162,42 @@ pub mod test_tokens {
         Ok(())
     }
 
+    // Owner can mint token
+    pub fn owner_mint_token(
+        ctx: Context<OwnerMintToken>,
+        amount: u64
+    ) -> Result<()> {
+        if amount == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+
+        let (mint_token_authority, mint_token_authority_bump) = 
+        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+
+        if mint_token_authority != ctx.accounts.state_account.key() {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        // Mint
+        let seeds = &[
+            PREFIX.as_bytes(),
+            &[mint_token_authority_bump]
+        ];
+        let signer = &[&seeds[..]];
+
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.token_mint.to_account_info(),
+            to: ctx.accounts.user_token.to_account_info(),
+            authority: ctx.accounts.state_account.to_account_info(),
+        };
+
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+
+        token::mint_to(cpi_ctx, amount)?;
+        Ok(())
+    }
+
     pub fn update_owner(
         ctx: Context<UpdateConfigAccount>,
         new_owner: Pubkey
@@ -118,7 +214,7 @@ pub mod test_tokens {
 }
 
 #[derive(Accounts)]
-pub struct Initialize<'info> {
+pub struct CreateToken1<'info> {
     // Token program owner
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -126,14 +222,14 @@ pub struct Initialize<'info> {
     #[account(init,
         seeds = [PREFIX.as_bytes()],
         bump,
-        space = TokenStateAccount::LEN + 8,
+        space = size_of::<TokenStateAccount>() + 8,
         payer = authority
     )]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
 
     // Config Accounts
     #[account(init,
-        space = Config::LEN + 8,        
+        space = size_of::<Config>() + 8,        
         payer = authority
     )]
     pub config: Box<Account<'info, Config>>,
@@ -183,6 +279,23 @@ pub struct Initialize<'info> {
     )]
     pub usdc_mint: Box<Account<'info, Mint>>,
 
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct CreateToken2<'info> {
+    // Token program owner
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    // State Accounts
+    #[account(mut, constraint=state_account.owner == authority.key())]
+    pub state_account: Box<Account<'info, TokenStateAccount>>,
+    
+    // Config Accounts
+    #[account(mut, has_one=state_account)]
+    pub config: Box<Account<'info, Config>>,
     #[account(init,
         mint::decimals = TOKEN_DECIMALS,
         mint::authority = state_account,
@@ -237,6 +350,23 @@ pub struct Initialize<'info> {
         payer = authority
     )]
     pub fida_mint: Box<Account<'info, Mint>>,
+
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct CreateToken3<'info> {
+    // Token program owner
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    // State Accounts
+    #[account(mut, constraint=state_account.owner == authority.key())]
+    pub state_account: Box<Account<'info, TokenStateAccount>>,    
+    // Config Accounts
+    #[account(mut, has_one=state_account)]
+    pub config: Box<Account<'info, Config>>,
 
     #[account(init,
         mint::decimals = TOKEN_DECIMALS,
@@ -297,16 +427,18 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
+// Proxy mintable
 #[derive(Accounts)]
-pub struct BurnToken<'info> {
+pub struct MintToken<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     #[account(mut)]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
     #[account(
-        mut,
-        constraint = user_token.mint == token_mint.key(),
-        constraint = user_token.owner == owner.key()
+        init_if_needed,
+        payer = owner,
+        associated_token::mint = token_mint,
+        associated_token::authority = owner
     )]
     pub user_token: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
@@ -314,14 +446,44 @@ pub struct BurnToken<'info> {
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>
 }
 
+
 #[derive(Accounts)]
-pub struct MintToken<'info> {
+pub struct FaucetUSDC<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     #[account(mut)]
+    pub state_account: Box<Account<'info, TokenStateAccount>>,
+    #[account(
+        init_if_needed,
+        payer = owner,
+        associated_token::mint = token_mint,
+        associated_token::authority = owner
+    )]
+    pub user_token: Box<Account<'info, TokenAccount>>,
+    #[account(
+        mut,
+        constraint=config.usdc_mint == token_mint.key()
+    )]
+    pub token_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub config: Box<Account<'info, Config>>,
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+// Program deployer mintable
+#[derive(Accounts)]
+pub struct OwnerMintToken<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    #[account(mut, has_one=owner)]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
     #[account(
         init_if_needed,
@@ -355,9 +517,6 @@ pub struct TokenStateAccount {
     pub owner: Pubkey,              // 32
     pub second_owner: Pubkey        // 32
 }
-impl TokenStateAccount {
-    pub const LEN: usize = 2 * 32;
-}
 
 #[account]
 #[derive(Default)]
@@ -381,10 +540,6 @@ pub struct Config {
     pub luna_mint: Pubkey,      // 32
     pub matic_mint: Pubkey,     // 32
     pub usdt_mint: Pubkey,      // 32
-}
-
-impl Config {
-    pub const LEN: usize = 18 * 32;
 }
 
 #[error_code]
