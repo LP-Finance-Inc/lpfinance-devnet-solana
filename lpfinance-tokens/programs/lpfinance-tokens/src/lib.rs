@@ -1,10 +1,15 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint, MintTo, Burn, Token, TokenAccount }
+    token::{self, Mint, MintTo, Token, TokenAccount }
 };
+use std::mem::size_of;
+use std::str::FromStr;
 
-declare_id!("GaVnsa8z34xSeYNDydTAdbiT64KxMgVXBXnimXXJT4Hw");
+declare_id!("Cdk1hTsGs375ua7xC66g1dPQwnnk1xesXKmxH8hHVLig");
+
+// PROTOCOL
+pub const CBS_PDA: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
 
 const LP_TOKEN_DECIMALS: u8 = 9;
 const PREFIX: &str = "lptokens";
@@ -73,9 +78,13 @@ pub mod lpfinance_tokens {
         if amount == 0 {
             return Err(ErrorCode::InvalidAmount.into());
         }
-        if ctx.accounts.config.cbs_account != ctx.accounts.signer.key() && ctx.accounts.config.staking_account != ctx.accounts.signer.key() {
+
+        let cbs_pubkey = Pubkey::from_str(CBS_PDA).unwrap();
+        if cbs_pubkey != ctx.accounts.signer.key()
+        {
             return Err(ErrorCode::InvalidOwner.into());
         }
+
         let (mint_token_authority, mint_token_authority_bump) = 
             Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
         
@@ -100,28 +109,6 @@ pub mod lpfinance_tokens {
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
 
         token::mint_to(cpi_ctx, amount)?;
-        Ok(())
-    }
-
-    // Let CBS to burn tokens
-    pub fn burn_lptoken(
-        ctx: Context<BurnLpToken>,
-        amount: u64
-    ) -> Result<()> {
-        if amount == 0 {
-            return Err(ErrorCode::InvalidAmount.into());
-        }
-
-        let cpi_accounts = Burn {
-            mint: ctx.accounts.token_mint.to_account_info(),
-            from: ctx.accounts.user_token.to_account_info(),
-            authority: ctx.accounts.owner.to_account_info(),
-        };
-
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-
-        token::burn(cpi_ctx, amount)?;
         Ok(())
     }
 
@@ -158,57 +145,6 @@ pub mod lpfinance_tokens {
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
 
         token::mint_to(cpi_ctx, amount)?;
-        Ok(())
-    }
-
-    pub fn owner_burn_lptoken(
-        ctx: Context<OwnerLpToken>,
-        amount: u64
-    ) -> Result<()> {
-        if amount == 0 {
-            return Err(ErrorCode::InvalidAmount.into());
-        }
-
-        // Burn
-        let cpi_accounts = Burn {
-            mint: ctx.accounts.lptoken_mint.to_account_info(),
-            from: ctx.accounts.user_lptoken.to_account_info(),
-            authority: ctx.accounts.owner.to_account_info(),
-        };
-
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-
-        token::burn(cpi_ctx, amount)?;
-
-        Ok(())
-    }
-
-    pub fn update_cbs_account(
-        ctx: Context<UpdateConfigAccount>,
-        new_cbs: Pubkey
-    ) -> Result<()> {
-        let config = &mut ctx.accounts.config;
-        
-        if ctx.accounts.state_account.owner != ctx.accounts.owner.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        config.cbs_account = new_cbs;
-        Ok(())
-    }
-
-    pub fn update_staking_account(
-        ctx: Context<UpdateConfigAccount>,
-        new_staking: Pubkey
-    ) -> Result<()> {
-        let config = &mut ctx.accounts.config;
-        
-        if ctx.accounts.state_account.owner != ctx.accounts.owner.key() {
-            return Err(ErrorCode::InvalidOwner.into());
-        }
-
-        config.staking_account = new_staking;
         Ok(())
     }
 
@@ -303,14 +239,14 @@ pub struct Initialize<'info> {
     #[account(init,
         seeds = [PREFIX.as_bytes()],
         bump,
-        space = TokenStateAccount::LEN + 8,
+        space = size_of::<TokenStateAccount>() + 8,
         payer = authority
     )]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
 
     // Config Accounts
     #[account(init,
-        space = Config::LEN + 8,
+        space = size_of::<Config>() + 8,
         payer = authority
     )]
     pub config: Box<Account<'info, Config>>,
@@ -357,13 +293,14 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
+// Proxy mintable
 #[derive(Accounts)]
 pub struct MintLpToken<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(mut)]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
-    #[account(mut)]
+    #[account(mut, has_one= state_account)]
     pub config: Box<Account<'info, Config>>,
     #[account(mut,
         constraint = user_lptoken.mint == lptoken_mint.key(),
@@ -377,29 +314,12 @@ pub struct MintLpToken<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
-#[derive(Accounts)]
-pub struct BurnLpToken<'info> {
-    #[account(mut)]
-    pub owner: Signer<'info>,
-    #[account(
-        mut,
-        constraint = user_token.mint == token_mint.key(),
-        constraint = user_token.owner == owner.key()
-    )]
-    pub user_token: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub token_mint: Box<Account<'info, Mint>>,
-    // Programs and Sysvars
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
-}
-
+// Program deployer mintable
 #[derive(Accounts)]
 pub struct OwnerLpToken<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
-    #[account(mut)]
+    #[account(mut, has_one=owner)]
     pub state_account: Box<Account<'info, TokenStateAccount>>,
     #[account(
         init_if_needed,
@@ -432,7 +352,7 @@ pub struct MintDaoLpToken<'info> {
     pub user_lptoken: Box<Account<'info, TokenAccount>>,
     #[account(mut, has_one = state_account)]
     pub config: Box<Account<'info, Config>>,
-    #[account(mut)]
+    #[account(mut, constraint=config.lpdao_mint == lptoken_mint.key())]
     pub lptoken_mint: Account<'info, Mint>,
     // Programs and Sysvars
     pub system_program: Program<'info, System>,
@@ -458,32 +378,14 @@ pub struct TokenStateAccount {
     pub second_owner: Pubkey
 }
 
-impl TokenStateAccount {
-    pub const LEN: usize = 2 * 32;
-}
-
 #[account]
 #[derive(Default)]
 pub struct Config {
     pub state_account: Pubkey,
-    pub cbs_account: Pubkey,
-    pub staking_account: Pubkey,
     pub lpusd_mint: Pubkey,
     pub lpsol_mint: Pubkey,
     pub lpdao_mint: Pubkey,
     pub last_mint_timestamp: i64 // 8
-}
-
-impl Config {
-    pub const LEN: usize = 6 * 32 + 8;
-}
-
-#[derive(AnchorDeserialize, AnchorSerialize, Default, Clone)]
-pub struct ProgramBumps {
-    pub state_account: u8,
-    pub lpsol_mint: u8,
-    pub lpusd_mint: u8,
-    pub lpdao_mint: u8
 }
 
 #[error_code]

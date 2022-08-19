@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-lpfinance_tokens = "GaVnsa8z34xSeYNDydTAdbiT64KxMgVXBXnimXXJT4Hw"
+lpfinance_tokens = "Cdk1hTsGs375ua7xC66g1dPQwnnk1xesXKmxH8hHVLig"
 
 [registry]
 url = "https://anchor.projectserum.com"
