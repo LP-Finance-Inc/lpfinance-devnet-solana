@@ -80,7 +80,7 @@ const stable_swap = async () => {
   );
   console.log('pool_ata_dest:', pool_ata_dest.toBase58());
 
-  const amount_src = 10 * 1e9;
+  const amount_src = 9 * 1e9;
 
   const amount_dest = await program.rpc.stableswapTokens(
     new anchor.BN(amount_src),

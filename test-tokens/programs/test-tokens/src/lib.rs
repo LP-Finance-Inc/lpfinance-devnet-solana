@@ -19,7 +19,7 @@ pub const AUCTION_PDA: &str = "6nqS5uUaXYUncgn81iEntgQafkQwMagSYZXUCQeqZHJd";
 // SWAP
 pub const SWAP_PDA1: &str = "6VBUBPA2Bev3dZTEJwfSVBJpCWv6sw9eoyywTS3cXmu3"; // LpSOL - wSOL pda
 pub const SWAP_PDA2: &str = "BFteZ5EXKa4myspKtvKcD7DNkQaLFrwEVpvMDaGwbeTZ"; // LpUSD - USDC pda
-pub const SWAP_PDA3: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const SWAP_PDA3: &str = "4Y2vLmpLtfo5gxvGhAK68RtKruQdm8vEvAWJVLicQhmf"; // SWAP-ROUTER
 
 
 #[program]

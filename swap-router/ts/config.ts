@@ -2,10 +2,19 @@ import { PublicKey } from "@solana/web3.js";
 
 export const NETWORK = "https://api.devnet.solana.com";
 // export const NETWORK = "http://localhost:8899";
+export { default as SolendIDL } from "../../solend/target/idl/solend.json"
+export { default as ApricotIDL } from "../../apricot/target/idl/apricot.json"
+export { default as LpfinanceTokenIDL } from "../../lpfinance-tokens/target/idl/lpfinance_tokens.json";
+export { default as CBSProtocolIDL } from "../../cbs-protocol/target/idl/cbs_protocol.json";
+export { default as SwapRouterIDL } from "../../swap-router/target/idl/swap_router.json";
+export { default as StableSwapIDL } from "../../stable-swap/target/idl/stable_swap.json";
+export { default as TestTokenIDL } from "../../test-tokens/target/idl/test_tokens.json";
+export { default as UniswapIDL } from "../../uniswap/target/idl/uniswap.json";
 
 export const stableswap_programID = new PublicKey("EDvp5kbQi9ogJtRgnxWaX58V66xEeZqWXxy4QUrhNC2V");
 export const uniswap_programID = new PublicKey("3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc");
 export const testToken_programID = new PublicKey("3QTW9aZp4U2xoj9UfvTF6PEL3UZzfEHi8UtNruhw7GHL");
+
 
 export const tokenStateAccount = new PublicKey("FEL9EygF1C3d5cwD2ZXkpmaQMBtdxKd1mvYRrD81KNVY");
 export const StableswapLpusdUsdc = new PublicKey("B51GTPYfj8FvVLq71wStjAkkc4mSDgXbfDQgLygDpczc")
@@ -16,19 +25,19 @@ export const LpUSD = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL
 export const LpSOL = new PublicKey("5jmsfTrYxWSKgrZp4Y8cziTWvt7rqmTCiJ75FbLqFTVZ")
 export const LpFI = new PublicKey("3x96fk94Pp4Jn2PWUexAXYN4eLK8TVYXHUippdYCHK1p");
 
-export const WSOL = new PublicKey("6hPAQy93EbDzwHyU843zcWKATy8NrJ1ZsKCRi2JkuXcT")
+export const WSOL = new PublicKey("3TufxjnyAiHH9cdMkdstCTMTjtH54p3Mnv9prDJ4eLTb")
 export const WSOL_PYTH = new PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix")
 
-export const MSOL = new PublicKey("ANfCF4STCJGBeZiVDeQktT3tL4WaPGCjoy1ZS8TxUm5A")
+export const MSOL = new PublicKey("9ct5yURTeKhET3wGqfThjYpftW1Z4QWR5C2U7Rh5fYGH")
 export const MSOL_PYTH = new PublicKey("9a6RNx3tCu1TSs6TBSfV2XRXEPEZXQ6WB7jRojZRvyeZ")
 
-export const STSOL = new PublicKey("6KQhrbT4drk7FDdT6casFueas3bBsaJLvMGPHx7qLU1k")
+export const STSOL = new PublicKey("DRXKnTLC9ypQ7NbaubgapdM2VTpfo3qNKddnKeRtw6Np")
 export const STSOL_PYTH = new PublicKey("2LwhbcswZekofMNRtDRMukZJNSRUiKYMFbqtBwqjDfke")
 
 export const SCNSOL = new PublicKey("8BUAjLqr2UKMtUuVRo5M4JzZ5UXS6dpKE97SFxHcBSer")
 export const SCNSOL_PYTH = new PublicKey("HoDAYYYhFvCNQNFPui51H8qvpcdz6KuVtq77ZGtHND2T")
 
-export const USDC = new PublicKey("6ybV587PY2z6DX4Pf1tTh8oEhnuR6wwXLE8LHinKQKYV")
+export const USDC = new PublicKey("F79eXaUWMH6BXWKbtE6woxtvHpbT7EVPSxsFEwFh62py")
 export const USDC_PYTH = new PublicKey("5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7")
 
 export const RAY = new PublicKey("Hzzzh4U29e2UoHsnVpLRCBRjgNtyK6D9sHc4BBzq1pdc")

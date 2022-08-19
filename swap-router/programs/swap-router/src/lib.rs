@@ -242,10 +242,27 @@ pub mod swap_router {
         let cpi_ctx_src = CpiContext::new(cpi_program, cpi_accounts_src);
         token::burn(cpi_ctx_src, amount_src)?;
         //-------- Mint Token Dest To User -----------------------------
+        //-------- Check PDA --------------------------------
+        let (swap_pda_signer, swap_pda_bump) = Pubkey::find_program_address(
+            &[
+                PREFIX_ESCROW.as_bytes()
+            ],
+            ctx.program_id
+        );
+        if swap_pda_signer != ctx.accounts.swap_pda.key() {
+            return Err(ErrorCode::SwapEscrowPDAError.into());
+        }
+        //-------- Generate Signer ---------------------------
+        let seeds = &[
+            PREFIX_ESCROW.as_bytes(),
+            &[swap_pda_bump]
+        ];
+        let signer = &[&seeds[..]];
+
         let cpi_accounts_dest = MintToken {
-            owner: user.to_account_info(),
+            owner: ctx.accounts.swap_pda.to_account_info(),
             state_account: token_state_acc.to_account_info(),
-            user_token: user_ata_dest.to_account_info(),
+            user_token: ctx.accounts.swap_ata_dest.to_account_info(),
             token_mint: token_dest.to_account_info(),
             system_program: system_program.to_account_info(),
             token_program: token_program.to_account_info(),
@@ -253,8 +270,19 @@ pub mod swap_router {
             rent: ret.to_account_info()
         };
         let cpi_program = testtokens_program.to_account_info();
-        let cpi_ctx_dest = CpiContext::new(cpi_program, cpi_accounts_dest);
+        let cpi_ctx_dest = CpiContext::new_with_signer(cpi_program, cpi_accounts_dest, signer);
         test_tokens::cpi::mint_token(cpi_ctx_dest, amount_return)?;
+
+
+        // Transfer swap -> User
+        let cpi_accounts_dest2 = Transfer {
+            from: ctx.accounts.swap_ata_dest.to_account_info(),
+            to: user_ata_dest.to_account_info(),
+            authority: ctx.accounts.swap_pda.to_account_info()
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx_dest2 = CpiContext::new_with_signer(cpi_program, cpi_accounts_dest2, signer);
+        token::transfer(cpi_ctx_dest2, amount_return)?;
 
         // -------- Mint Token ( fee ) -----------------------------
         // //-------- Check PDA --------------------------------

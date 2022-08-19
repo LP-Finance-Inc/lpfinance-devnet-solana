@@ -192,17 +192,15 @@ pub struct SwapPyth<'info> {
     #[account(mut)]
     pub token_dest: Box<Account<'info, Mint>>,
 
+    /// CHECK: This is safe
+    #[account(mut, seeds = [PREFIX_ESCROW.as_ref()], bump)]
+    pub swap_pda: AccountInfo<'info>,
     /// CHECK:
     pub pyth_src: AccountInfo<'info>,
     /// CHECK:
     pub pyth_dest: AccountInfo<'info>,
 
-    #[account(
-        init_if_needed,
-        payer = user,
-        associated_token::mint = token_src,
-        associated_token::authority = user,
-    )]    
+    #[account(mut)]    
     pub user_ata_src: Box<Account<'info, TokenAccount>>,
     #[account(
         init_if_needed,
@@ -212,6 +210,11 @@ pub struct SwapPyth<'info> {
     )]    
     pub user_ata_dest: Box<Account<'info, TokenAccount>>,
 
+    #[account(mut,
+        associated_token::mint = token_dest,
+        associated_token::authority = swap_pda,
+    )]    
+    pub swap_ata_dest: Box<Account<'info, TokenAccount>>,
     /// CHECK:
     pub testtokens_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
