@@ -14,7 +14,7 @@ import {
   StableLpusdPool,
   StableLpsolPool,
   tokenStateAccount,
-  USDCMint,
+  USDC_Mint,
   AuctionIDL,
   StableSwapIDL,
   TestTokenIDL,
@@ -57,7 +57,7 @@ const swap_lpsol_to_lpusd = async () => {
     const TestTokenProgramId = new PublicKey(TestTokenIDL.metadata.address);
 
     const stableswapPoolAtaLpusd = await getATAPublicKey(cbsConfigData.lpusdMint, StableLpusdPool);
-    const stableswapPoolAtaUsdc = await getATAPublicKey(USDCMint, StableLpusdPool);
+    const stableswapPoolAtaUsdc = await getATAPublicKey(USDC_Mint, StableLpusdPool);
     const stableswapPoolAtaLpsol = await getATAPublicKey(cbsConfigData.lpsolMint, StableLpsolPool);
     const stableswapPoolAtaWsol = await getATAPublicKey(cbsConfigData.wsolMint, StableLpsolPool);
 
@@ -89,7 +89,7 @@ const swap_lpsol_to_lpusd = async () => {
 
                 tokenWsol: cbsConfigData.wsolMint,
                 tokenLpsol: cbsConfigData.lpsolMint,
-                tokenUsdc: USDCMint,
+                tokenUsdc: USDC_Mint,
 
                 cbsAtaWsol: cbsConfigData.poolWsol,
                 cbsAtaUsdc: EscrowUSDC,
@@ -115,7 +115,7 @@ const swap_lpsol_to_lpusd = async () => {
               cbsPda: PDA[0],
               stableSwapPool: StableLpusdPool,
 
-              tokenUsdc: USDCMint,
+              tokenUsdc: USDC_Mint,
               tokenLpusd: cbsConfigData.lpusdMint,
 
               cbsAtaUsdc: EscrowUSDC,

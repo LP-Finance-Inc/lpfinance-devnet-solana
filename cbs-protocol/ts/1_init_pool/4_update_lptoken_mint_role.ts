@@ -12,7 +12,7 @@ import {
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 import { LpfinanceTokenConfig, LpfinanceTokenPDA, NETWORK, PREFIX } from "../config";
-import { getCreatorKeypair, getPublicKey, writePublicKeys } from "../utils";
+import { getCreatorKeypair, getPublicKey, writePublicKey, writePublicKeys } from "../utils";
 
 const { Wallet } = anchor;
 
@@ -27,20 +27,21 @@ const update_lptoken_mint_role = async () => {
         [Buffer.from(PREFIX)],
         program.programId
     );    
+    
+    writePublicKey(PDA[0], 'cbs_pda');
+    // const lptokenProgram = new anchor.Program(LpfinanceTokenIDL as anchor.Idl, LpfinanceTokenIDL.metadata.address);
+    // // initialize
+    // await lptokenProgram.rpc.updateCbsAccount(
+    //     PDA[0],
+    //     {
+    //         accounts: {
+    //             owner: creatorKeypair.publicKey,
+    //             config: LpfinanceTokenConfig,
+    //             stateAccount: LpfinanceTokenPDA
+    //         }
+    //     });
 
-    const lptokenProgram = new anchor.Program(LpfinanceTokenIDL as anchor.Idl, LpfinanceTokenIDL.metadata.address);
-    // initialize
-    await lptokenProgram.rpc.updateCbsAccount(
-        PDA[0],
-        {
-            accounts: {
-                owner: creatorKeypair.publicKey,
-                config: LpfinanceTokenConfig,
-                stateAccount: LpfinanceTokenPDA
-            }
-        });
-
-    console.log("Successfully Done")
+    console.log("Successfully Done", PDA[0].toBase58())
 }
 
 update_lptoken_mint_role();

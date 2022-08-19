@@ -7,8 +7,8 @@ import {
   PublicKey
 } from "@solana/web3.js";
 import { NETWORK, PREFIX } from "../config";
-import { getCreatorKeypair, writePublicKey } from "../utils";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getATAPublicKey, getCreatorKeypair, getPublicKey, writePublicKey } from "../utils";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const { Wallet } = anchor;
 
@@ -21,10 +21,19 @@ const create_user_account = async () => {
     anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
     const program = anchor.workspace.CbsProtocol as Program<CbsProtocol>;
 
+    // Config
+    const config = getPublicKey('cbs_config');  
+    const cbsConfigData = await program.account.config.fetch(config);
+
+    const lpsolMint= cbsConfigData.lpsolMint as PublicKey;
+    const lpusdMint= cbsConfigData.lpusdMint as PublicKey;
+
     const [userAccount, bump] = await PublicKey.findProgramAddress(
         [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
         program.programId
     );
+    const userLpusd = await getATAPublicKey(lpusdMint, creatorKeypair.publicKey);
+    const userLpsol = await getATAPublicKey(lpsolMint, creatorKeypair.publicKey);
 
     try {
         const accountData = await program.account.userAccount.fetch(userAccount);
@@ -36,6 +45,12 @@ const create_user_account = async () => {
                 userAccount,
                 userAuthority: creatorKeypair.publicKey,
                 systemProgram: anchor.web3.SystemProgram.programId,
+                lpusdMint,
+                lpsolMint,
+                userLpusd,
+                userLpsol,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 rent: SYSVAR_RENT_PUBKEY,
             },
         });    

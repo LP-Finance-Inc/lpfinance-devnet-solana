@@ -9,7 +9,7 @@ use std::str::FromStr;
 declare_id!("Cdk1hTsGs375ua7xC66g1dPQwnnk1xesXKmxH8hHVLig");
 
 // PROTOCOL
-pub const CBS_PDA: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const CBS_PDA: &str = "9SYSA3RPEakev2i9GNDBLD5NGNELnVYKchWkWRrK1J6B";
 
 const LP_TOKEN_DECIMALS: u8 = 9;
 const PREFIX: &str = "lptokens";

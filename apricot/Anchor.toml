@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-apricot = "ETAZpMupgKhLfdz7sAsvGxELmtnm1mgwapMYDfwtRGtk"
+apricot = "4DGj9snmzbMeXJyG5XSzVdywt2dQ4nb4mKRxCAc3X25N"
 
 [registry]
 url = "https://anchor.projectserum.com"

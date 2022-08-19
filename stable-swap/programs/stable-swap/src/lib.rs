@@ -14,7 +14,7 @@ pub use states::*;
 // use std::str::FromStr;
 // use pyth_client;
 
-declare_id!("EDvp5kbQi9ogJtRgnxWaX58V66xEeZqWXxy4QUrhNC2V");
+declare_id!("39rpAgmdTmc5fLXUA9vZw59fz4byzZNok9bH7MFV9RzS");
 
 #[program]
 pub mod stable_swap {

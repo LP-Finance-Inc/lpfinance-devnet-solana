@@ -14,7 +14,7 @@ import {
   StableLpusdPool,
   StableLpsolPool,
   tokenStateAccount,
-  USDCMint,
+  USDC_Mint,
   AuctionIDL,
   StableSwapIDL,
   TestTokenIDL,
@@ -59,7 +59,7 @@ const swap_lpfi_to_lpusd = async () => {
     const UniswapProgramId = new PublicKey(UniswapIDL.metadata.address);
 
     const stableswapPoolAtaLpusd = await getATAPublicKey(cbsConfigData.lpusdMint, StableLpusdPool);
-    const stableswapPoolAtaUsdc = await getATAPublicKey(USDCMint, StableLpusdPool);
+    const stableswapPoolAtaUsdc = await getATAPublicKey(USDC_Mint, StableLpusdPool);
         
     // LpFI <-> USDC
     const UniswapPool = getPublicKey('lpfi-usdc-pool');
@@ -69,7 +69,7 @@ const swap_lpfi_to_lpusd = async () => {
     );
       
     const uniswapPoolAtaUsdc = await getATAPublicKey(
-        USDCMint,
+        USDC_Mint,
         UniswapPool
     );
        
@@ -84,7 +84,7 @@ const swap_lpfi_to_lpusd = async () => {
               uniswapPool: LiquidityPool,
 
               tokenLpfi: cbsConfigData.lpfiMint,
-              tokenUsdc: USDCMint,
+              tokenUsdc: USDC_Mint,
               tokenLpusd: cbsConfigData.lpusdMint,
 
               escrowAtaUsdc: EscrowUSDC,

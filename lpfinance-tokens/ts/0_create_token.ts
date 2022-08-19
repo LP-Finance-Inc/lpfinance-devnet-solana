@@ -41,27 +41,27 @@ const initialize_config = async () => {
         );
         writePublicKey(stateAccount, 'lpfinance_tokens_pda')
         
-        let pubkeys = `import { PublicKey } from "@solana/web3.js";\n\n`;
+        let pubkeys = "";
 
         const [lpsolMint, lpsolMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(lpsol_mint)],
             program.programId
         );
 
-        pubkeys += `export const LpSOLMint = new PublicKey("${lpsolMint.toBase58()}")\n`;
+        pubkeys += `export const LpSOL_MINT = new PublicKey("${lpsolMint.toBase58()}")\n`;
         
         const [lpusdMint, lpusdMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(lpusd_mint)],
             program.programId
         );
-        pubkeys += `export const LpUSDMint = new PublicKey("${lpusdMint.toBase58()}")\n`;
+        pubkeys += `export const LpUSD_MINT = new PublicKey("${lpusdMint.toBase58()}")\n`;
         
         // DAO Token name is LpFI
         const [lpdaoMint, lpdaoMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(lpdao_mint)],
             program.programId
         );
-        pubkeys += `export const LpFIMint = new PublicKey("${lpdaoMint.toBase58()}")\n`;
+        pubkeys += `export const LpFI_MINT = new PublicKey("${lpdaoMint.toBase58()}")\n`;
 
         const userDaoToken = await getATAPublicKey(
             lpdaoMint, 

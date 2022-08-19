@@ -14,7 +14,7 @@ use cbs_protocol::{self};
 use stable_swap::{self, StableswapPool};
 use uniswap::{self, UniswapPool};
 
-declare_id!("DbQju5NRVunuGz5aKdaqAaUfWSMRsy6hdZQ2zFDkGL9y");
+declare_id!("AGwys238zSCewzcjDxifbisDF1mCsgrWbSua1Vvi2zfN");
 
 
 pub const PRICE_DENOMINATOR: u128 = 100000000; // 10 ^ 8
@@ -276,9 +276,9 @@ pub mod lpusd_auction {
         msg!("LTV {} Camount {} Bamount {}", _ltv, _total_price, _borrowed_total);
 
         // If LTV < 94, not be able to liquidate
-        // if _ltv < LTV_PERMISSION {
-        //     return Err(ErrorCode::NotEnoughLTV.into());
-        // }
+        if _ltv < LTV_PERMISSION {
+            return Err(ErrorCode::NotEnoughLTV.into());
+        }
 
         // Burn token users' deposited LpUSD
         if borrowed_lpusd > lpusd_ata.amount {

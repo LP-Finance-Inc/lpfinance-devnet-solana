@@ -63,7 +63,7 @@ const create_uniswap = async () => {
   ); 
   console.log("Uniswap Pool PDA address:", uniswap_pool_pda[0].toBase58());
   console.log("Uniswap Pool PDA bump:", uniswap_pool_pda[1]);
-  writePublicKey(uniswap_pool_pda[0], `lpfi-usdc-pool`); 
+  writePublicKey(uniswap_pool_pda[0], `lpfi_usdc_pool`); 
 
   const author_ata_a = await findAssociatedTokenAddress(
     authKeypair.publicKey,

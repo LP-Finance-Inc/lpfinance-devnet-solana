@@ -14,11 +14,11 @@ const TOKEN_DECIMALS: u8 = 9;
 const MAX_USDC_FAUCET_LIMIT: u64 = 1000;
 
 // PROTOCOL
-pub const CBS_PDA: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
-pub const AUCTION_PDA: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const CBS_PDA: &str = "9SYSA3RPEakev2i9GNDBLD5NGNELnVYKchWkWRrK1J6B";
+pub const AUCTION_PDA: &str = "6nqS5uUaXYUncgn81iEntgQafkQwMagSYZXUCQeqZHJd";
 // SWAP
-pub const SWAP_PDA1: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
-pub const SWAP_PDA2: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
+pub const SWAP_PDA1: &str = "6VBUBPA2Bev3dZTEJwfSVBJpCWv6sw9eoyywTS3cXmu3"; // LpSOL - wSOL pda
+pub const SWAP_PDA2: &str = "BFteZ5EXKa4myspKtvKcD7DNkQaLFrwEVpvMDaGwbeTZ"; // LpUSD - USDC pda
 pub const SWAP_PDA3: &str = "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7";
 
 

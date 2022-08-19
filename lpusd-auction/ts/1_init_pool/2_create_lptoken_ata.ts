@@ -12,8 +12,8 @@ import {
   Connection,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-import { LpfinanceTokenConfig, NETWORK, PREFIX } from "../config";
-import { getATAPublicKey, getCreatorKeypair, getPublicKey, writePublicKeys } from "../utils";
+import { LpfinanceTokenConfig, NETWORK, AUCTION_PREFIX } from "../config";
+import { getATAPublicKey, getCreatorKeypair, getPublicKey, writePublicKey, writePublicKeys } from "../utils";
 
 const { Wallet } = anchor;
 
@@ -40,21 +40,20 @@ const create_lptoken_ata = async () => {
     // console.log(lpfiMint.toBase58())
 
     const PDA = await PublicKey.findProgramAddress(
-      [Buffer.from(PREFIX)],
+      [Buffer.from(AUCTION_PREFIX)],
       program.programId
-  );    
+    );        
+    writePublicKey(PDA[0], 'auction_pda')
+
     // Find PDA for `lpsol pool`
     const poolLpsolKeypair = await getATAPublicKey(lpsolMint, PDA[0]) // anchor.web3.Keypair.generate();  
-    const poolLpsolKeyString = `const poolLpsol = new PublicKey("${poolLpsolKeypair.toString()}");\n`
+    const poolLpsolKeyString = `export const LpSOL_AUCTION_ATA = new PublicKey("${poolLpsolKeypair.toString()}");\n`
     pubkeys += poolLpsolKeyString;
 
       // Find PDA for `lpusd pool`
     const poolLpusdKeypair = await getATAPublicKey(lpusdMint, PDA[0]) // anchor.web3.Keypair.generate();  
-    const poolLpusdKeyString = `const poolLpusd = new PublicKey("${poolLpusdKeypair.toString()}");\n`
+    const poolLpusdKeyString = `export const LpUSD_AUCTION_ATA = new PublicKey("${poolLpusdKeypair.toString()}");\n`
     pubkeys += poolLpusdKeyString;
-
-    const auctionPDAKeyString = `const auctionPDA = new PublicKey("${PDA[0].toString()}");`
-    pubkeys += auctionPDAKeyString;
 
     writePublicKeys(pubkeys, "auction_lptokens_ata");
 

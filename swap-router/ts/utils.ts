@@ -11,7 +11,7 @@ export const logError = (msg: string) => {
 
 export const writePublicKey = (publicKey: PublicKey, name: string) => {
   fs.writeFileSync(
-    `../keys/${name}_pub.json`,
+    `../keys/${name}_pub.js`,
     JSON.stringify(publicKey.toString())
   );
 };
@@ -25,12 +25,12 @@ export const writePublicKeys = (publicKeys: string, name: string) => {
 
 export const getPublicKey = (name: string) =>
   new PublicKey(
-    JSON.parse(fs.readFileSync(`../keys/${name}_pub.json`) as unknown as string)
+    JSON.parse(fs.readFileSync(`../keys/${name}_pub.js`) as unknown as string)
   );
 
 export const getPrivateKey = (name: string) =>
   Uint8Array.from(
-    JSON.parse(fs.readFileSync(`./keys/${name}.json`) as unknown as string)
+    JSON.parse(fs.readFileSync(`./keys/${name}.js`) as unknown as string)
   );
 
 export const getKeypair = (name: string) =>

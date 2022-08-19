@@ -50,37 +50,37 @@ const create_token_ata = async () => {
 
     // Find PDA for `Ray pool`
     const poolRayKeypair = await getATAPublicKey(rayMint, PDA[0]); // anchor.web3.Keypair.generate();  
-    const poolRayKeyString = `const poolRay = new PublicKey("${poolRayKeypair.toString()}");\n`
+    const poolRayKeyString = `export const RAY_CBS_ATA = new PublicKey("${poolRayKeypair.toString()}");\n`
     pubkeys += poolRayKeyString;
 
       // Find PDA for `Wsol pool`
     const poolWsolKeypair = await getATAPublicKey(wsolMint, PDA[0]); // anchor.web3.Keypair.generate();  
-    const poolWsolKeyString = `const poolWsol = new PublicKey("${poolWsolKeypair.toString()}");\n`
+    const poolWsolKeyString = `export const WSOL_CBS_ATA = new PublicKey("${poolWsolKeypair.toString()}");\n`
     pubkeys += poolWsolKeyString;
 
     // Find PDA for `Msol pool`
     const poolMsolKeypair = await getATAPublicKey(msolMint, PDA[0]); // anchor.web3.Keypair.generate();    
-    const poolMsolKeyString = `const poolMsol = new PublicKey("${poolMsolKeypair.toString()}");\n`
+    const poolMsolKeyString = `export const MSOL_CBS_ATA = new PublicKey("${poolMsolKeypair.toString()}");\n`
     pubkeys += poolMsolKeyString;
 
     // Find PDA for `Srm pool`
     const poolSrmKeypair = await getATAPublicKey(srmMint, PDA[0]); // anchor.web3.Keypair.generate();  
-    const poolSrmKeyString = `const poolSrm = new PublicKey("${poolSrmKeypair.toString()}");\n`
+    const poolSrmKeyString = `export const SRM_CBS_ATA = new PublicKey("${poolSrmKeypair.toString()}");\n`
     pubkeys += poolSrmKeyString;
 
     // Find PDA for `Scnsol pool`
     const poolScnsolKeypair = await getATAPublicKey(scnsolMint, PDA[0]); // anchor.web3.Keypair.generate();  
-    const poolScnsolKeyString = `const poolScnsol = new PublicKey("${poolScnsolKeypair.toString()}");\n`
+    const poolScnsolKeyString = `export const SCNSOL_CBS_ATA = new PublicKey("${poolScnsolKeypair.toString()}");\n`
     pubkeys += poolScnsolKeyString;
 
     // Find PDA for `Stsol pool`
     const poolStsolKeypair = await getATAPublicKey(stsolMint, PDA[0]); // anchor.web3.Keypair.generate();    
-    const poolStsolKeyString = `const poolStsol = new PublicKey("${poolStsolKeypair.toString()}");\n`
+    const poolStsolKeyString = `export const STSOL_CBS_ATA = new PublicKey("${poolStsolKeypair.toString()}");\n`
     pubkeys += poolStsolKeyString;
 
     // Find PDA for `Usdc pool`
     const poolUsdcKeypair = await getATAPublicKey(usdcMint, PDA[0]); // anchor.web3.Keypair.generate();  
-    const poolUsdcKeyString = `const poolUsdc = new PublicKey("${poolUsdcKeypair.toString()}");\n`
+    const poolUsdcKeyString = `export const USDC_CBS_ATA = new PublicKey("${poolUsdcKeypair.toString()}");\n`
     pubkeys += poolUsdcKeyString;
 
 
@@ -100,7 +100,6 @@ const create_token_ata = async () => {
         rent: SYSVAR_RENT_PUBKEY,
       },      
     });
-    return;
     
     // create ATA
     await program.rpc.createTokenAta1({

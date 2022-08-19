@@ -14,7 +14,7 @@ use uniswap::cpi::accounts::UniswapTokens;
 use solend::{self};
 use apricot::{self};
 
-declare_id!("8NSpbuD66CrveJYufKZWiJPneVak7Ri74115qpiP8xw4");
+declare_id!("KJavsL5joNr5dAkkgdqsnmnoWDkvwssihnXkjnQJhBf");
 
 const LTV: f64 = 85.0;
 const DOMINATOR: f64 = 100.0;
@@ -830,9 +830,9 @@ pub mod cbs_protocol {
             )?;
     
             // Threshold 90
-            // if _ltv < 90 {
-            //     return Err(ErrorCode::LTVAlreadyExceed.into());
-            // }        
+            if _ltv < 90 {
+                return Err(ErrorCode::LTVAlreadyExceed.into());
+            }        
             
             let mut _solend_higher = false;
             let mut _lending_rate = 0;

@@ -13,8 +13,6 @@ import {
   SolendConfig,
   ApricotConfig,
   ApricotIDL,
-  solendPool,
-  apricotPool,
   solendSTSOLPool,
   apricotSTSOLPool,
   solendRAYPool,
@@ -51,8 +49,8 @@ const deposit = async () => {
   // const collateralPool= cbsConfigData.poolRay as PublicKey;
   // const collateralMint= cbsConfigData.scnsolMint as PublicKey;
   // const collateralPool= cbsConfigData.poolScnsol as PublicKey;
-  // const collateralMint= cbsConfigData.msolMint as PublicKey;
-  // const collateralPool= cbsConfigData.poolMsol as PublicKey;
+  const collateralMint= cbsConfigData.msolMint as PublicKey;
+  const collateralPool= cbsConfigData.poolMsol as PublicKey;
   // const collateralMint= cbsConfigData.srmMint as PublicKey;
   // const collateralPool= cbsConfigData.poolSrm as PublicKey;
   // const collateralMint= cbsConfigData.wsolMint as PublicKey;
@@ -64,8 +62,8 @@ const deposit = async () => {
   // const collateralPool= cbsConfigData.poolLpusd as PublicKey;
   // const collateralMint= cbsConfigData.lpsolMint as PublicKey;
   // const collateralPool= cbsConfigData.poolLpsol as PublicKey;
-  const collateralMint= cbsConfigData.lpfiMint as PublicKey;
-  const collateralPool= cbsConfigData.poolLpfi as PublicKey;
+  // const collateralMint= cbsConfigData.lpfiMint as PublicKey;
+  // const collateralPool= cbsConfigData.poolLpfi as PublicKey;
 
   const userCollateral = await getATAPublicKey(collateralMint, creatorKeypair.publicKey);
   const solendAccount = getPublicKey('cbs_solend_account')
@@ -92,7 +90,7 @@ const deposit = async () => {
   /* Dynamic token */
   // const apricotPool = apricotConfigData.poolRay as PublicKey;
 
-  const deposit_wei = convert_to_wei("100");
+  const deposit_wei = convert_to_wei("2000000");
   const deposit_amount = new anchor.BN(deposit_wei);
   
   const tx = await program.rpc.depositCollateral(deposit_amount, {
@@ -106,10 +104,10 @@ const deposit = async () => {
       userAccount,
       solendConfig: SolendConfig,
       solendAccount,
-      solendPool: solendSCNSOLPool, // solendMSOLPool, // solendSRMPool, // solendwSOLPool, // solendRAYPool, // solendSTSOLPool,
+      solendPool: solendMSOLPool, // solendSRMPool, // solendwSOLPool, // solendRAYPool, // solendSTSOLPool, // solendSCNSOLPool, // 
       apricotConfig: ApricotConfig,
       apricotAccount,
-      apricotPool: apricotSCNSOLPool, // apricotMSOLPool, // apricotSRMPool, // apricotwSOLPool, // apricotRAYPool, // apricotSTSOLPool,
+      apricotPool: apricotMSOLPool, // apricotSRMPool, // apricotwSOLPool, // apricotRAYPool, // apricotSTSOLPool, // apricotSCNSOLPool, // 
       solendProgram: solendProgramId,
       apricotProgram: apricotProgramId,
       systemProgram: anchor.web3.SystemProgram.programId,

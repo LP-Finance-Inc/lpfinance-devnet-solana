@@ -20,32 +20,32 @@ const owner_mint = async () => {
     const creatorKeypair = getCreatorKeypair();
 
     anchor.setProvider(new anchor.AnchorProvider(connection, new Wallet(creatorKeypair), anchor.AnchorProvider.defaultOptions()));
-    const program = anchor.workspace.TestTokens as Program<LpfinanceTokens>;
+    const program = anchor.workspace.LpfinanceTokens as Program<LpfinanceTokens>;
     
     try {
         // Authority
         const authority = creatorKeypair.publicKey;
         // Config
         const config = getPublicKey('lpfinance_tokens_config')
-        console.log("Config:", config.toBase58())
 
+        console.log("Config:", config.toBase58(), authority.toBase58())
         const configData = await program.account.config.fetch(config);
-        const lpusdMint = configData.lpusdMint;
+        const lptoken = configData.lpsolMint;
 
         // Find PDA from `test tokens` for state account
         const [stateAccount, stateAccountBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX)],
             program.programId
         );
-        const userLpToken = await getATAPublicKey(lpusdMint, authority);
+        const userLpToken = await getATAPublicKey(lptoken, authority);
 
-        const amount = 1000 * 1e9;
+        const amount = 1 * 1e9;
         // faucet usdc
         const tx = await program.rpc.ownerMintLptoken(new anchor.BN(amount), {
             accounts: {
                 owner: authority,
                 stateAccount,
-                lptokenMint: lpusdMint,
+                lptokenMint: lptoken,
                 userLptoken: userLpToken,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,

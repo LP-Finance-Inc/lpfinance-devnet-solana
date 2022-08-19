@@ -20,13 +20,13 @@ import {
   SolendConfig,
   ApricotConfig,
   ApricotIDL,
-  solendPool,
-  apricotPool,
   LiquidityPool,
   SolendStateAccount,
   ApricotStateAccount,
   StableLpsolPool,
-  StableLpusdPool
+  StableLpusdPool,
+  solendRAYPool,
+  apricotRAYPool
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey } from "../utils";
@@ -92,10 +92,10 @@ const withdraw = async () => {
         solendConfig: SolendConfig,
         solendAccount,
         solendStateAccount: SolendStateAccount,
-        solendPool,
+        solendPool: solendRAYPool,
         apricotConfig: ApricotConfig,
         apricotAccount,
-        apricotPool,
+        apricotPool: apricotRAYPool,
         apricotStateAccount: ApricotStateAccount,
         solendProgram: solendProgramId,
         apricotProgram: apricotProgramId,

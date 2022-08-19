@@ -7,7 +7,7 @@ pub use states::*;
 use test_tokens::cpi::accounts::MintToken;
 use test_tokens::{self};
 
-declare_id!("BgN7NGCcQgFMVs9U8tQzht7NNrKCdQjcZ8g4GBRwgMrb");
+declare_id!("68VcGJpUBW47Cbz8Ar9XpFVV9qPw1z23THARpTV6UTq4");
 
 // Reward distribution duration
 const DAY_IN_SECONDS: i64 = 86400;

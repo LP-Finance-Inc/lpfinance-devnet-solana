@@ -11,7 +11,7 @@ use std::f64;
 mod states;
 pub use states::*;
 
-declare_id!("3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc");
+declare_id!("AwtkxxDuTqg2x1wNU6crTf5rM4vgPrupquqbqLSeegUm");
 
 #[program]
 pub mod uniswap {

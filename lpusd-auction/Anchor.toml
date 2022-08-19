@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-lpusd_auction = "DbQju5NRVunuGz5aKdaqAaUfWSMRsy6hdZQ2zFDkGL9y"
+lpusd_auction = "AGwys238zSCewzcjDxifbisDF1mCsgrWbSua1Vvi2zfN"
 
 [registry]
 url = "https://anchor.projectserum.com"

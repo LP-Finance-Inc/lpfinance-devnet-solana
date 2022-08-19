@@ -52,110 +52,110 @@ const initialize_config = async () => {
         );
         writePublicKey(stateAccount, 'test_tokens_pda')
         
-        let pubkeys = `import { PublicKey } from "@solana/web3.js";\n\n`;
+        let pubkeys = "";
 
         const [wsolMint, wsolMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(wsol_mint)],
             program.programId
         );
-        pubkeys += `export const wSOLmint = new PublicKey("${wsolMint.toBase58()}")\n`;
+        pubkeys += `export const WSOL_MINT = new PublicKey("${wsolMint.toBase58()}")\n`;
     
         const [msolMint, msolMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(msol_mint)],
             program.programId
         );
         // bumps.poolMsol = poolMsolBump;
-        pubkeys += `export const MSOLMint = new PublicKey("${msolMint.toBase58()}")\n`;
+        pubkeys += `export const MSOL_MINT = new PublicKey("${msolMint.toBase58()}")\n`;
     
         const [stsolMint, stsolMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(stsol_mint)],
             program.programId
         );
-        pubkeys += `export const stsolMint = new PublicKey("${stsolMint.toBase58()}")\n`;
+        pubkeys += `export const STSOL_MINT = new PublicKey("${stsolMint.toBase58()}")\n`;
     
         const [scnsolMint, scnsolMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(scnsol_mint)],
             program.programId
         );
-        pubkeys += `export const scnSOLMint = new PublicKey("${scnsolMint.toBase58()}")\n`;
+        pubkeys += `export const SCNSOL_MINT = new PublicKey("${scnsolMint.toBase58()}")\n`;
     
         const [usdcMint, usdcMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(usdc_mint)],
             program.programId
         );
-        pubkeys += `export const USDCMint = new PublicKey("${usdcMint.toBase58()}")\n`;
+        pubkeys += `export const USDC_MINT = new PublicKey("${usdcMint.toBase58()}")\n`;
     
         const [btcMint, btcMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(btc_mint)],
             program.programId
         );
-        pubkeys += `export const BtcMint = new PublicKey("${btcMint.toBase58()}")\n`;
+        pubkeys += `export const BTC_MINT = new PublicKey("${btcMint.toBase58()}")\n`;
     
         const [ethMint, ethMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(eth_mint)],
             program.programId
         );
-        pubkeys += `export const ETHmint = new PublicKey("${ethMint.toBase58()}")\n`;
+        pubkeys += `export const ETH_MINT = new PublicKey("${ethMint.toBase58()}")\n`;
     
         const [rayMint, rayMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(ray_mint)],
             program.programId
         );
-        pubkeys += `export const Raymint = new PublicKey("${rayMint.toBase58()}")\n`;
+        pubkeys += `export const RAY_MINT = new PublicKey("${rayMint.toBase58()}")\n`;
     
         const [srmMint, srmMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(srm_mint)],
             program.programId
         );
-        pubkeys += `export const SRMMint = new PublicKey("${srmMint.toBase58()}")\n`;
+        pubkeys += `export const SRM_MINT = new PublicKey("${srmMint.toBase58()}")\n`;
     
         const [avaxMint, avaxMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(avax_mint)],
             program.programId
         );
-        pubkeys += `export const AvaxMint = new PublicKey("${avaxMint.toBase58()}")\n`;
+        pubkeys += `export const AVAX_MINT = new PublicKey("${avaxMint.toBase58()}")\n`;
     
         const [fidaMint, fidaMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(fida_mint)],
             program.programId
         );
-        pubkeys += `export const fidaMint = new PublicKey("${fidaMint.toBase58()}")\n`;
+        pubkeys += `export const FIDA_MINT = new PublicKey("${fidaMint.toBase58()}")\n`;
     
         const [fttMint, fttMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(ftt_mint)],
             program.programId
         );
-        pubkeys += `export const fttMint = new PublicKey("${fttMint.toBase58()}")\n`;
+        pubkeys += `export const FTT_MINT = new PublicKey("${fttMint.toBase58()}")\n`;
     
         const [ftmMint, ftmMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(ftm_mint)],
             program.programId
         );
-        pubkeys += `export const ftmMint = new PublicKey("${ftmMint.toBase58()}")\n`;
+        pubkeys += `export const FTM_MINT = new PublicKey("${ftmMint.toBase58()}")\n`;
     
         const [gmtMint, gmtMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(gmt_mint)],
             program.programId
         );
-        pubkeys += `export const gmtMint = new PublicKey("${gmtMint.toBase58()}")\n`;
+        pubkeys += `export const GMT_MINT = new PublicKey("${gmtMint.toBase58()}")\n`;
     
         const [lunaMint, lunaMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(luna_mint)],
             program.programId
         );
-        pubkeys += `export const lunaMint = new PublicKey("${lunaMint.toBase58()}")\n`;
+        pubkeys += `export const LUNA_MINT = new PublicKey("${lunaMint.toBase58()}")\n`;
     
         const [maticMint, maticMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(matic_mint)],
             program.programId
         );
-        pubkeys += `export const maticMint = new PublicKey("${maticMint.toBase58()}")\n`;
+        pubkeys += `export const MATIC_MINT = new PublicKey("${maticMint.toBase58()}")\n`;
     
         const [usdtMint, usdtMintBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX), Buffer.from(usdt_mint)],
             program.programId
         );
-        pubkeys += `export const USDTMint = new PublicKey("${usdtMint.toBase58()}")\n`;
+        pubkeys += `export const USDT_MINT = new PublicKey("${usdtMint.toBase58()}")\n`;
         writePublicKeys(pubkeys, "test_tokens");
     
         const authority = creatorKeypair.publicKey;

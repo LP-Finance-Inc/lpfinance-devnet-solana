@@ -7,3 +7,5 @@ cp ./swap-router/target/idl/swap_router.json ./idls/swap_router.json
 cp ./lpfinance-tokens/target/idl/lpfinance_tokens.json ./idls/lpfinance_tokens.json
 cp ./test-tokens/target/idl/test_tokens.json ./idls/test_tokens.json
 cp ./lpusd-auction/target/idl/lpusd_auction.json ./idls/lpusd-auction.json
+
+node ./program_helper/merge_keys.ts

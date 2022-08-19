@@ -2,10 +2,10 @@
 seeds = false
 
 [programs.localnet]
-uniswap = "3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc"
+uniswap = "AwtkxxDuTqg2x1wNU6crTf5rM4vgPrupquqbqLSeegUm"
 
 [programs.devnet]
-uniswap = "3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc"
+uniswap = "AwtkxxDuTqg2x1wNU6crTf5rM4vgPrupquqbqLSeegUm"
 
 [registry]
 url = "https://anchor.projectserum.com"

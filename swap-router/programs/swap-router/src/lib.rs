@@ -18,7 +18,7 @@ use stable_swap::cpi::accounts::StableswapTokens;
 use uniswap::cpi::accounts::UniswapTokens;
 use test_tokens::cpi::accounts::MintToken;
 
-declare_id!("AxfYaVXibrtcLB58SmFWvTjLKE6ejkJmuEoPpWap87VB");
+declare_id!("HQQC4EbED22P49XiJmMXFLkinHZ1aVEBveZfTSowmJGB");
 
 #[program]
 pub mod swap_router {

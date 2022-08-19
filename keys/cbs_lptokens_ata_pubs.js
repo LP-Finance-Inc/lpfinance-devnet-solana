@@ -1,5 +1,3 @@
-const poolLpsol = new PublicKey("Ab3Gi7BmCwTvB61Qws3RSVLuFvdAtLbTvZrjgFByPiV6");
-const poolLpusd = new PublicKey("13RG3AEARHT3XpoaVqygFGnUGBfQdobADUddMtBcR6jP");
-const poolLpfi = new PublicKey("5gEe9EnkQteastPr9zDr6zvU3XGofhGjGYmKdMhTeHPh");
-
-const cbsPDA = new PublicKey("Gu6urAi7fg5eV5Jvohdo6U1pxYTSxheh5RxUzprdENLq");
+export const LpSOL_CBS_ATA = new PublicKey("E1wcBGcGjbdFe4LwiFd3W3VuCiobMx2fp3Yy5bvAV57n");
+export const LpUSD_CBS_ATA = new PublicKey("5ZAFTKf5ceXZwE6oCizPShccBk4dya7yoBvHzTUpU2bv");
+export const LpFI_CBS_ATA= new PublicKey("D24GvHsYJSrCcwgei8pP79zT6wp8AZ5eJEnNYCLd5WCB");

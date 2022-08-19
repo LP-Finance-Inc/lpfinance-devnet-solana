@@ -20,8 +20,6 @@ import {
     SolendConfig,
     ApricotConfig,
     ApricotIDL,
-    solendPool,
-    apricotPool,
     StableLpsolPool,
     StableLpusdPool,
     LiquidityPool,

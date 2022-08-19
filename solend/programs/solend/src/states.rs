@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 use test_tokens::program::TestTokens;
 
-pub const PREFIX: &str = "solend0";
+pub const PREFIX: &str = "solend-pool";
 
 // This state account would be used as tx signer
 #[account]
@@ -159,11 +159,12 @@ pub struct UserAccount {
     pub srm_amount: u64,
     pub scnsol_amount: u64,
     pub stsol_amount: u64,
-    pub ray_amount: u64
+    pub ray_amount: u64,
+    pub temp: u64
 }
 
 impl UserAccount {
-    pub const LEN: usize = 32 + 8 * 6 + 8;
+    pub const LEN: usize = 32 + 8 * 7 + 8;
     
     pub fn get_key_amount (
         &self, 

@@ -18,7 +18,7 @@ import {
   pythStsolAccount,
   StableLpusdPool,
   tokenStateAccount,
-  USDCMint,
+  USDC_Mint,
   AuctionIDL,
   StableSwapIDL,
   TestTokenIDL,
@@ -81,7 +81,7 @@ const swap_normal_to_lpusd = async () => {
     const TestTokenProgramId = new PublicKey(TestTokenIDL.metadata.address);
 
     const stableswapPoolAtaLpusd = await getATAPublicKey(cbsConfigData.lpusdMint, StableLpusdPool);
-    const stableswapPoolAtaUsdc = await getATAPublicKey(USDCMint, StableLpusdPool);
+    const stableswapPoolAtaUsdc = await getATAPublicKey(USDC_Mint, StableLpusdPool);
 
     console.log("UserAccount:", userAccount.toBase58())
     
@@ -126,7 +126,7 @@ const swap_normal_to_lpusd = async () => {
                         pythSrc: tokenData.pythSrc,
                         pythUsdc: pythUsdcAccount,
                         tokenSrc: tokenData.destMint,
-                        tokenUsdc: USDCMint,
+                        tokenUsdc: USDC_Mint,
                         tokenLpusd: cbsConfigData.lpusdMint,
                         cbsAtaSrc: tokenData.cbsPool,
                         cbsAtaUsdc: EscrowUSDC,

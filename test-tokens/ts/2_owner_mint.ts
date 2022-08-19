@@ -13,6 +13,8 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token
 
 const { Wallet } = anchor;
 
+const convert_to_wei = (val) => (parseFloat(val) * 1e9).toString();
+
 const owner_mint = async () => {
     
     const connection = new Connection(NETWORK, "confirmed");
@@ -30,22 +32,22 @@ const owner_mint = async () => {
         console.log("Config:", config.toBase58())
 
         const configData = await program.account.config.fetch(config);
-        const msolMint = configData.msolMint;
+        const tokenMint = configData.wsolMint;
 
         // Find PDA from `test tokens` for state account
         const [stateAccount, stateAccountBump] = await PublicKey.findProgramAddress(
             [Buffer.from(PREFIX)],
             program.programId
         );
-        const userToken = await getATAPublicKey(msolMint, authority);
+        const userToken = await getATAPublicKey(tokenMint, authority);
 
-        const amount = 1000 * 1e9;
+        const amount = convert_to_wei(20000000);
         // faucet usdc
         const tx = await program.rpc.ownerMintToken(new anchor.BN(amount), {
             accounts: {
                 owner: authority,
                 stateAccount,
-                tokenMint: msolMint,
+                tokenMint: tokenMint,
                 userToken: userToken,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,

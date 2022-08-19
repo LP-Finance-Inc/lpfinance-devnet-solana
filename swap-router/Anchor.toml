@@ -2,10 +2,10 @@
 seeds = false
 
 [programs.localnet]
-swap_router = "AxfYaVXibrtcLB58SmFWvTjLKE6ejkJmuEoPpWap87VB"
+swap_router = "HQQC4EbED22P49XiJmMXFLkinHZ1aVEBveZfTSowmJGB"
 
 [programs.devnet]
-swap_router = "AxfYaVXibrtcLB58SmFWvTjLKE6ejkJmuEoPpWap87VB"
+swap_router = "HQQC4EbED22P49XiJmMXFLkinHZ1aVEBveZfTSowmJGB"
 
 [registry]
 url = "https://anchor.projectserum.com"

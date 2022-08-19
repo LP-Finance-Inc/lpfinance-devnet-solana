@@ -8,7 +8,7 @@ import {
 
 import { 
   NETWORK, 
-  PREFIX
+  AUCTION_PREFIX
 } from "../config";
 
 import { convert_to_wei, getATAPublicKey, getCreatorKeypair, getPublicKey, print_config_data, print_user_data } from "../utils";
@@ -32,12 +32,12 @@ const deposit = async () => {
   const userLpusd = await getATAPublicKey(lpusdMint, creatorKeypair.publicKey);
 
   const [userAccount, bump] = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
+    [Buffer.from(AUCTION_PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
     program.programId
   );
 
   const PDA = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX)],
+    [Buffer.from(AUCTION_PREFIX)],
     program.programId
   );    
 

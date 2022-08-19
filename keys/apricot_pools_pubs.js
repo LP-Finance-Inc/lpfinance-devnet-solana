@@ -1,0 +1,6 @@
+export const RAY_Apricot_ATA = new PublicKey("7CrChAbBcgyETrzAKBzWLXrsfPcc9uKvBLKLo7fF8t4t")
+export const WSOL_Apricot_ATA = new PublicKey("4s8KkDLCceqK23qHVMQ3YGDDAemYK81uuq34hqHt7XVM")
+export const MSOL_Apricot_ATA = new PublicKey("A2G3nS4TyPJQiqMvS7eMUcEnbB4W2dp4uAaUzDoec6hn")
+export const SRM_Apricot_ATA = new PublicKey("6ch55C8j2QQMbLdvN7YjdWH7ffSMChr2eq3EhHhYFsF1")
+export const SCNSOL_Apricot_ATA = new PublicKey("ATi33pTpoMnYBUamMhZD5AKyhS67yGXq3q3RtNzrXAV3")
+export const STSOL_Apricot_ATA = new PublicKey("EnZRffpnJPbYGeeS87QioBLRb6AwVwJAGGJ8WSVWNtyw")

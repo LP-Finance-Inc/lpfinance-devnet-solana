@@ -1,3 +1,2 @@
-const poolLpsol = new PublicKey("4MfusNQT7s6hecyba7mDJ3pDF7dAYFvPJ1B6UuvihaR1");
-const poolLpusd = new PublicKey("HjpEZQkp2rQ8iXa2nbaq8LFhj2FK2SjoeWC8jXg6GKX8");
-const auctionPDA = new PublicKey("ELbSTaq6JtUVStbM3nC1PTvz55FHJ9HMeqz2rjArngBM");
+export const LpSOL_AUCTION_ATA = new PublicKey("EERadkf396iVuGD7ykMPhGihUi2qBYZBu6es52H166uS");
+export const LpUSD_AUCTION_ATA = new PublicKey("EbwMqfLxjGQ6bb7jf5Zm47bBhtzKcwB3G2znTSe2f9x3");

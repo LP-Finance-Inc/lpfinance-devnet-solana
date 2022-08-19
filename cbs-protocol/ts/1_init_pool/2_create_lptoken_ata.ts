@@ -47,21 +47,18 @@ const create_lptoken_ata = async () => {
 
     // Find PDA for `lpsol pool`
     const poolLpsolKeypair = await getATAPublicKey(lpsolMint, PDA[0]); // anchor.web3.Keypair.generate();  
-    const poolLpsolKeyString = `const poolLpsol = new PublicKey("${poolLpsolKeypair.toString()}");\n`
+    const poolLpsolKeyString = `export const LpSOL_CBS_ATA = new PublicKey("${poolLpsolKeypair.toString()}");\n`
     pubkeys += poolLpsolKeyString;
 
       // Find PDA for `lpusd pool`
     const poolLpusdKeypair = await getATAPublicKey(lpusdMint, PDA[0]); //anchor.web3.Keypair.generate();  
-    const poolLpusdKeyString = `const poolLpusd = new PublicKey("${poolLpusdKeypair.toString()}");\n`
+    const poolLpusdKeyString = `export const LpUSD_CBS_ATA = new PublicKey("${poolLpusdKeypair.toString()}");\n`
     pubkeys += poolLpusdKeyString;
 
     // Find PDA for `lpfi pool`
     const poolLpfiKeypair = await getATAPublicKey(lpfiMint, PDA[0]); // anchor.web3.Keypair.generate();    
-    const poolLpfiKeyString = `const poolLpfi = new PublicKey("${poolLpfiKeypair.toString()}");\n\n`
+    const poolLpfiKeyString = `export const LpFI_CBS_ATA= new PublicKey("${poolLpfiKeypair.toString()}");\n\n`
     pubkeys += poolLpfiKeyString;
-
-    const cbsPDAKeyString = `const cbsPDA = new PublicKey("${PDA[0].toString()}");`
-    pubkeys += cbsPDAKeyString;
 
     writePublicKeys(pubkeys, "cbs_lptokens_ata");
     

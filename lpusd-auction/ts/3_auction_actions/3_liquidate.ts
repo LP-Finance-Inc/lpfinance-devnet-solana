@@ -10,7 +10,7 @@ import {
     CBSProtocolIDL,
     CBS_PREFIX,
     NETWORK, 
-    PREFIX,
+    AUCTION_PREFIX,
     StableLpsolPool,
     StableLpusdPool,
     pythRayAccount,
@@ -48,7 +48,7 @@ const liquidate = async () => {
   const testTokenProgramId = new PublicKey(TestTokenIDL.metadata.address);
   
   const PDA = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX)],
+    [Buffer.from(AUCTION_PREFIX)],
     program.programId
   );
 
@@ -72,7 +72,7 @@ const liquidate = async () => {
   );
 
   const [userAccount, bump] = await PublicKey.findProgramAddress(
-    [Buffer.from(PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
+    [Buffer.from(AUCTION_PREFIX), Buffer.from(creatorKeypair.publicKey.toBuffer())],
     program.programId
   );
 

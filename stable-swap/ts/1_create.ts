@@ -46,19 +46,19 @@ const create_stableswap = async () => {
   anchor.setProvider(new anchor.AnchorProvider(connection, provider.wallet, anchor.AnchorProvider.defaultOptions()));
   const program = anchor.workspace.StableSwap as Program<StableSwap>;
 
-  // const lpsol_wsol_pool_key = 'lpsol-wsol-pool'
-  // const token_a = LpSOL;
-  // console.log("token_a : ", token_a.toBase58())
-
-  // const token_b = WSOL;
-  // console.log("token_b : ", token_b.toBase58())
-
-  const lpusd_usdc_pool_key = 'lpusd-usdc-pool'
-  const token_a = LpUSD;
+  const lpsol_wsol_pool_key = 'lpsol_wsol_pool'
+  const token_a = LpSOL;
   console.log("token_a : ", token_a.toBase58())
 
-  const token_b = USDC;
+  const token_b = WSOL;
   console.log("token_b : ", token_b.toBase58())
+
+  // const lpusd_usdc_pool_key = 'lpusd-usdc-pool'
+  // const token_a = LpUSD;
+  // console.log("token_a : ", token_a.toBase58())
+
+  // const token_b = USDC;
+  // console.log("token_b : ", token_b.toBase58())
 
   const stableswap_pool_pda = await PublicKey.findProgramAddress(
     [
@@ -71,8 +71,8 @@ const create_stableswap = async () => {
   ); 
   console.log("Swap Swap Pool PDA address:", stableswap_pool_pda[0].toBase58());
   console.log("Swap Swap Pool PDA bump:", stableswap_pool_pda[1]);
-  // writePublicKey(stableswap_pool_pda[0], lpsol_wsol_pool_key); 
-  writePublicKey(stableswap_pool_pda[0], lpusd_usdc_pool_key); 
+  writePublicKey(stableswap_pool_pda[0], lpsol_wsol_pool_key); 
+  // writePublicKey(stableswap_pool_pda[0], lpusd_usdc_pool_key); 
 
   const author_ata_a = await findAssociatedTokenAddress(
     authKeypair.publicKey,

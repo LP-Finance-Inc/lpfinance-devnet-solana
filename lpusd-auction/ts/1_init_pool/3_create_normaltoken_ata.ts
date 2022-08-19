@@ -12,7 +12,7 @@ import {
   Connection,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-import { LpfinanceTokenConfig, NETWORK, PREFIX, TestTokenConfig, TestTokenIDL } from "../config";
+import { LpfinanceTokenConfig, NETWORK, AUCTION_PREFIX, TestTokenConfig, TestTokenIDL } from "../config";
 import { getATAPublicKey, getCreatorKeypair, getPublicKey, writePublicKeys } from "../utils";
 
 const { Wallet } = anchor;
@@ -39,17 +39,17 @@ const create_normaltoken_ata = async () => {
     const usdcMint = testTokenConfigData.usdcMint as PublicKey;
 
     const PDA = await PublicKey.findProgramAddress(
-      [Buffer.from(PREFIX)],
+      [Buffer.from(AUCTION_PREFIX)],
       program.programId
   );    
     // Find PDA for `wSOL pool`
     const poolWsolKeypair = await getATAPublicKey(wsolMint, PDA[0]) // anchor.web3.Keypair.generate();  
-    const poolWsolKeyString = `const poolWsol = new PublicKey("${poolWsolKeypair.toString()}");\n`
+    const poolWsolKeyString = `export const auctionWsolPool = new PublicKey("${poolWsolKeypair.toString()}");\n`
     pubkeys += poolWsolKeyString;
 
       // Find PDA for `usdc pool`
     const poolUsdcKeypair = await getATAPublicKey(usdcMint, PDA[0]) // anchor.web3.Keypair.generate();  
-    const poolUsdcKeyString = `const poolUsdc = new PublicKey("${poolUsdcKeypair.toString()}");\n`
+    const poolUsdcKeyString = `export const auctionUsdcPool = new PublicKey("${poolUsdcKeypair.toString()}");\n`
     pubkeys += poolUsdcKeyString;
 
     writePublicKeys(pubkeys, "auction_tokens_ata");

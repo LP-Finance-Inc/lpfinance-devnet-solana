@@ -82,7 +82,7 @@ const add_liquidity = async () => {
   );
   console.log('author_ata_lp:', author_ata_lp.toBase58());
 
-  const amount_a = 100000 * 1e9;
+  const amount_a = 8000000 * 1e9;
 
   await program.rpc.addLiquidityUniswap(
     new anchor.BN(amount_a),

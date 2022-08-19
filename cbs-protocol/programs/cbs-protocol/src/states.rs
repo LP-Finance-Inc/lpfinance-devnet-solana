@@ -281,11 +281,32 @@ pub struct InitUserAccount<'info> {
         payer = user_authority
     )]
     pub user_account: Box<Account<'info, UserAccount>>,
+
+    #[account(mut)]
+    pub lpusd_mint: Box<Account<'info,Mint>>,
+    #[account(mut)]
+    pub lpsol_mint: Box<Account<'info,Mint>>,
+    #[account(
+        init_if_needed,
+        payer = user_authority,
+        associated_token::mint = lpusd_mint,
+        associated_token::authority = user_authority
+    )]
+    pub user_lpusd : Box<Account<'info,TokenAccount>>,
+    #[account(
+        init_if_needed,
+        payer = user_authority,
+        associated_token::mint = lpsol_mint,
+        associated_token::authority = user_authority
+    )]
+    pub user_lpsol : Box<Account<'info,TokenAccount>>,
     // Signer
     #[account(mut)]
     pub user_authority: Signer<'info>,
     // Programs and Sysvars
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
 }
 
@@ -372,12 +393,7 @@ pub struct BorrowLpToken<'info> {
     pub tokens_state: Box<Account<'info, TokenStateAccount>>,
     #[account(mut)]
     pub lptoken_config: Box<Account<'info, lpfinance_tokens::Config>>,
-    #[account(
-        init_if_needed,
-        payer = user_authority,
-        associated_token::mint = lptoken_mint,
-        associated_token::authority = user_authority
-    )]
+    #[account(mut, constraint=user_lptoken.mint == lptoken_mint.key())]
     pub user_lptoken : Box<Account<'info,TokenAccount>>,
     // LpUSD-USDC stableswap pool
     pub stable_lpusd_pool: Box<Account<'info, StableswapPool>>,

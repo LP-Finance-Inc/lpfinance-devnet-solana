@@ -44,7 +44,7 @@ const create_pools = async () => {
     console.log("Swap Escrow Pool PDA address:", swap_escrow_pool_pda[0].toBase58());
     console.log("Swap Escrow Pool PDA bump:", swap_escrow_pool_pda[1]);
     
-    writePublicKey(swap_escrow_pool_pda[0], 'swap_router_config');
+    writePublicKey(swap_escrow_pool_pda[0], 'swap_router_pda');
 
     const tokenDataArr = TokenDataArr;
     const len = tokenDataArr.length;
@@ -53,7 +53,7 @@ const create_pools = async () => {
     for (let i = 0; i < len; i++) {
         const tokenData = tokenDataArr[i];
         const tokenAta = await getATAPublicKey(tokenData.token, swap_escrow_pool_pda[0]);
-        const poolString = `const ${tokenData.key} = new PublicKey("${tokenAta.toString()}");\n`
+        const poolString = `export const ${tokenData.key} = new PublicKey("${tokenAta.toString()}");\n`
         pubkeys += poolString;
 
         try {

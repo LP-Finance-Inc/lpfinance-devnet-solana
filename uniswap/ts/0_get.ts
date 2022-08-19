@@ -49,11 +49,11 @@ const get_uniswap_pool = async () => {
     console.log(i)
     console.log('author : ', uniswappoolAccounts[i].account.author.toBase58());
     console.log('token_a : ', uniswappoolAccounts[i].account.tokenA.toBase58());
-    console.log('amount_a : ', uniswappoolAccounts[i].account.amountA.toNumber());
+    console.log('amount_a : ', uniswappoolAccounts[i].account.amountA.toString());
     console.log('token_b : ', uniswappoolAccounts[i].account.tokenB.toBase58());
-    console.log('amount_b : ', uniswappoolAccounts[i].account.amountB.toNumber());
+    console.log('amount_b : ', uniswappoolAccounts[i].account.amountB.toString());
     console.log('token_lp : ', uniswappoolAccounts[i].account.tokenLp.toBase58());
-    console.log('total_amount_lp : ', uniswappoolAccounts[i].account.totalLpAmount.toNumber());
+    console.log('total_amount_lp : ', uniswappoolAccounts[i].account.totalLpAmount.toString());
     console.log('fee : ', uniswappoolAccounts[i].account.fee);
   }
 
