@@ -19,7 +19,7 @@ import {
   writePublicKey,
   getProgramId
 } from "./utils";
-import { LpFI, LpSOL, LpUSD, NETWORK, StableswapLpsolWsol, StableswapLpusdUsdc, stableswap_programID, testToken_programID, UniswapLpfiUsdc, uniswap_programID, USDC, USDC_PYTH, WSOL, WSOL_PYTH } from "./config";
+import { LpFI, LpSOL, LpUSD, NETWORK, StableSwapIDL, StableswapLpsolWsol, StableswapLpusdUsdc, TestTokenIDL, USDC, USDC_PYTH, WSOL, WSOL_PYTH } from "./config";
 
 async function findAssociatedTokenAddress(
     walletAddress: PublicKey,
@@ -46,6 +46,9 @@ const stable_swap = async () => {
   anchor.setProvider(new anchor.AnchorProvider(connection, provider.wallet, anchor.AnchorProvider.defaultOptions()));
   const program = anchor.workspace.SwapRouter as Program<SwapRouter>;
 
+  const testToken_programID = new PublicKey(TestTokenIDL.metadata.address);
+  const stableswap_programID = new PublicKey(StableSwapIDL.metadata.address);
+  
   const escrow_pda = await PublicKey.findProgramAddress(
     [
         Buffer.from("swap-escrow")

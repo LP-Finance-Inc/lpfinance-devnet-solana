@@ -43,8 +43,8 @@ const borrow = async () => {
   const config = getPublicKey('cbs_config');  
   const cbsConfigData = await program.account.config.fetch(config);
 
-  const lptokenMint= cbsConfigData.lpsolMint as PublicKey;
   // const lptokenMint= cbsConfigData.lpsolMint as PublicKey;
+  const lptokenMint= cbsConfigData.lpusdMint as PublicKey;
   const userLptoken = await getATAPublicKey(lptokenMint, creatorKeypair.publicKey);
 
   const [userAccount, bump] = await PublicKey.findProgramAddress(
@@ -59,7 +59,7 @@ const borrow = async () => {
 
   const lptokenProgramId = LpfinanceTokenIDL.metadata.address;
 
-  const borrow_wei = convert_to_wei("2000000");
+  const borrow_wei = convert_to_wei("5000");
   const borrow_amount = new anchor.BN(borrow_wei);
   
   const tx = await program.rpc.borrowLptoken(borrow_amount, {

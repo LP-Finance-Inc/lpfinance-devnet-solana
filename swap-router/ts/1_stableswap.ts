@@ -19,7 +19,7 @@ import {
   writePublicKey,
   getProgramId
 } from "./utils";
-import { LpSOL, LpUSD, NETWORK, StableswapLpsolWsol, StableswapLpusdUsdc, stableswap_programID, USDC, WSOL } from "./config";
+import { LpSOL, LpUSD, NETWORK, StableSwapIDL, USDC, WSOL } from "./config";
 
 async function findAssociatedTokenAddress(
     walletAddress: PublicKey,
@@ -109,7 +109,8 @@ const stable_swap = async () => {
   console.log('escrow_ata_dest:', escrow_ata_dest.toBase58());
 
   const amount_src = 10 * 1e9;
-
+  
+  const stableswap_programID = new PublicKey(StableSwapIDL.metadata.address);
   const result = await program.rpc.swapStableswap(
     new anchor.BN(amount_src),
     {

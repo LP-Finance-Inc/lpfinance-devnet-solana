@@ -11,14 +11,9 @@ export { default as StableSwapIDL } from "../../stable-swap/target/idl/stable_sw
 export { default as TestTokenIDL } from "../../test-tokens/target/idl/test_tokens.json";
 export { default as UniswapIDL } from "../../uniswap/target/idl/uniswap.json";
 
-export const stableswap_programID = new PublicKey("EDvp5kbQi9ogJtRgnxWaX58V66xEeZqWXxy4QUrhNC2V");
-export const uniswap_programID = new PublicKey("3s5mYbRJbWvgberG3EpexdQm7aVJKLQjnz7THT1m6LTc");
-export const testToken_programID = new PublicKey("3QTW9aZp4U2xoj9UfvTF6PEL3UZzfEHi8UtNruhw7GHL");
-
-
-export const tokenStateAccount = new PublicKey("FEL9EygF1C3d5cwD2ZXkpmaQMBtdxKd1mvYRrD81KNVY");
-export const StableswapLpusdUsdc = new PublicKey("B51GTPYfj8FvVLq71wStjAkkc4mSDgXbfDQgLygDpczc")
-export const StableswapLpsolWsol = new PublicKey("CVsmW8n6Wm8YfF6ssMgpvaURdFCY2je55WBnHTUjX7hz")
+export const tokenStateAccount = new PublicKey("3kbA8tGp5ayZPbKVetchs633deYkwjnd95bPpuq8bypq");
+export const StableswapLpusdUsdc = new PublicKey("BFteZ5EXKa4myspKtvKcD7DNkQaLFrwEVpvMDaGwbeTZ")
+export const StableswapLpsolWsol = new PublicKey("6VBUBPA2Bev3dZTEJwfSVBJpCWv6sw9eoyywTS3cXmu3")
 export const UniswapLpfiUsdc = new PublicKey("C4rkcFbPi2E9jUcuLxfFakJQZKaRRuKgjnCdLSYWBSeq")
 
 export const LpUSD = new PublicKey("3GB97goPSqywzcXybmVurYW7jSxRdGuS28nj74W8fAtL")

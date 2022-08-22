@@ -198,6 +198,42 @@ pub mod test_tokens {
         Ok(())
     }
 
+    // Owner can mint token
+    pub fn airdrop_token(
+        ctx: Context<AirdropToken>,
+        amount: u64
+    ) -> Result<()> {
+        if amount == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+
+        let (mint_token_authority, mint_token_authority_bump) = 
+        Pubkey::find_program_address(&[PREFIX.as_bytes()], ctx.program_id);
+
+        if mint_token_authority != ctx.accounts.state_account.key() {
+            return Err(ErrorCode::InvalidOwner.into());
+        }
+
+        // Mint
+        let seeds = &[
+            PREFIX.as_bytes(),
+            &[mint_token_authority_bump]
+        ];
+        let signer = &[&seeds[..]];
+
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.token_mint.to_account_info(),
+            to: ctx.accounts.user_token.to_account_info(),
+            authority: ctx.accounts.state_account.to_account_info(),
+        };
+
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+
+        token::mint_to(cpi_ctx, amount)?;
+        Ok(())
+    }
+
     pub fn update_owner(
         ctx: Context<UpdateConfigAccount>,
         new_owner: Pubkey
@@ -490,6 +526,32 @@ pub struct OwnerMintToken<'info> {
         payer = owner,
         associated_token::mint = token_mint,
         associated_token::authority = owner
+    )]
+    pub user_token: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub token_mint: Account<'info, Mint>,
+    // Programs and Sysvars
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>
+}
+
+// Program deployer mintable
+#[derive(Accounts)]
+pub struct AirdropToken<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    /// CHECK:
+    #[account(mut)]
+    pub receiver: AccountInfo<'info>,
+    #[account(mut, has_one=owner)]
+    pub state_account: Box<Account<'info, TokenStateAccount>>,
+    #[account(
+        init_if_needed,
+        payer = owner,
+        associated_token::mint = token_mint,
+        associated_token::authority = receiver
     )]
     pub user_token: Box<Account<'info, TokenAccount>>,
     #[account(mut)]

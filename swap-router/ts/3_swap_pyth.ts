@@ -20,7 +20,7 @@ import {
   getProgramId,
   getATAPublicKey
 } from "./utils";
-import { LpFI, LpSOL, LpUSD, NETWORK, stableswap_programID, TestTokenIDL, UniswapLpfiUsdc, uniswap_programID, USDC, USDC_PYTH, WSOL, WSOL_PYTH } from "./config";
+import { LpFI, LpSOL, LpUSD, NETWORK, TestTokenIDL, USDC, USDC_PYTH, WSOL, WSOL_PYTH } from "./config";
 
 async function findAssociatedTokenAddress(
     walletAddress: PublicKey,

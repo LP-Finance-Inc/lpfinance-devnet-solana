@@ -19,7 +19,7 @@ import {
   writePublicKey,
   getProgramId
 } from "./utils";
-import { LpFI, LpSOL, LpUSD, NETWORK, StableswapLpsolWsol, StableswapLpusdUsdc, stableswap_programID, testToken_programID, UniswapLpfiUsdc, uniswap_programID, USDC, USDC_PYTH, WSOL, WSOL_PYTH } from "./config";
+import { LpFI, LpSOL, LpUSD, NETWORK, StableSwapIDL, StableswapLpsolWsol, StableswapLpusdUsdc, TestTokenIDL, USDC, USDC_PYTH, WSOL, WSOL_PYTH } from "./config";
 
 async function findAssociatedTokenAddress(
     walletAddress: PublicKey,
@@ -54,6 +54,7 @@ const stable_swap = async () => {
   ); 
   console.log("escrow_pda:", escrow_pda[0].toBase58());
   console.log("escrow_pda:", escrow_pda[1]);
+  const testToken_programID = new PublicKey(TestTokenIDL.metadata.address);
 
   const token_state_account_pda = await PublicKey.findProgramAddress(
     [
@@ -99,6 +100,7 @@ const stable_swap = async () => {
   );
   console.log('escrow_ata_usdc:', escrow_ata_usdc.toBase58());
   
+  const stableswap_programID = new PublicKey(StableSwapIDL.metadata.address);
 
   const amount_lpusd = 10 * 1e9;
 
